@@ -1,0 +1,26 @@
+*.pyc
+tips.txt
+cardsjson - 副本.txt
+songsjson - 副本.txt
+score.txt
+unit*.txt
+
+avatar.py
+card.py
+tipsextract.py
+songmodify.py
+prediction.py
+
+cardchange
+cardsjson
+songchange
+songsjson
+livejson
+static/card
+static/card300
+static/llhead
+static/newcard
+static/newcard300
+static/newhead
+
+
