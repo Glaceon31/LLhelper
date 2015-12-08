@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script src="http://lovelive.oss-cn-beijing.aliyuncs.com/Js/ReadPredCN.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.1"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+   
+   <script language="javascript">
+   lpcost = [5, 10, 15, 25]
+   basept = [36, 89, 163, 272]
+   expbydiff = [12, 26, 46, 83]
+   
+   function init(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			if (getCookie(inputs[i].name) != "")
+   				inputs[i].value = getCookie(inputs[i].name);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		if (getCookie(selects[i].name) != "")
+   			selects[i].value = getCookie(selects[i].name);
+   	}
+   	document.getElementById('timeleft').style.backgroundColor = '#FFFF80'
+   }
+   
+   function setrank(){
+   	rm = [1, 1.05, 1.1, 1.15, 1.2]
+   	rank = document.getElementById("rankselect").value
+   	if (rank != ""){
+   		document.getElementById("rank").value = rm[parseInt(rank)]
+   	}
+   }
+   
+   function clearrank(){
+   	document.getElementById("rankselect").value=""
+   }
+   
+   function setorder(){
+   	om = [1.1125, 1.25, 1.15, 1.05, 1]
+   	order = document.getElementById("orderselect").value
+   	if (order != ""){
+   		document.getElementById("order").value = om[parseInt(order)]
+   	}
+   }
+   
+   function clearorder(){
+   	document.getElementById("orderselect").value = ""
+   }
+   
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			setCookie(inputs[i].name, inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name, selects[i].value, 1);
+   	}
+   }
+   
+   function check(){
+   	var inputs = document.getElementsByTagName("input");
+   	for (i in inputs){
+   		if (inputs[i].type != "text")
+   			continue
+   		if (!isNotNegative(inputs[i].value)){
+   			alert("请输入非负数");
+   			return false;
+   		}
+   		if (parseInt(document.getElementById("target").value) > 5000000){
+   			alert("不可能达到5百万点以上")
+   			return false;
+   		}
+   		if (parseInt(document.getElementById("lpwaste").value) > 240){
+   			alert("一天几小时来着？")
+   			return false;
+   		}
+   	}
+   	saveToCookie();
+   	calcu()
+   	document.getElementById("result").scrollIntoView()
+   	return true;
+   }
+   
+   function calcu(){
+   	infolist = ['timeleft', 'lpwaste','diff','rank','order','target','current','lp','lvl','exp','expf']
+   	remlist = ['current','lp','lvl','exp','extraplaytime']
+   	for (i in infolist)
+   		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
+   	playtime = 0
+   	extraplaytime = 0
+   	regen = 0
+   	loveca = 0
+   	lvlupwarning = 0
+   	safelp = 2
+   	lp += parseInt(timeleft*10)-lpwaste*parseInt((timeleft-14)/24+1)-safelp
+   	while ((current < target) || (lp >= 5) || (exp >= expbylvl(lvl, expf))){
+   		while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
+   			if (lp >= lpcost[diff]){
+   				play = parseInt(lp/lpcost[diff])
+   				playtime += play
+   				lp -=play*lpcost[diff]
+   				exp += expbydiff[diff]*play
+   				current += parseInt(basept[diff]*rank*order*play)
+   			}
+   			while (exp >= expbylvl(lvl, expf)){
+   				exp -= expbylvl(lvl, expf)
+   				lvl += 1
+   				lp += lpbylvl(lvl)-1+regen
+   				regen = 1-regen
+   			}
+   		}
+   		//deal with remainings
+   		for (i in remlist)
+   			eval('tmp'+remlist[i]+' = '+remlist[i])
+   		//if not enough
+   		if (lp >= 5){
+   			for (i = 3; i >= 0; i--){
+   				if (lp >= lpcost[i]){
+   					lp -= lpcost[i]
+   					exp += expbydiff[i]
+   					current += parseInt(basept[i]*rank*order)
+   					extraplaytime += 1
+   				}
+   			}
+   		}
+   		if (exp >= expbylvl(lvl, expf)){
+   			continue
+   		}
+   		if (current < target){
+   			for (i in remlist)
+   				eval(remlist[i]+' = tmp'+remlist[i])
+   			loveca += 1
+   			lp += lpbylvl(lvl)-1+regen
+   			regen = 1-regen
+   			lvlupwarning = 0
+   		}	
+   	}
+   	//powered by Glaceon
+   	expneed = expbylvl(lvl, expf)
+   	returnlist = ['loveca','playtime','extraplaytime','lvl','exp','expneed','current','totalhour','totalminute','extrahour','extraminute','warning']
+   	totalhour = parseInt((playtime)*3/60)
+   	totalminute = parseInt((playtime)*3)-60*totalhour
+   	extrahour = parseInt((extraplaytime)*3/60)
+   	extraminute = parseInt((extraplaytime)*3)-60*extrahour
+   	warning = ""
+   	if (exp-3.3*lpbylvl(lvl) < 50)
+   		warning = "最后一次升级的时间离活动结束时间较近，请提前规划好时间"
+   	for (i in returnlist)
+   		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
+   	document.getElementById("result").style.display = ""
+   }
+   
+   function clearall(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		setCookie(inputs[i].name, inputs[i].value, -1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name, selects[i].value, -1);
+   	}
+   	window.location.href="/llsm"
+   }
+   /*
+   function showprediction(){
+   	document.getElementById('prediction').innerHTML = '一档 65000pt(-1100)； 二档 53500pt(-800) （10月26日12:00更新）'
+   }
+   
+   function hideprediction(){
+   	document.getElementById('prediction').innerHTML = 'LLhelper国服十月秋收花活动预测线'
+   }*/
+   </script>
+   
+   
+  </head>
+   <body onload="init()">
+
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>Score Match助手</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
+2、填写剩下所有文本框，其中rank加成和顺位加成可以参考系数表，也可以通过选择rank和顺位自动填入系数
+3、点击Calculate
+4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
+</pre>
+<input type="submit" name="cntime" value="国服活动" onclick="cntime()">
+<input type="submit" name="jptime" value="日服活动" onclick="jptime()">
+<input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
+<input type="submit" name="clear" value="清空输入" onclick="clearall()"><br>
+活动结束时间：<input id="endday" type="text" name="endday" value="0" autocomplete="off" style="width:30px">日<input id="endhour" type="text" name="endhour" value="0" autocomplete="off" style="width:30px">时<br>
+剩余时间 :<input type="text" id="timeleft" name="timeleft" autocomplete="off" onchange="document.getElementById('timeleft').style.backgroundColor = '#FFFFFF'">小时<br>
+每天浪费LP :<input id="lpwaste" type="text" name="lpwaste" value="0" autocomplete="off" >（因为睡觉等原因浪费的LP数）<br>
+
+<br>
+难度选择 :<select id="diff" name="diff">
+	<option value=0>Easy</option>
+	<option value=1>Normal</option>
+	<option value=2>Hard</option>
+	<option value=3 SELECTED>Expert</option>
+	</select><br>
+rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
+	<option value=""></option>
+	<option value=0>-</option>
+	<option value=1>C</option>
+	<option value=2>B</option>
+	<option value=3>A</option>
+	<option value=4 SELECTED>S</option>
+	</select>
+	<br>
+rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
+顺位（可选）：<select id="orderselect" name="orderselect" onchange="setorder()">
+	<option value=""></option>
+	<option value=0 SELECTED>一位~四位平均</option>
+	<option value=1>一位</option>
+	<option value=2>二位</option>
+	<option value=3>三位</option>
+	<option value=4>四位</option>
+	</select>
+	<br>
+顺位加成：<input id="order" type="text" name="order" value="1.1125" style="width:50px" autocomplete="off" onchange="clearorder()">x
+<a href="/smmulti" target="_blank">加成系数表</a>
+<br>
+<br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4171048661" target="_blank">LLhelper国服十一月手工绘活动预测线</a><br>
+已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
+<br>
+当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
+当前等级 :<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
+当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
+经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
+			<option value=0>正常</option>
+			<option value=1>100级以下减半（日服）</option>
+	</select>(half指100级以下升级所需经验值减半)<br>
+<input type="submit" name="submit" value="Calculate" onclick="check()"><br>
+
+<div id="result" style="display:none">
+<pre>
+注意：
+1、加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考
+2、如果最终点数和目标点数过于接近，请考虑多磕一心。
+</pre>
+<div style="float:left">
+需要心数：<nospan id="rloveca"></nospan>心<br>
+SM次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
+总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（一首按三分计算）<br>
+最终等级：<nospan id="rlvl"></nospan><br>
+最终exp：<nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan><br>
+最终点数：<nospan id="rcurrent"></nospan><br>
+<nospan id="rwarning" style="color:red"></nospan>
+</div>
+</div>
+</body>
+</html>

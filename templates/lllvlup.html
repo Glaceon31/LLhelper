@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:160px;width:160px;margin-left:80px;margin-top:80px;background-color:#F0F8FF}
+   	.mainbody {width:1024px;margin:auto;margin-bottom:100px;}
+   	.myjumbotron {position:relative;width:800px;margin-left:auto;margin-right:auto;margin-top:100px;background-color:#F0F8FF;}
+   	.myjumbotron:last-child {margin-bottom:100px;}
+   	.mycontainer {width:auto}
+   </style>
+   <script language="javascript">
+   lpmf = [4,8,12,20]
+   lpsm = [5,10,15,25]
+   lpbydiff = [5,10,15,25]
+   expbydiff = [12,26,46,83]
+   expbyfivemin = [12,26,46,52,83]
+   expbylpmax = [0, 0, 0, 0, 9, 12, 14, 17, 20, 25, 29, 29, 35, 35, 42, 46, 46, 47, 51, 55, 58, 60, 63, 66, 71, 83]
+   expbylpmin = [0, 0, 0, 0, 9, 12, 14, 17, 20, 23, 26, 29, 35, 35, 42, 46, 46, 47, 51, 55, 58, 60, 63, 66, 69, 83]
+   function init(){
+   	//alert(document.cookie)
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			if (getCookie(inputs[i].name+"lvlup") != "")
+   				inputs[i].value = getCookie(inputs[i].name+"lvlup");
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		if (getCookie(selects[i].name+"lvlup") != "")
+   			selects[i].value = getCookie(selects[i].name+"lvlup");
+   	}
+   	settype()
+   }
+   
+   function maxchoice(lvl){
+   	if (lvl >= 70)
+   		return 60
+   	else if (lvl >= 30)
+   		return 40
+   	else if (lvl >= 22)
+   		return 36
+   	else
+   		return 24
+   }
+   
+   function settype(){
+   	type = document.getElementById("actype").value
+   	if (type == 1){
+   		document.getElementById("mfexp").style.display = "none"
+   		document.getElementById("actimes").style.display = ""
+   	}
+   	else if (type == 3){
+   		document.getElementById("actimes").style.display = "none"
+   		document.getElementById("mfexp").style.display = ""
+   	}
+   	else{
+   		document.getElementById("mfexp").style.display = "none"
+   		document.getElementById("actimes").style.display = "none"
+   		/*
+   		document.getElementById("aceasy").value = 0
+   		document.getElementById("acnormal").value = 0
+   		document.getElementById("achard").value = 0
+   		document.getElementById("acexpert").value = 0*/
+   	}	
+   }
+   
+   function clearall(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		setCookie(inputs[i].name+"lvlup", inputs[i].value, -1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name+"lvlup", selects[i].value, -1);
+   	}
+   	window.location.href="/lllvlup"
+   }
+   
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			setCookie(inputs[i].name+"lvlup", inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name+"lvlup", selects[i].value, 1);
+   	}
+   }
+   
+   function totwo(string){
+   	str = String(string)
+   	while (str.length < 2){
+   		str = '0'+str
+   	}
+   	return str
+   }
+   
+   function calcu(){
+   	infolist = ['lvl', 'exp', 'lp', 'loveca', 'aceasy', 'acnormal', 'achard', 'acexpert', 'actype', 'lpcost', 'expf']
+   	returnlist = ['nowexp', 'minlvluptime', 'bestlvluptime', 'maxlvluptime', 'nowtime', 'expremain']
+   	for (i in infolist)
+   		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
+   	
+   	expneed = expbylvl(lvl, expf)
+   	nowexp = String(exp)+'/'+String(expneed)
+   	
+   	nowtime = new Date()
+   	lvluptime = new Date()
+   	if (actype == 3){
+   		lpbydiff = lpmf
+   	}
+   	else {
+   		lpbydiff = lpsm
+   	}
+   	if (actype <= 3){
+   		if (actype == 1){
+   			exp += aceasy*12+acnormal*26+achard*46+acexpert*83
+   		}
+   		expmulti = 1
+   		if ((document.getElementById('expbonus').checked) && (actype == 3))
+   			expmulti = 1.1
+   		if (document.getElementById('rank').checked)
+   			expmulti *= 0.5
+   		lp += loveca*lpbylvl(lvl)
+   		ptime = parseInt(lp/lpbydiff[lpcost])
+   		exp += parseInt(expbydiff[lpcost]*expmulti)*ptime
+   		lp -= lpbydiff[lpcost]*ptime
+   		if (exp > expneed){
+   			//lvluptime="已经能升级了"
+   			//expremain = exp-expneed
+   			returnlist = ['nowexp','nowtime']
+   			nowtime = timeString(nowtime)
+   			document.getElementById('result').style.display = ''
+   			document.getElementById('resultdata').style.display = 'none'
+   			document.getElementById('already').style.display = ''
+   			for (i in returnlist)
+   		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
+   			return
+   		}
+   		else{
+   			ptimes = Math.ceil((expneed-83-exp)/(expbydiff[lpcost]*expmulti))
+   			if (ptimes > 0){
+   				lpneed = lpbydiff[lpcost]*ptimes-lp
+   				lp = 0
+   				exp += parseInt(expbydiff[lpcost]*expmulti)*ptimes
+   				lvluptime.setMinutes(lvluptime.getMinutes()+6*lpneed)
+   			}
+   			
+   			//remaining
+   			ptimes = Math.ceil((expneed-exp)/expbydiff[lpcost])
+   			lpneed = lpbydiff[lpcost]*ptimes-lp
+   			bestlvluptime = new Date(lvluptime)
+   			bestlvluptime.setMinutes(bestlvluptime.getMinutes()+6*lpneed)
+   			expbest = expbydiff[lpcost]*ptimes+exp
+   			expremain = expbest-expneed
+   			
+   			minlvluptime = new Date(lvluptime)
+   			if (actype <= 1){
+   				for (i=0;i<=25;i++){
+   					if (exp+expbylpmax[i] >= expneed){
+   						minlvluptime.setMinutes(minlvluptime.getMinutes()+6*(i-lp))
+   						break
+   					}
+   				}
+   			}
+   			else{
+   				for (i=0;i<4;i++){
+   					if (exp+expbydiff[i] >= expneed){
+   						minlvluptime.setMinutes(minlvluptime.getMinutes()+6*(lpbydiff[i]-lp))
+   						break
+   					}
+   				}
+   			}
+   			
+   			maxlvluptime = new Date(lvluptime)
+   			if (actype <= 1){
+   				//canplay = 0
+   				for (i=24;i>=4;i--){
+   					if (exp+expbylpmin[i] < expneed){
+   						maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(i-lp))
+   						lp = 0
+   						break
+   					}
+   				}
+   				maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(25-lp))
+   			}
+   			else if (actype == 2){
+   				for (i = 4; i >=0;i--){
+   					if (exp+expbyfivemin[i] < expneed){
+   						maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(5*(i+1)-lp))
+   						lp = 0
+   						break
+   					}
+   				}
+   				maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(25-lp))
+   			}
+   			else if (actype == 3){
+   				for (i = 4; i >=0;i--){
+   					if (exp+expbyfivemin[i] < expneed){
+   						maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(4*(i+1)-lp))
+   						lp = 0
+   						break
+   					}
+   				}
+   				maxlvluptime.setMinutes(maxlvluptime.getMinutes()+6*(maxchoice(lvl)-lp))
+   			}
+   			
+   			minlvluptime = timeString(minlvluptime)
+   			bestlvluptime = timeString(bestlvluptime)
+   			maxlvluptime = timeString(maxlvluptime)
+   		}
+   	}
+   	
+   	
+   	nowtime = timeString(nowtime)
+   	document.getElementById('resultdata').style.display = ''
+   	
+   	for (i in returnlist)
+   		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
+   	document.getElementById("result").style.display = ""
+   	document.getElementById("already").style.display = "none"
+   }
+   
+   function timeString(t){
+   	return String(t.getMonth()+1)+'月'+String(t.getDate())+'日 '+totwo(String(t.getHours()))+':'+totwo(String(t.getMinutes()))
+   }
+   
+   function check(){
+   	var inputs = document.getElementsByTagName("input");
+   	for (i in inputs){
+   		if (inputs[i].type != "text")
+   			continue
+   		if (!isNotNegative(inputs[i].value)){
+   			alert("请输入非负数");
+   			return false;
+   		}
+   	}
+   	if (parseInt(document.getElementById("lvl").value) < 1){
+   		alert("等级不能为负")
+   		return false;
+   	}
+   	saveToCookie();
+   	calcu()
+   	return true;
+   }
+   </script>
+   </head>
+<body onload="init()">
+
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>升级时间计算</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+使用方法：
+1、若想要计算如何通过磕心和打活动曲调整升级时间到有空的时候，通过修改吃心数和打活动曲数来计算该方案下的升级时间即可
+</pre>
+
+<form action="" method="POST" onsubmit="return check()">
+当前等级：<input type="text" id="lvl" name="lvl" value="0" autocomplete="off"><br>
+当前经验：<input type="text" id="exp" name="exp" value="0" autocomplete="off"><br>
+当前LP：<input type="text" id="lp" name="lp" value="0" autocomplete="off"><br>
+吃心数：<input type="text" id="loveca"name="loveca" value="0" autocomplete="off"><br>
+活动类型：<select id="actype" name="actype" onchange="settype()">
+	<option value=0>非活动</option>
+	<option value=1>传统活动</option>
+	<option value=2>SM</option>
+	<option value=3>MF</option>
+</select><br>
+通常曲/SM方针：
+<select id="lpcost" name="lpcost">
+	<option value=0>Easy</option>
+	<option value=1>Normal</option>
+	<option value=2>Hard</option>
+	<option value=3 SELECTED>Expert</option>
+</select>
+<br>
+经验公式：
+<select id="expf" name="expf">
+	<option value=0>正常</option>
+	<option value=1>100级以下减半（日服）</option>
+</select>(half指100级以下升级所需经验值减半)
+<br>
+<input type="checkbox" id="rank" name="rank" >经验减半</input><br>
+<br>
+<div id='mfexp' style="display:none">
+<input type="checkbox" id="expbonus" name="expbonus" >经验+10%</input><br>
+</div>
+<div id="actimes">
+活动曲次数：
+<table border="1">
+<tr>
+	<td>Easy</td>
+	<td>Normal</td>
+	<td>Hard</td>
+	<td>Expert</td>
+</tr>
+<tr>
+	<td><input type="text" id="aceasy" name="aceasy" value="0" size=1 autocomplete="off"></td>
+	<td><input type="text" id="acnormal" name="acnormal" value="0" size=1 autocomplete="off"></td>
+	<td><input type="text" id="achard" name="achard" value="0" size=1 autocomplete="off"></td>
+	<td><input type="text" id="acexpert" name="acexpert" value="0" size=1 autocomplete="off"></td>
+</tr>
+</table>
+</div>
+
+<input type="button" name="submit" value="Calculate" onclick="check();">
+</form>
+
+<div id="result" style="display:none">
+<pre>
+注意：
+1、最快升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰能升级的情况下的升级时间
+2、最佳升级时间指的是完全按照方针打的情况下的升级时间
+3、最慢升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰不能升级（并且若不少于15LP且不为17LP时必打一首hard），再打一首ex曲升级的情况下的升级时间
+4、关于MF的计算，勾选exp+10%时默认仅在所选难度使用，可能会有个位数的误差
+5、以上纯属抠细节不用看，直接按字面意思理解即可
+</pre>
+现在时间：<nospan id="rnowtime"></nospan><br>
+当前经验：<nospan id="rnowexp"></nospan><br>
+<br>
+<div id='resultdata'>
+最快升级时间：<nospan id="rminlvluptime"></nospan><br>
+最佳升级时间：<nospan id="rbestlvluptime"></nospan><br>
+最佳升级后剩余经验：<nospan id="rexpremain"></nospan><br>
+最慢升级时间：<nospan id="rmaxlvluptime"></nospan><br>
+</div>
+<div id='already'>已经能升级了</div>
+</div>
+
+</body>
+</html>

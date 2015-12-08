@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+   <script>
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var cards = eval("("+cardsjson+")")
+   var songs = eval("("+songsjson+")")
+   var attcolor = new Array();
+   var mezame = 0
+   var language = 0
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   var kizuna = new Array();
+   kizuna["N"] = [25, 50]
+   kizuna["R"] = [100, 200]
+   kizuna["SR"] = [250, 500]
+   kizuna["UR"] = [500, 1000]
+   nametojp = new Array()
+   nametojp["高坂穗乃果"] = "高坂穂乃果"
+   nametojp["绚濑绘里"] = "絢瀬絵里"
+   nametojp["南小鸟"] = "南ことり"
+   nametojp["园田海未"] = "園田海未"
+   nametojp["星空凛"] = "星空凛"
+   nametojp["西木野真姬"] = "西木野真姫"
+   nametojp["东条希"] = "東條希"
+   nametojp["小泉花阳"] = "小泉花陽"
+   nametojp["矢泽妮可"] = "矢澤にこ"
+   
+   function getcardselect(rarity, chr, att, cnhave, special){
+   	sel = document.getElementById("cardchoice");
+   	sel.options.length = 1;
+   	var index = 0;
+   	//alert(chr)
+   	for (card in cards){
+   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((cnhave == "") || (cnhave == cards[index].cnhave)) && ((special == "") || ((cards[index].smile != 0) && (special == 0)) || ((cards[index].smile == 0) && (special == 1)))){
+   			var newOption
+   			if (language == 0)
+   				newOption = new Option(cards[index].id+" "+cards[index].rarity+" "+cards[index].name, index)
+   			else
+   				newOption = new Option(cards[index].id+" "+cards[index].rarity+" "+cards[index].jpname, index)
+   			newOption.style.color = attcolor[cards[index].attribute]
+   			sel.options.add(newOption)
+   		}
+   		index += 1
+   	}
+   	//changecolor("cardchoice")
+   }
+   
+   function getsongselect(diff, att, cnhave, type){
+   	sel = document.getElementById("songchoice");
+   	var keyword = document.getElementById("songsearch").value
+   	sel.options.length = 1;
+   	var index = 0;
+   	for (song in songs){
+   		if (((att == "") || (att == songs[index].attribute)) && ((diff == "") || (diff == songs[index].difficulty)) && ((cnhave == "") || (cnhave == songs[index].cnhave)) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
+   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
+   			var newOption
+   			if (language == 0)
+   				newOption = new Option(songs[index].name+" ("+songs[index].difficulty+")", index)
+   			else
+   				newOption = new Option(songs[index].jpname+" ("+songs[index].difficulty+")", index)
+   			newOption.style.color = attcolor[songs[index].attribute]
+   			sel.options.add(newOption)
+   		}
+   		}
+   		index += 1
+   	}
+   	//changesongcolor("songchoice")
+   }
+   
+   function havevalue(selectId, value){
+   	objSelect = document.getElementById(selectId)
+   	for (var i = 0; i < objSelect.options.length; i++){
+   		if (objSelect.options[i].value == value)
+   			return true;
+   	}
+   	return false;
+   }
+   
+   function changesongselect(){
+   	diff = document.getElementById("diff").value
+   	att = document.getElementById("songatt").value
+   	cnhave = document.getElementById("songcnhave").value
+   	type = document.getElementById("type").value
+   	var songchoice = document.getElementById("songchoice").value
+   	getsongselect(diff, att, cnhave, type)
+   	if (havevalue("songchoice", songchoice)){
+   		document.getElementById("songchoice").value = songchoice
+   	}
+   	changesongcolor("songchoice")
+   }
+   
+   function changecardselect(){
+   	rarity = document.getElementById("rarity").value
+   	chr = document.getElementById("chr").value
+   	att = document.getElementById("att").value
+   	cnhave = document.getElementById("cnhave").value
+   	special = document.getElementById("special").value
+   	var cardchoice = document.getElementById("cardchoice").value
+   	getcardselect(rarity, chr, att, cnhave, special)
+   	if (havevalue("cardchoice", cardchoice)){
+   		document.getElementById("cardchoice").value = cardchoice
+   	}
+   	changecolor("cardchoice")
+   }
+   
+   function changecolor(which){
+   	index = document.getElementById(which).value
+   	if (index != "") {
+   		c = attcolor[cards[index].attribute]
+   		document.getElementById(which).style.color = c
+   		document.getElementById("main").value = cards[index].attribute
+   		infolist = ["skill", "require", "possibility", "score"]
+   		infolist2 = ["smile", "pure", "cool"]
+   		for (i in infolist){
+   			document.getElementById(infolist[i]).value = cards[index][infolist[i]]
+   		}
+   		if (mezame == 0){
+   			for (i in infolist2){
+   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]]
+   				document.getElementById("mezame").value = "未觉醒"
+   			}
+   		}
+   		else{
+   			for (i in infolist2){
+   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]+"2"]
+   				document.getElementById("mezame").value = "已觉醒"
+   			}
+   		}
+   		document.getElementById("kizuna").value = kizuna[cards[index].rarity][mezame]
+   	}
+   	changeskilltext()
+   }
+   
+   function changesongcolor(which){
+   	index = document.getElementById(which).value
+   	if (index != "") {
+   		c = attcolor[songs[index].attribute]
+   		document.getElementById(which).style.color = c
+   		selectlist = ["map", "bonus", "bonus2", "base", "base2"]
+   		for (i in selectlist){
+   			document.getElementById(selectlist[i]).value = songs[index].attribute
+   		}
+   		infolist = ["weight", "combo", "slider", "time", "star"]
+   		for (i in infolist){
+   			document.getElementById(infolist[i]).value = songs[index][infolist[i]]
+   		}
+   		document.getElementById("perfect").value = parseInt(parseInt(document.getElementById("combo").value)*19/20)
+   		document.getElementById("starperfect").value = parseInt(parseInt(document.getElementById("star").value)*19/20)
+   	}
+   }
+   
+   function init(){
+   	mezame = getCookie("mezame")
+   	language = getCookie("language")
+   	if (mezame == "")
+   		mezame = 0
+   	if (language == "")
+   		language = 0
+   	
+   	getcardselect("", "", "", "", "");
+   	getsongselect("", "", "", "");
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			if (getCookie(inputs[i].name) != "")
+   				inputs[i].value = getCookie(inputs[i].name);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		if (getCookie(selects[i].name) != "")
+   			selects[i].value = getCookie(selects[i].name);
+   	}
+   	if (mezame == 1)
+   		document.getElementById("mezame").checked = mezame
+   	//selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
+   	//selects["songchoice"].value = getCookie(selects["songchoice"].name);
+   	changeskilltext()
+   	document.getElementById("songsearch").value = ""
+   	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+   	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
+   	
+   	//changecolor("cardchoice")
+   	//changesongcolor("songchoice")
+   }
+   
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			setCookie(inputs[i].name, inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name, selects[i].value, 1);
+   	}
+   	setCookie("mezame", mezame, 1)
+   	setCookie("language", language, 1)
+   }
+   
+   function check(){
+   	var inputs = document.getElementsByTagName("input");
+   	for (i in inputs){
+   		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
+   			continue
+   		if (!isNumber(inputs[i].value)){
+   			alert("请输入数字");
+   			return false;
+   		}
+   	}
+   	saveToCookie();
+   	return true;
+   }
+   
+   function toMezame(){
+   	mezame = 1-mezame
+   	changecolor("cardchoice")
+   }
+   
+   function changeLanguage(){
+   	var cardchoice = document.getElementById("cardchoice").value
+   	var songchoice = document.getElementById("songchoice").value
+   	language = 1-language
+   	changecardselect()
+   	changesongselect()
+   	document.getElementById("cardchoice").value = cardchoice
+   	document.getElementById("songchoice").value = songchoice
+   }
+   
+   function changeskilltext(){
+   	var skilltype = document.getElementById("skill").value
+   	if (skilltype == 0)
+   		document.getElementById("skilltext").style.display = "none"
+   	else 
+   		document.getElementById("skilltext").style.display = ""
+   	//require
+   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
+   		document.getElementById("requiretext").innerHTML = "个图标"
+   	else if ((skilltype == 2) || (skilltype == 9))
+   		document.getElementById("requiretext").innerHTML = "个prefect"
+   	else if (skilltype == 3)
+   		document.getElementById("requiretext").innerHTML = "分"
+   	else if (skilltype == 10)
+   		document.getElementById("requiretext").innerHTML = "星星perfect"
+   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
+   		document.getElementById("requiretext").innerHTML = "秒"
+   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
+   		document.getElementById("requiretext").innerHTML = "combo"
+   	//effect
+   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
+   		document.getElementById("effecttext").innerHTML = "增加"
+   		document.getElementById("unittext").innerHTML = "分"
+   	}
+   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
+   		document.getElementById("effecttext").innerHTML = "增强判定"
+   		document.getElementById("unittext").innerHTML = "秒"
+   	}
+   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
+   		document.getElementById("effecttext").innerHTML = "回复"
+   		document.getElementById("unittext").innerHTML = "点体力"
+   	}
+   }
+   
+   function clearall(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		setCookie(inputs[i].name, inputs[i].value, -1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name, selects[i].value, -1);
+   	}
+   	setCookie("mezame", mezame, -1)
+   	window.location.href="/llcardtest"
+   }
+   
+   function test1(){
+   	alert(songs[2].name)
+   }
+   </script>
+   
+  </head>
+   <body onload="init()">
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>卡片强度计算</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+1、填写歌曲信息 或 选择歌曲并填写perfect数
+2、填写卡片信息 或 选择卡片、选择是否觉醒、若技能不为1级需填写技能信息
+3、填写队伍面板数值和C技能 若为分数系加分需填写总对应等效属性（不会计算可以填面板属性的1.15~1.2倍）
+4、点击Calculate
+</pre>
+<input type="submit" name="clear" value="清空输入" onclick="clearall()"><br>
+<form action="" method="POST" onsubmit="return check()">
+<h3>歌曲信息</h3>
+搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
+筛选：<select id="diff" name="diff" onchange="changesongselect()">
+		<option value="">难度</option>
+		<option value="Easy">Easy</option>
+		<option value="Normal">Normal</option>
+		<option value="Hard">Hard</option>
+		<option value="Ex">Ex</option>
+	</select>
+	<select id="songatt" name="songatt" onchange="changesongselect()">
+		<option value="">属性</option>
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>
+	<select id="songcnhave" name="songcnhave" onchange="changesongselect()">
+		<option value="">国服是否有</option>
+		<option value=1>国服有</option>
+		<option value=0>国服无</option>
+	</select>
+	<select id="type" name="type" onchange="changesongselect()">
+		<option value="">类型</option>
+		<option value="普通曲">普通曲</option>
+		<option value="活动曲">活动曲</option>
+		<option value="日替">日替</option>
+		<option value="超难关">超难关</option>
+		<option value="有随机谱">有随机谱</option>
+		<option value="特别配信">特别配信</option>
+	</select><br>
+歌曲：<select id="songchoice" name="songchoice" onchange="changesongcolor('songchoice')">
+		<option value=""> </option>
+	</select>
+	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+	<br>
+	图属性 :<select id="map" name="map">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select><br>
+	位置权重 :<input type="text" id="weight" name="position" value="25" autocomplete="off" size=1>（即角色所在位置在一首歌内出现的单点的个数+1.25*长按个数）<br>
+	总combo数 :<input type="text" id="combo" name="combo" value="300" autocomplete="off" size=1><br>
+	长按比例 :<input type="text" id="slider" name="slider" value="10" autocomplete="off" size=1>%<br>
+	perfect数:<input type="text" id="perfect" name="perfect" value="285" autocomplete="off" size=1><br>
+	时间:<input type="text" id="time" name="time" value="100" autocomplete="off" size=1>秒（从人物出现到最后一个note被击打的时间，不是歌曲长度）<br>
+	星星数:<input type="text" id="star" name="star" value="50" autocomplete="off" size=1>个<br>
+	星星perfect数:<input type="text" id="starperfect" name="starperfect" value="47" autocomplete="off" size=1>（只有星星系加分需要填写）<br>
+<br>
+<h3>卡片属性</h3>
+筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
+		<option value="">稀有度</option>
+		<option value="R">R</option>
+		<option value="SR">SR</option>
+		<option value="UR">UR</option>
+	</select>
+	<select id="chr" name="chr" onchange="changecardselect()">
+		<option value="">角色</option>
+		<option value="高坂穗乃果">高坂穗乃果</option>
+		<option value="绚濑绘里">绚濑绘里</option>
+		<option value="南小鸟">南小鸟</option>
+		<option value="园田海未">园田海未</option>
+		<option value="星空凛">星空凛</option>
+		<option value="西木野真姬">西木野真姬</option>
+		<option value="东条希">东条希</option>
+		<option value="小泉花阳">小泉花阳</option>
+		<option value="矢泽妮可">矢泽妮可</option>
+	</select>
+	<select id="att" name="att" onchange="changecardselect()">
+		<option value="">属性</option>
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>
+	<select id="cnhave" name="cnhave" onchange="changecardselect()">
+		<option value="">国服是否有</option>
+		<option value=1>国服有</option>
+		<option value=0>国服无</option>
+	</select>
+	<select id="special" name="special" onchange="changecardselect()">
+		<option value="">是否特典卡</option>
+		<option value=0>不是特典</option>
+		<option value=1>是特典</option>
+	</select><br>
+卡片：<select id="cardchoice" name="cardchoice" onchange="changecolor('cardchoice')">
+		<option value=""> </option>
+	</select>
+	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+	（特典卡需选择觉醒）<br>
+
+	smile :<input type="text" id="smile" name="smile" value="0" autocomplete="off" ></input><br>
+	pure :<input type="text" id="pure" name="pure" value="0" autocomplete="off" ><br>
+	cool :<input type="text" id="cool" name="cool" value="0" autocomplete="off" ><br>
+	主属性 :<select id="main" name="main">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select><br>
+	绊:<input type="text" id="kizuna" name="kizuna" value="0" autocomplete="off" ><br>
+	技能 :<select id="skill" name="skill" onchange="changeskilltext()">
+		<option value=0>无</option>
+		<option value=1>图标系加分</option>
+		<option value=2>perfect系加分</option>
+		<option value=3>分数系加分</option>
+		<option value=4>时间系加分</option>
+		<option value=5>时间系判定</option>
+		<option value=6>图标系判定</option>
+		<option value=7>图标系回血</option>
+		<option value=8>时间系回血</option>
+		<option value=9>perfect系回血</option>
+		<option value=10>星星perfect系加分</option>
+		<option value=11>combo系加分</option>
+		<option value=12>combo系判定</option>
+		<option value=13>combo系回血</option>
+	</select><br><nobr>
+	<p id="skilltext" style="display:none">
+	技能效果 :每<input type="text" id="require" name="require" value="0" autocomplete="off" size=3></input>
+	<nobr id="requiretext"></nobr>
+	<input type="text" id="possibility" name="possibility" value="0" autocomplete="off" size=1>%概率</input>
+	<nobr id="effecttext"></nobr>
+	<input type="text" id="score" name="score" value="0" autocomplete="off" size=1>
+	<nobr id="unittext"></nobr>
+	</input></nobr><br>
+	</p>
+
+<br>
+
+<br>
+
+<h3>队伍属性</h3>
+主唱技能 :<select id="bonus" name="bonus">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>增加<select id="percentage" name="percentage">
+		<option value=0>0</option>
+		<option value=3>3</option>
+		<option value=6 SELECTED>6</option>
+		<option value=9>9</option>
+		<option value=12>12</option>
+	</select>%的<select id="base" name="base">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select><br>
+好友主唱技能 :<select id="bonus2" name="bonus2">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>增加<select id="percentage2" name="percentage2">
+		<option value=0>0</option>
+		<option value=3>3</option>
+		<option value=6>6</option>
+		<option value=9 SELECTED>9</option>
+		<option value=12>12</option>
+	</select>%的<select id="base2" name="base2">
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select><br>
+
+总对应面板属性 :<input type="text" id="total" name="total" value="44000" autocomplete="off">（选歌界面的属性值）<br>
+<br>
+分数系加分填写<br>
+总对应等效属性 :<input type="text" id="totalequal" name="totalequal" value="50000" autocomplete="off">（数值为所有人等效属性之和，即面板属性先加上同色加成再加上所有加分技能的等效属性）<br>
+<br>
+<input type="submit" name="submit" value="Calculate"> <br><br>
+<pre>
+注意：
+1、计算判定技能的等效属性时，在perfect中填写去掉该判定技能后的大致perfect数；而若perfect数已考虑该判定技能，则不要将该判定技能的等效属性加入总对应等效属性
+2、总对应等效属性的计算方法为面板属性加上同色加成（若纯色就加10%），然后加上所有加分技能的对应属性。在计算分数加分系技能的属性时可以估计一下，误差不会很大，但是计算期望得分时务必精确
+3、若不计算分数系加分卡和期望得分，不必填写总对应等效属性
+4、一张卡在不同歌曲的强度也不同
+</pre>
+
+</form>
+{% if data.calculate == 1%}
+原属性 : {{data.attributeo}} （卡面显示值）<br>
++主唱加成 :  {{data.cbonus}}<br>
++绊 :  {{data.kizunabonus}}<br>
+=界面属性 : {{data.showattribute}} （对选歌界面属性值的贡献）<br>
++同色加成：{{data.colorbonus}}<br>
++技能等效属性：{{data.skillattribute}}<br>
+=最终等效属性 : {{data.attribute}} （衡量对得分的贡献，决定卡片强度）<br>
+<br>
+{% if data.accuracy > 0 %}
+判定覆盖率：{{data.accuracy}}%（单卡值，时间覆盖率）<br>
+<br>
+{% endif %}
+{% if data.heal > 0 %}
+平均单note回复：{{data.heal}}<br>
+{% endif %}
+技能等效裸属性：{{data.skillattributeo}}<br>
+技能等效面板属性：{{data.skillattributeshow}}<br>
+<br>
+期望得分：{{data.finalscore}}（需要较准确填写总对应等效属性，注意技能的波动会导致实际得分有较大波动）
+{% endif %}
+
+</body>
+</html>

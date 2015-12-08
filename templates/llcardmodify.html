@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;margin-left:30px;}
+   	td {size:2}
+   </style>
+   <script>
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var cards = eval("("+cardsjson+")")
+   var attcolor = new Array();
+   var language = 0
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   
+   nametojp = new Array()
+   nametojp["高坂穗乃果"] = "高坂穂乃果"
+   nametojp["绚濑绘里"] = "絢瀬絵里"
+   nametojp["南小鸟"] = "南ことり"
+   nametojp["园田海未"] = "園田海未"
+   nametojp["星空凛"] = "星空凛"
+   nametojp["西木野真姬"] = "西木野真姫"
+   nametojp["东条希"] = "東條希"
+   nametojp["小泉花阳"] = "小泉花陽"
+   nametojp["矢泽妮可"] = "矢澤にこ"
+   
+   function havevalue(selectId, value){
+      objSelect = document.getElementById(selectId)
+      for (var i = 0; i < objSelect.options.length; i++){
+         if (objSelect.options[i].value == value)
+            return true;
+      }
+      return false;
+   }
+
+   function getcardselect(rarity, chr, att, cnhave, cardtype,special){
+      sel = document.getElementById("cardchoice");
+      skilltype = document.getElementById("skilltype").value
+      triggertype = document.getElementById("triggertype").value
+      sel.options.length = 1;
+      var index = 1;
+      //alert(chr)
+      for (card in cards){
+         if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((cnhave == "") || (cnhave == cards[index].cnhave)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype))){
+            if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
+               index += 1
+               continue
+            }
+            var newOption
+            if (cards[index].eponym) {eponym = "【"+cards[index].eponym+"】"} else eponym = ""
+            if (cards[index].series && (cards[index].series != '')) {series = "("+cards[index].series+")"} else series = ""
+            if (cards[index].jpeponym) {jpeponym = "【"+cards[index].jpeponym+"】"} else jpeponym = ""
+            if (cards[index].jpseries && (cards[index].jpseries != '')) {jpseries = "("+cards[index].jpseries+")"} else jpseries = ""
+            if (language == 0)
+               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+eponym+cards[index].name+" "+series, index)
+            else
+               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+jpeponym+cards[index].jpname+" "+jpseries, index)
+            newOption.style.color = attcolor[cards[index].attribute]
+            sel.options.add(newOption)
+         }
+         index += 1
+      }
+      //changecolor("cardchoice")
+   }
+   
+   function changecardselect(){
+      rarity = document.getElementById("rarity").value
+      chr = document.getElementById("chr").value
+      att = document.getElementById("att").value
+      cnhave = document.getElementById("cnhave").value
+      cardtype = document.getElementById("cardtype").value
+      special = document.getElementById("special").value
+      var cardchoice = document.getElementById("cardchoice").value
+      getcardselect(rarity, chr, att, cnhave, cardtype, special)
+      if (havevalue("cardchoice", cardchoice)){
+         document.getElementById("cardchoice").value = cardchoice
+      }
+      changecolor("cardchoice")
+   }
+   
+   function changeLanguage(){
+   	var cardchoice = document.getElementById("cardchoice").value
+   	language = 1-language
+	changecardselect()
+   	document.getElementById("cardchoice").value = cardchoice
+   }
+   
+   function changecolor(which){
+   	index = document.getElementById(which).value
+   	if (index != "") {
+         card = cards[String(index)]
+   		c = attcolor[card.attribute]
+   		document.getElementById(which).style.color = c
+   		
+         
+   		infolist = ['cnhave','type','series','jpseries']
+   		for (i in infolist){
+   			document.getElementById(infolist[i]).value = String(card[infolist[i]])
+   		}
+   	}
+   }
+   
+   function init(){
+   	changecardselect()
+   }
+   </script>
+</head>
+<body onload="init()">
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>卡片数据修改</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<h3>卡片库</h3>
+筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
+      <option value="">稀有度</option>
+      <option value="N">N</option>
+      <option value="R">R</option>
+      <option value="SR">SR</option>
+      <option value="UR">UR</option>
+   </select>
+   <select id="chr" name="chr" onchange="changecardselect()">
+      <option value="">角色</option>
+      <option value="高坂穗乃果">高坂穗乃果</option>
+      <option value="绚濑绘里">绚濑绘里</option>
+      <option value="南小鸟">南小鸟</option>
+      <option value="园田海未">园田海未</option>
+      <option value="星空凛">星空凛</option>
+      <option value="西木野真姬">西木野真姬</option>
+      <option value="东条希">东条希</option>
+      <option value="小泉花阳">小泉花阳</option>
+      <option value="矢泽妮可">矢泽妮可</option>
+   </select>
+   <select id="att" name="att" onchange="changecardselect()">
+      <option value="">属性</option>
+      <option value="smile" style="color:red">smile</option>
+      <option value="pure" style="color:green">pure</option>
+      <option value="cool" style="color:blue">cool</option>
+   </select>
+   <select id="cnhave" name="cnhave" onchange="changecardselect()">
+      <option value="">国服是否有</option>
+      <option value=1>国服有</option>
+      <option value=0 SELECTED>国服无</option>
+   </select>
+   </select>
+   <select id="triggertype" name="triggertype" onchange="changecardselect()">
+      <option value="">触发类型</option>
+      <option value="1">时间</option>
+      <option value="3">图标</option>
+      <option value="4">combo</option>
+      <option value="5">分数</option>
+      <option value="6">perfect</option>
+      <option value="12">星星perfect</option>
+   </select>
+   <select id="skilltype" name="skilltype" onchange="changecardselect()">
+      <option value="">技能类型</option>
+      <option value="4">小判定</option>
+      <option value="5">大判定</option>
+      <option value="9">回血</option>
+      <option value="11">加分</option>
+   </select>
+   <select id="cardtype" name="cardtype" onchange="changecardselect()">
+      <option value="">卡片类型</option>
+      <option value="活动卡">活动卡</option>
+      <option value="登录奖励">登录奖励</option>
+   </select>
+   <select id="special" name="special" onchange="changecardselect()">
+      <option value="">是否特典卡</option>
+      <option value=0 SELECTED>不是特典</option>
+      <option value=1>是特典</option>
+   </select>
+   <input type="checkbox" id="showncard" name="showncard" onchange="changecardselect()" checked>显示N卡</input><br>
+<form method='POST' action=''>
+卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changecolor('cardchoice')">
+      <option value=""> </option>
+   </select>
+   <input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+   <br>
+	
+<table border='1'>
+<tr>
+	<td>卡片类型</td>
+	<td>中文编名</td>
+	<td>日文编名</td>
+   <td>国服有无</td>
+</tr>
+<tr>
+	<td><input type='text'  id='type' name='type' size=10 ></td>
+	<td><input type='text'  id='series' name='series' size=20 autocomplete="off"></td>
+	<td><input type='text'  id='jpseries' name='jpseries' size=10 autocomplete="off"></td>
+	<td><input type='text'  id='cnhave' name='cnhave' size=2></td>
+</tr>
+</table>
+
+<br>
+密码<input type='text' id = 'passwd' name = 'passwd' size =3>
+<br>
+<input type='submit' name='submit'>
+
+</form>
+</body>
+</html>
+   
+   

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;margin-left:30px;}
+   	td {size:2}
+   </style>
+   <script>
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var songs = eval("("+songsjson+")")
+   var attcolor = new Array();
+   var language = 0
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   
+   function getsongselect(diff, att, cnhave, type){
+   	sel = document.getElementById("songchoice");
+      diffc = document.getElementById('diff').value
+   	var keyword = document.getElementById("search").value
+   	var smnum =document.getElementById("smfilter").value
+      var mfnum =document.getElementById("mffilter").value
+   	sel.options.length = 1;
+   	for (index in songs){
+   		if (((att == "") || (att == songs[index].attribute)) && ((cnhave == "") || (cnhave == songs[index]['hard']['cnhave'])) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
+   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
+   			smhave = false
+   			if (smnum != ""){
+               if (diffc == ''){
+   			      smList = songs[index]['hard'].sm.split(" ")
+                  if (songs[index]['expert'] != null)
+                     smList = (songs[index]['hard'].sm+' '+songs[index]['expert'].sm).split(" ")
+               }
+               else if (diffc == 'expert'){
+                  smList = []
+                  if (songs[index]['expert'] != null)
+                     smList = songs[index]['expert'].sm.split(" ")
+               }
+               else{
+                  smList = songs[index]['hard'].sm.split(" ")
+               }
+   				for (i in smList){
+   					if (smnum == smList[i]){
+   						smhave = true
+   						break
+   					}
+   				}
+   			}
+            mfhave = false
+            if (mfnum != ""){
+               if (diffc == ''){
+                  mfList = songs[index]['hard'].mf.split(" ")
+                  if (songs[index]['expert'] != null)
+                     mfList = (songs[index]['hard'].mf+' '+songs[index]['expert'].mf).split(" ")
+               }
+               else if (diffc == 'expert'){
+                  mfList = []
+                  if (songs[index]['expert'] != null)
+                     mfList = songs[index]['expert'].mf.split(" ")
+               }
+               else{
+                  mfList = songs[index]['hard'].mf.split(" ")
+               }
+               for (i in mfList){
+                  if (mfnum == mfList[i]){
+                     mfhave = true
+                     break
+                  }
+               }
+            }
+   			//alert(smhave)
+   			if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
+   				var newOption
+   				if (language == 0)
+   					newOption = new Option(songs[index].name, index)
+   				else
+   					newOption = new Option(songs[index].jpname, index)
+   				newOption.style.color = attcolor[songs[index].attribute]
+   				sel.options.add(newOption)
+   			}
+            
+   		}
+   		}
+   		index += 1
+   	}
+   	//changesongcolor("songchoice")
+   }
+   
+   function havevalue(selectId, value){
+   	objSelect = document.getElementById(selectId)
+   	for (var i = 0; i < objSelect.options.length; i++){
+   		if (objSelect.options[i].value == value)
+   			return true;
+   	}
+   	return false;
+   }
+   
+   function kizuna(combo){
+   	var result = 0
+   	for (var i = 1; i <= parseInt(combo/10); i++){
+   		if (i % 10 == 0)
+   			result += 10
+   		else if (i % 5 == 0)
+   			result += 5
+   		else if (i > 20)
+   			result += 2
+   		else
+   			result += 1
+   	}
+   	return result
+   }
+   
+   function combomulti(cb){
+   	if (cb <= 50)
+      	return 1
+    	else if (cb <= 100)
+        	return (1.1*(cb-50)+50.0)/cb
+    	else if (cb <= 200)
+      	return (1.15*(cb-100)+105.0)/cb
+    	else if (cb <= 400)
+      	return (1.2*(cb-200)+220.0)/cb
+    	else if (cb <= 600)
+      	return (1.25*(cb-400)+460.0)/cb
+      else if (cb <= 800)
+      	return (1.3*(cb-600)+710.0)/cb
+      else
+      	return (1.35*(cb-800)+970)/cb
+   }
+   
+   function changesongselect(){
+   	diff = document.getElementById("diff").value
+   	att = document.getElementById("songatt").value
+   	cnhave = document.getElementById("songcnhave").value
+   	type = document.getElementById("songtype").value
+   	var songchoice = document.getElementById("songchoice").value
+   	getsongselect(diff, att, cnhave, type)
+   	if (havevalue("songchoice", songchoice)){
+   		document.getElementById("songchoice").value = songchoice
+   	}
+   	changesonginfo("songchoice")
+   }
+   
+   function changediffinfo(){
+      savediff = document.getElementById('diffchoice').value
+      index = document.getElementById('songchoice').value
+      diffc = document.getElementById('diff').value
+      smnum =document.getElementById("smfilter").value
+      mfnum =document.getElementById("mffilter").value
+
+      diffsel = document.getElementById('diffchoice')
+      diffsel.options.length = 0;
+      diffname = ['easy', 'normal', 'hard', 'expert']
+      finddiff = false
+      //if (index == '')
+      //   return
+      for (i in diffname){
+         diff = diffname[i]
+         if (songs[index][diff] != null){
+            cnhave = document.getElementById('songcnhave').value
+            if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
+               smhave = false
+               if (smnum != ""){
+                  smList = songs[index][diff].sm.split(" ")
+                  for (i in smList){
+                     if (smnum == smList[i]){
+                        smhave = true
+                        break
+                     }
+                  }
+               }
+               mfhave = false
+               if (mfnum != ""){
+                  mfList = songs[index][diff].mf.split(" ")
+                  for (i in mfList){
+                     if (mfnum == mfList[i]){
+                        mfhave = true
+                        break
+                     }
+                  }
+               }
+               if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
+                  newOption = new Option(diff, diff)
+                  diffsel.options.add(newOption)
+                  if (savediff == diff){
+                     document.getElementById('diffchoice').value = savediff
+                     finddiff = true
+                  }
+                     
+               }
+            }
+         }
+      }
+      if (!finddiff)
+         document.getElementById('diffchoice').value = 'hard'
+      return 
+   }
+
+   function changesonginfo(which){
+      index = document.getElementById(which).value
+   	diff = document.getElementById('diffchoice').value
+   	if (index != "") {
+   		c = attcolor[songs[index].attribute]
+   		document.getElementById(which).style.color = c
+   		
+   		document.getElementById("attribute").innerHTML = songs[index].attribute
+   		//改颜色
+   		colorList = ["attribute", "clowatt", "blowatt", "alowatt", "slowatt", "cstableatt", "bstableatt", "astableatt", "sstableatt","name","jpname"]
+   		for (i in colorList){
+   			document.getElementById(colorList[i]).style.color = c
+   		}
+   		
+         songinfolist = ["totaltime","bpm","type","name","jpname"]
+   		diffinfolist = ["combo", "time", "stardifficulty", "oldstardifficulty","randomdifficulty","oldrandomdifficulty", "star",  "cnhave", "cscore", "bscore", "ascore", "sscore","lp","exp",'sm','mf']
+   		songextend = ["秒", "", "", "", "",]
+         diffextend = ["", "秒", "", "", "",  "", "", "", "", "", "", "", "","","","","",""]
+   		if (songs[index]['jpname'] == songs[index]['name']){
+   			document.getElementById("name").style.display = "none"
+   			document.getElementById("cnametag").style.display = "none"
+   		}
+   		else{
+   			document.getElementById("name").style.display = ""
+   			document.getElementById("cnametag").style.display = ""
+   		}
+   		for (i in songinfolist){
+   			document.getElementById(songinfolist[i]).innerHTML = songs[index][songinfolist[i]]+songextend[i]
+   		}
+         for (i in diffinfolist){
+            document.getElementById(diffinfolist[i]).innerHTML = songs[index][diff][diffinfolist[i]]+diffextend[i]
+         }
+   		tmp = songs[index][diff]["cnhave"]
+   		if (tmp == '0')
+   			document.getElementById("cnhave").innerHTML = '无'
+   		else
+   			document.getElementById("cnhave").innerHTML = '有'
+   			
+         
+   		arraylist = ["positionnote", "positionslider", "positionweight"]
+   		for (i in arraylist){
+   			for (j = 0; j < 9; j++){
+   				document.getElementById(arraylist[i]+String(j)).innerHTML=songs[index][diff][arraylist[i]][j]
+   			}
+   		}
+         totalweight = 0
+         for (i = 0; i < 9; i++)
+            totalweight += parseFloat(songs[index][diff]['positionweight'][i])
+   		c = parseInt(songs[index][diff].combo)
+   		sl = (totalweight-c)*100/0.25/c
+         document.getElementById('slider').innerHTML = String(sl.toFixed(1))+'%'
+   		for (i = 0; i < 9; i++){
+   			p = parseFloat(songs[index][diff].positionweight[i])
+   			percentage = p/(c*(1+0.0025*sl))
+   			document.getElementById("positionmulti"+String(i)).innerHTML=String((10*percentage).toFixed(3))+"%"
+   		}
+   		//隐藏没有的信息
+   		hidelist = ["randomdifficulty",'oldstardifficulty','oldrandomdifficulty']
+   		for (i in hidelist){
+   			if (songs[index][diff][hidelist[i]] == ""){
+   				document.getElementById(hidelist[i]).style.display = "none"
+   				document.getElementById(hidelist[i]+"tag").style.display = "none"
+   			}
+   			else{
+   				document.getElementById(hidelist[i]).style.display = ""
+   				document.getElementById(hidelist[i]+"tag").style.display = ""
+   			}
+   		}
+   		//其他信息
+   		document.getElementById("kizunaget").innerHTML = kizuna(parseInt(songs[index][diff].combo))
+   		document.getElementById("combomulti").innerHTML = combomulti(parseInt(songs[index][diff].combo)).toFixed(3)
+   		document.getElementById("scoreperstrength").innerHTML = (1.1/80*c*combomulti(c)*(1+0.25*sl/100)).toFixed(3)
+   		
+   		//属性需求信息
+   		cbmulti = combomulti(parseInt(songs[index][diff].combo))
+   		rankList = ['c', 'b', 'a', 's']
+   		for (i in rankList){
+   			if (songs[index][diff][rankList+"score"] == "")
+   				continue
+   			document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
+   			document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
+   		}
+   		
+   		//高亮低权重位置
+   		we = new Array(8)
+   		po = [0, 1, 2 ,3 ,5 ,6, 7, 8]
+   		for (i = 0; i < 4; i++){
+   			we[i] = parseFloat(songs[index][diff].positionweight[i])
+   		}
+   		for (i = 5; i < 9; i++){
+   			we[i-1] = parseFloat(songs[index][diff].positionweight[i])
+   		}
+   		for (i = 0; i < 8; i ++){
+   			for (j = 0; j < 7; j++){
+   				if (we[j] > we[j+1]){
+   					tmp = we[j]
+   					we[j] = we[j+1]
+   					we[j+1] = tmp
+   					tmp = po[j]
+   					po[j] = po[j+1]
+   					po[j+1] = tmp
+   				}
+   			}
+   		}
+   		for (i = 0; i < 9; i++){
+   			document.getElementById("positionweight"+String(i)).style.background = ""
+   		}
+    		document.getElementById("positionweight"+String(po[0])).style.background = "#FF0000"
+    		document.getElementById("positionweight"+String(po[1])).style.background = "#FF7F00"
+    		document.getElementById("positionweight"+String(po[2])).style.background = "#FFFF00"
+   		
+   	}
+   	
+   }
+   
+   function changeLanguage(){
+   	var songchoice = document.getElementById("songchoice").value
+   	language = 1-language
+	changesongselect()
+   	document.getElementById("songchoice").value = songchoice
+   }
+   
+   function init(){
+   	getsongselect("", "", "", "");
+   }
+   
+   </script>
+   
+  </head>
+   <body onload="init()">
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>歌曲数据</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+       选择歌曲以浏览数据，可以使用搜索和筛选来查找想要看的歌曲
+
+注意：当不需要歌曲名搜索时，删除搜索框内所有字符（包括空格等）
+normal easy和新曲的数据仍不全
+</pre>
+
+搜索：<input type="text" id="search" value="" onchange="changesongselect()"></input><br>
+筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo()">
+		<option value="">难度</option>
+		<option value="easy">easy</option>
+		<option value="normal">normal</option>
+		<option value="hard">hard</option>
+		<option value="expert">expert</option>
+	</select>
+	<select id="songatt" name="songatt" onchange="changesongselect()">
+		<option value="">属性</option>
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>
+	<select id="songcnhave" name="songcnhave" onchange="changesongselect();changediffinfo()">
+		<option value="">国服是否有</option>
+		<option value=1>国服有</option>
+		<option value=0>国服没</option>
+	</select>
+	<select id="songtype" name="songtype" onchange="changesongselect()">
+		<option value="">类型</option>
+		<option value="普通曲">普通曲</option>
+		<option value="活动曲">活动曲</option>
+		<option value="日替">日替</option>
+		<option value="特别配信">特别配信</option>
+	</select>
+	<select id="smfilter" name="smfilter" onchange="changesongselect();changediffinfo()">
+		<option value="">SM查询</option>
+		<option value="1">第一次SM</option>
+		<option value="2">第二次SM</option>
+		<option value="3">第三次SM</option>
+		<option value="4">第四次SM</option>
+		<option value="5">第五次SM</option>
+		<option value="6">第六次SM</option>
+		<option value="7">第七次SM</option>
+		<option value="8">第八次SM</option>
+		<option value="9">第九次SM</option>
+		<option value="10">第十次SM</option>
+		<option value="11">第十一次SM</option>
+		<option value="12">第十二次SM</option>
+		<option value="13">第十三次SM</option>
+		<option value="14">第十四次SM</option>
+		<option value="15">第十五次SM</option>
+		<option value="16">第十六次SM</option>
+		<option value="17">第十七次SM</option>
+		<option value="18">第十八次SM</option>
+      <option value="19">第十九次SM</option>
+      <option value="20">第二十次SM</option>
+	</select>
+   <select id="mffilter" name="mffilter" onchange="changesongselect();changediffinfo()">
+      <option value="">MF查询</option>
+      <option value="1">第一次MF</option>
+      <option value="2">第二次MF</option>
+      <option value="3">第三次MF</option>
+      <option value="4">第四次MF</option>
+      <option value="5">第五次MF</option>
+      <option value="6">第六次MF</option>
+      <option value="7">第七次MF</option>
+   </select><br>
+歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');">
+		<option value=""> </option>
+	</select>
+	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+	<br>
+难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice')">
+      <option value="easy">easy</option>
+      <option value="normal">normal</option>
+      <option value="hard" SELECTED>hard</option>
+      <option value="expert">expert</option>
+   </select>
+	
+<h3>基本信息</h3>
+
+<table border='1'>
+<tr>
+	<td>歌曲名</td>
+	<td id='cnametag'>中文名</td>
+	<td>属性</td>
+	<td>难度</td>
+   <td id="oldstardifficultytag">原难度</td>
+	<td id="randomdifficultytag">random谱难度</td>
+   <td id="oldrandomdifficultytag">原random谱难度</td>
+	<td id="lptag">消耗LP</td>
+	<td>经验</td>
+	<td>combo数</td>
+	<td>长按比例</td>
+	<td>时间*(1)</td>
+	<td>歌曲长度*(2)</td>
+	<td>BPM</td>
+	<td>星星数</td>
+	<td>歌曲类型</td>
+	<td>国服是否有</td>
+</tr>
+<tr>
+	<td id='jpname'></td>
+	<td id='name'></td>
+	<td id='attribute'> </td>
+	<td id='stardifficulty'> </td>
+   <td id='oldstardifficulty'> </td>
+	<td id='randomdifficulty'> </td>
+   <td id='oldrandomdifficulty'> </td>
+	<td id='lp'> </td>
+	<td id='exp'> </td>
+	<td id='combo'> </td>
+	<td id='slider'> </td>
+	<td id='time'> </td>
+	<td id='totaltime'> </td>
+	<td id='bpm'> </td>
+	<td id='star'> </td>
+	<td id='type'> </td>
+	<td id='cnhave'> </td>
+</tr>
+</table>
+<table border='1'>
+   <tr>
+      <td>SM收录</td>
+      <td id='sm'></td>
+   </tr>
+   <tr>
+      <td>MF收录</td>
+      <td id='mf'></td>
+   </tr>
+</table>
+
+<h3>分数要求</h3>
+<table border='1'>
+<tr>
+	<td></td>
+	<td>C</td>
+	<td>B</td>
+	<td>A</td>
+	<td>S</td>
+</tr>
+<tr>
+	<td>分数需求</td>
+	<td id="cscore"></td>
+	<td id="bscore"></td>
+	<td id="ascore"></td>
+	<td id="sscore"></td>
+</tr>
+<tr>
+	<td>最低属性*(5)</td>
+	<td id="clowatt"></td>
+	<td id="blowatt"></td>
+	<td id="alowatt"></td>
+	<td id="slowatt"></td>
+</tr>
+<tr>
+	<td>安全属性*(6)</td>
+	<td id="cstableatt"></td>
+	<td id="bstableatt"></td>
+	<td id="astableatt"></td>
+	<td id="sstableatt"></td>
+</tr>
+</table>
+
+<h3>谱面分布</h3>
+<table border='1'>
+<tr>
+	<td></td>
+	{% for i in range(0, 9)%}
+		<td>{{i+1}}</td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>单点</td>
+	{% for i in range(0, 9)%}
+		<td id="positionnote{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>长按</td>
+	{% for i in range(0, 9)%}
+		<td id="positionslider{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>权重</td>
+	{% for i in range(0, 9)%}
+		<td id="positionweight{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>同色加成*(3)</td>
+	{% for i in range(0, 9)%}
+		<td id="positionmulti{{i}}"></td>
+	{% endfor %}
+</tr>
+</table>
+<p style="margin-left:30px">*异色卡放在红色位置最好，其次橙色、黄色位置</p>
+
+<h3>其他</h3>
+<table border='1'>
+<tr>
+	<td>combo乘数*(4)</td>
+	<td>获得绊</td>
+	<td>单位强度得分*(8)</td>
+</tr>
+<tr>
+	<td id="combomulti"></td>
+	<td id="kizunaget"></td>
+	<td id="scoreperstrength"></td>
+</tr>
+</table>
+<br>
+<pre>
+说明：
+1、时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量
+2、歌曲长度大约为封面到full combo/live成功字样出现的总时间
+3、同色加成指的是在某个位置放置与歌曲颜色相同的卡对总分的增加量
+4、combo乘数指的是FC比起max combo不到50时的得分的倍数
+5、最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
+6、安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
+     若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
+7、SM分数线为SM时的分数线，数据仍不全
+8、单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差
+</pre>
+</body>
+</html>

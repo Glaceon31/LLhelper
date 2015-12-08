@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;margin-left:30px;}
+   	td {size:2}
+   </style>
+   <script>
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var songs = eval("("+songsjson+")")
+   var attcolor = new Array();
+   var language = 0
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   
+   function getsongselect(diff, att, cnhave, type){
+   	sel = document.getElementById("songchoice");
+   	var keyword = document.getElementById("search").value
+   	var smnum =document.getElementById("smfilter").value
+   	sel.options.length = 1;
+   	var index = 0;
+   	for (song in songs){
+   		if (((att == "") || (att == songs[index].attribute)) && ((diff == "") || (diff == songs[index].difficulty)) && ((cnhave == "") || (cnhave == songs[index].cnhave)) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
+   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
+   			smhave = false
+   			if (smnum != ""){
+   				smList = songs[index].sm.split(" ")
+   				for (i in smList){
+   					if (smnum == smList[i]){
+   						smhave = true
+   						break
+   					}
+   				}
+   			}
+   			//alert(smhave)
+   			if ((smnum == "") || smhave){
+   				var newOption
+   				if (language == 0)
+   					newOption = new Option(songs[index].name+" ("+songs[index].difficulty+")", index)
+   				else
+   					newOption = new Option(songs[index].jpname+" ("+songs[index].difficulty+")", index)
+   				newOption.style.color = attcolor[songs[index].attribute]
+   				sel.options.add(newOption)
+   			}
+   		}
+   		}
+   		index += 1
+   	}
+   	//changesongcolor("songchoice")
+   }
+   
+   function havevalue(selectId, value){
+   	objSelect = document.getElementById(selectId)
+   	for (var i = 0; i < objSelect.options.length; i++){
+   		if (objSelect.options[i].value == value)
+   			return true;
+   	}
+   	return false;
+   }
+
+   function changesongselect(){
+   	diff = document.getElementById("diff").value
+   	att = document.getElementById("songatt").value
+   	cnhave = document.getElementById("songcnhave").value
+   	type = document.getElementById("songtype").value
+   	var songchoice = document.getElementById("songchoice").value
+   	getsongselect(diff, att, cnhave, type)
+   	if (havevalue("songchoice", songchoice)){
+   		document.getElementById("songchoice").value = songchoice
+   	}
+   	changesonginfo("songchoice")
+   }
+   
+   function changesonginfo(which){
+   	index = document.getElementById(which).value
+   	if (index != "") {
+   		c = attcolor[songs[index].attribute]
+   		document.getElementById(which).style.color = c
+   		
+   		document.getElementById("attribute").value = songs[index].attribute
+   		infolist = ["name", "jpname", "difficulty","combo", "sm",'mf',"weight","slider", "time", "stardifficulty", "oldstardifficulty","randomdifficulty","oldrandomdifficulty","totaltime", "bpm","star", "type", "cnhave", "cscore", "bscore", "ascore", "sscore","smcscore", "smbscore", "smascore", "smsscore","lp","exp"]
+   		for (i in infolist){
+   			document.getElementById(infolist[i]).value = songs[index][infolist[i]]
+   		}
+
+   		arraylist = ["positionnote", "positionslider", "positionweight"]
+   		for (i in arraylist){
+   			for (j = 0; j < 9; j++){
+   				document.getElementById(arraylist[i]+String(j)).value=songs[index][arraylist[i]][j]
+   			}
+   		}
+   		
+   		if (index > 0)
+   			document.getElementById("previoussong").value=index-1
+   		else
+			document.getElementById("previoussong").value=""
+   	}
+   	
+   }
+   
+   function changeLanguage(){
+   	var songchoice = document.getElementById("songchoice").value
+   	language = 1-language
+	changesongselect()
+   	document.getElementById("songchoice").value = songchoice
+   }
+   
+   function init(){
+   	getsongselect("", "", "", "");
+   	allsel = document.getElementById("previoussong")
+   	for (index in songs){
+   		var newOption
+   		newOption = new Option(songs[index].name+" ("+songs[index].difficulty+")", index)
+   		newOption.style.color = attcolor[songs[index].attribute]
+   		allsel.options.add(newOption)
+   	}
+   }
+   
+   </script>
+   
+  </head>
+   <body onload="init()">
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>歌曲数据修改</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+       选择歌曲以浏览数据，可以使用搜索和筛选来查找想要看的歌曲
+       
+注意：当不需要歌曲名搜索时，删除搜索框内所有字符（包括空格等）
+</pre>
+
+搜索：<input type="text" id="search" value="" onchange="changesongselect()"></input><br>
+筛选：<select id="diff" name="diff" onchange="changesongselect()">
+		<option value="">难度</option>
+		<option value="Easy">Easy</option>
+		<option value="Normal">Normal</option>
+		<option value="Hard">Hard</option>
+		<option value="Ex">Ex</option>
+	</select>
+	<select id="songatt" name="songatt" onchange="changesongselect()">
+		<option value="">属性</option>
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>
+	<select id="songcnhave" name="songcnhave" onchange="changesongselect()">
+		<option value="">国服是否有</option>
+		<option value=1>国服有</option>
+		<option value=0>国服没</option>
+	</select>
+	<select id="songtype" name="songtype" onchange="changesongselect()">
+		<option value="">类型</option>
+		<option value="普通曲">普通曲</option>
+		<option value="活动曲">活动曲</option>
+		<option value="日替">日替</option>
+		<option value="超难关">超难关</option>
+		<option value="有随机谱">有随机谱</option>
+		<option value="特别配信">特别配信</option>
+	</select>
+	<select id="smfilter" name="smfilter" onchange="changesongselect()">
+		<option value="">SM查询</option>
+		<option value="1">第一次SM</option>
+		<option value="2">第二次SM</option>
+		<option value="3">第三次SM</option>
+		<option value="4">第四次SM</option>
+		<option value="5">第五次SM</option>
+		<option value="6">第六次SM</option>
+		<option value="7">第七次SM</option>
+		<option value="8">第八次SM</option>
+		<option value="9">第九次SM</option>
+		<option value="10">第十次SM</option>
+		<option value="11">第十一次SM</option>
+		<option value="12">第十二次SM</option>
+		<option value="13">第十三次SM</option>
+		<option value="14">第十四次SM</option>
+		<option value="15">第十五次SM</option>
+		<option value="16">第十六次SM</option>
+		<option value="17">第十七次SM</option>
+		<option value="18">第十八次SM</option>
+      <option value="19">第十九次SM</option>
+	</select><br>
+<form action='' method="POST" onsubmit='check()'>
+歌曲：<select id="songchoice" name="songchoice" onchange="changesonginfo('songchoice')">
+		<option value=""> 新曲子</option>
+	</select>
+	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+	<br>
+
+
+<h3>基本信息</h3>
+<table border='1'>
+<tr>
+	<td>中文名</td>
+	<td>日文名</td>
+	<td>难度</td>
+</tr>
+<tr>
+	<td><input type='text'  id='name' name='name' size=40 autocomplete="off"></td>
+	<td><input type='text'  id='jpname' name='jpname' size=40 autocomplete="off"></td>
+	<td><input type='text'  id='difficulty' name='difficulty' size=3 autocomplete="off"></td>
+</tr>
+</table>
+<table border='1'>
+<tr>
+	<td>属性</td>
+	<td>难度</td>
+   <td>原难度</td>
+	<td>random谱难度</td>
+   <td>原random谱难度</td>
+	<td>消耗LP</td>
+	<td>经验</td>
+	<td>combo数</td>
+	<td>滑条比例</td>
+	<td>位置权重</td>
+	<td>时间*(1)</td>
+	<td>歌曲长度*(2)</td>
+	<td>BPM</td>
+	<td>星星数</td>
+	<td>歌曲类型</td>
+	<td>国服是否有</td>
+</tr>
+<tr>
+	<td><input type='text' size=3 id='attribute' name='attribute'> </td>
+	<td><input type='text' size=3 id='stardifficulty' name='stardifficulty' autocomplete="off"> </td>
+   <td><input type='text' size=3 id='oldstardifficulty' name='oldstardifficulty' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='randomdifficulty' name='randomdifficulty' autocomplete="off"> </td>
+   <td><input type='text' size=3 id='oldrandomdifficulty' name='oldrandomdifficulty' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='lp' name='lp' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='exp' name='exp' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='combo' name='combo' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='slider' name='slider' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='weight' name='weight' autocomplete="off"></td>
+	<td><input type='text' size=3 id='time' name='time' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='totaltime' name='totaltime' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='bpm' name='bpm' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='star' name='star' autocomplete="off"> </td>
+	<td><input type='text' size=3 id='type' name='type'> </td>
+	<td><input type='text' size=3 id='cnhave' name='cnhave'> </td>
+</tr>
+</table>
+SM出现场次：<input type='text' size=25 id='sm' name='sm' autocomplete="off">
+MF出现场次：<input type='text' size=25 id='mf' name='mf' autocomplete="off">
+
+<h3>分数要求</h3>
+<table border='1'>
+<tr>
+	<td></td>
+	<td>C</td>
+	<td>B</td>
+	<td>A</td>
+	<td>S</td>
+</tr>
+<tr>
+	<td>分数需求</td>
+	<td><input type='text' size=3 id="cscore" name="cscore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="bscore" name="bscore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="ascore" name="ascore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="sscore" name="sscore" autocomplete="off"></td>
+</tr>
+</table>
+
+<table border='1'>
+<tr>
+	<td>SM分数线</td>
+	<td>C</td>
+	<td>B</td>
+	<td>A</td>
+	<td>S</td>
+</tr>
+<tr>
+	<td>分数需求</td>
+	<td><input type='text' size=3 id="smcscore" name="smcscore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="smbscore" name="smbscore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="smascore" name="smascore" autocomplete="off"></td>
+	<td><input type='text' size=3 id="smsscore" name="smsscore" autocomplete="off"></td>
+</tr>
+</table>
+
+<h3>谱面分布</h3>
+<table border='1'>
+<tr>
+	<td></td>
+	{% for i in range(0, 9)%}
+		<td>{{i+1}}</td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>单点</td>
+	{% for i in range(0, 9)%}
+		<td><input type='text' size=3 id="positionnote{{i}}" name='positionnote{{i}}' autocomplete="off"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>长按</td>
+	{% for i in range(0, 9)%}
+		<td><input type='text' size=3 id="positionslider{{i}}" name='positionslider{{i}}' autocomplete="off"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<td>权重</td>
+	{% for i in range(0, 9)%}
+		<td><input type='text' size=3 id="positionweight{{i}}" name='positionweight{{i}}' autocomplete="off"></td>
+	{% endfor %}
+</tr>
+</table>
+
+位置（前一首）：<select id="previoussong" name="previoussong">
+		<option value="">顶上</option>
+	</select>
+<br>
+
+密码：<input type="password" name="passwd">
+<input type="submit" name="submit">
+</form>
+</body>
+</html>

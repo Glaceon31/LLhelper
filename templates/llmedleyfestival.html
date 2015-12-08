@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <meta http-equiv=Content-Type content="text/html;charset=utf-8">
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.0"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+   <script language="javascript">
+   basept = [[31,64,99],[72,150,234],[126,262,408],[241,500,777]]
+   lpcost = [4, 8, 12, 20]
+   expbydiff = [12, 26, 46, 83]
+   minutebynum = [3, 5, 7]
+   
+   function init(){
+   	//alert(document.cookie)
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			if (getCookie(inputs[i].name+"mf") != "")
+   				inputs[i].value = getCookie(inputs[i].name+"mf");
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		if (getCookie(selects[i].name+"mf") != "")
+   			selects[i].value = getCookie(selects[i].name+"mf");
+   	}
+   	document.getElementById('timeleft').style.backgroundColor = '#FFFF80'
+   }
+   
+      function setrank(){
+   	rm = [1, 1.05, 1.1, 1.15, 1.2]
+   	rank = document.getElementById("rankselect").value
+   	if (rank != ""){
+   		document.getElementById("rank").value = rm[parseInt(rank)]
+   	}
+   }
+   
+   function clearrank(){
+   	document.getElementById("rankselect").value=""
+   }
+   
+   function setcombo(){
+   	om = [1, 1.02, 1.04, 1.06, 1.08]
+   	order = document.getElementById("comboselect").value
+   	if (order != ""){
+   		document.getElementById("combo").value = om[parseInt(order)]
+   	}
+   }
+   
+   function clearcombo(){
+   	document.getElementById("comboselect").value = ""
+   }
+   
+   function check(){
+   	var inputs = document.getElementsByTagName("input");
+   	for (i in inputs){
+   		if (inputs[i].type != "text")
+   			continue
+   		if (!isNotNegative(inputs[i].value)){
+   			alert("请输入非负数");
+   			return false;
+   		}
+   	}
+   	if (parseInt(document.getElementById("target").value) > 5000000){
+   		alert("不可能达到5百万点以上")
+   		return false;
+   	}
+   	if (parseInt(document.getElementById("lpwaste").value) > 240){
+   		alert("一天几小时来着？")
+   		return false;
+   	}
+   	saveToCookie();
+   	calcu();
+   	document.getElementById("result").scrollIntoView()
+   	return true;
+   }
+   
+   function clearall(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		setCookie(inputs[i].name+"mf", inputs[i].value, -1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name+"mf", selects[i].value, -1);
+   	}
+   	window.location.href="/llmf"
+   }
+   
+   function calcu(){
+   	infolist =['timeleft','lpwaste','diff','songnum','rank','combo','target','current','lp','lvl','exp','expf']
+   	remlist =['current', 'lp', 'lvl', 'exp', 'extraplaytime','extraminute']
+   	for (i in infolist)
+   		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
+   	expmulti = 1
+   	ptmulti = 1
+   	if (document.getElementById('expbonus').checked)
+   		expmulti = 1.1
+   	if (document.getElementById('acptbonus').checked)
+   		ptmulti = 1.1
+   	friendmulti = 1
+   	playtime = 0
+   	extraplaytime = 0
+   	totalminute = 0
+   	extraminute = 0
+   	regen = 0
+   	loveca = 0
+   	lvlupwarning = 0
+   	safelp = 2
+   	lp += parseInt(timeleft*10)-lpwaste*parseInt((timeleft-14)/24+1)-safelp
+   	while ((current < target) || (lp >= 4) || (exp >= expbylvl(lvl, expf))){
+   		while ((lp >= lpcost[diff]*songnum) || (exp >= expbylvl(lvl, expf))){
+   			if (lp >= lpcost[diff]*songnum){
+   				play = parseInt(lp/(lpcost[diff]*songnum))
+   				playtime += play
+   				totalminute += play*minutebynum[songnum-1]
+   				lp -=play*lpcost[diff]*songnum
+   				exp += parseInt((expbydiff[diff]*songnum*play*expmulti).toFixed(0))
+   				current += parseInt((basept[diff][songnum-1]*rank*combo*ptmulti*friendmulti*play).toFixed(0))
+   			}
+   			while (exp >= expbylvl(lvl, expf)){
+   				exp -= expbylvl(lvl, expf)
+   				lvl += 1
+   				lp += lpbylvl(lvl)-1+regen
+   				regen = 1-regen
+   			}
+   		}
+   		//deal with remainings
+   		for (i in remlist)
+   			eval('tmp'+remlist[i]+' = '+remlist[i])
+   		//if not enough
+   		if (lp >= 4){
+   			for (i = songnum-1; i >= 1; i--){
+   				if (lp >= lpcost[diff]*i){
+   					lp -= lpcost[diff]*i
+   					exp += parseInt((expbydiff[diff]*songnum*expmulti).toFixed(0))
+   					current += parseInt((basept[diff][i-1]*rank*combo*ptmulti*friendmulti).toFixed(0))
+   					extraplaytime += 1
+   					extraminute += 3
+   				}
+   			}
+   			for (i = diff-1; i >=0; i--){
+   				if (lp >= lpcost[i]){
+   					lp -= lpcost[i]
+   					exp += parseInt((expbydiff[i]*expmulti).toFixed(0))
+   					current += parseInt((basept[i][0]*rank*combo*ptmulti*friendmulti).toFixed(0))
+   					extraplaytime += 1
+   					extraminute += 3
+   				}
+   			}
+   		}
+   		if (exp >= expbylvl(lvl, expf)){
+   			continue
+   		}
+   		if (current < target){
+   			for (i in remlist)
+   				eval(remlist[i]+' = tmp'+remlist[i])
+   			loveca += 1
+   			lp += lpbylvl(lvl)-1+regen
+   			regen = 1-regen
+   			lvlupwarning = 0
+   		}
+   		
+   	}
+   	expneed = expbylvl(lvl, expf)
+   	exp = parseInt(exp)
+   	current = parseInt(current)
+   	totalminute = parseInt(totalminute)
+   	extraminute = parseInt(extraminute)
+   	returnlist = ['loveca','playtime','extraplaytime','lvl','exp','expneed','current','totalhour','totalminute','extrahour','extraminute','warning']
+   	totalhour = parseInt(totalminute/60)
+   	totalminute -= 60*totalhour
+   	extrahour = parseInt(extraminute/60)
+   	extraminute -= 60*extrahour
+   	warning = ""
+   	if (exp-4.1*expmulti*lpbylvl(lvl) < 50)
+   		warning = "最后一次升级的时间离活动结束时间较近，请提前规划好时间"
+   	for (i in returnlist)
+   		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
+   	document.getElementById("result").style.display = ""
+   }
+   
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			setCookie(inputs[i].name+"mf", inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name+"mf", selects[i].value, 1);
+   	}
+   }
+   </script>
+   </head>
+   <body onload="init()">
+
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>medley festival助手</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+使用方法：
+1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
+2、填写剩下所有文本框，其中rank和combo加成可以通过填写rank与combo评价自动填入，也可以参考乘数表手动填入
+3、点击Calculate
+</pre>
+
+<input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime()">
+<input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
+<input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
+<br>
+活动结束时间：<input id="endday" type="text" name="endday" value="0" autocomplete="off" style="width:30px">日<input id="endhour" type="text" name="endhour" value="0" autocomplete="off" style="width:30px">时<br>
+剩余时间 :<input id="timeleft" type="text" name="timeleft" autocomplete="off" onchange="document.getElementById('timeleft').style.backgroundColor = '#FFFFFF'">小时<br>
+每天浪费LP :<input id="lpwaste" type="text" name="lpwaste" value="0" autocomplete="off" >（因为睡觉等原因浪费的LP数）<br>
+<br>
+
+<input type="checkbox" id="acptbonus" name="acptbonus">活动点数+10%</input>
+<input type="checkbox" id="expbonus" name="expbonus">经验+10%</input><br>
+曲数：<select id="songnum" name="songnum">
+	<option value=1>1</option>
+	<option value=2>2</option>
+	<option value=3 SELECTED>3</option>
+</select><br>
+难度选择 :<select id="diff" name="diff">
+	<option value=0>Easy</option>
+	<option value=1>Normal</option>
+	<option value=2>Hard</option>
+	<option value=3 SELECTED>Expert</option>
+	</select><br>
+rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
+	<option value=""></option>
+	<option value=0>-</option>
+	<option value=1>C</option>
+	<option value=2>B</option>
+	<option value=3>A</option>
+	<option value=4 SELECTED>S</option>
+	</select>
+	<br>
+rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
+combo（可选）：<select id="comboselect" name="comboselect" onchange="setcombo()">
+	<option value=""></option>
+	<option value=0>-</option>
+	<option value=1>C</option>
+	<option value=2>B</option>
+	<option value=3 SELECTED>A</option>
+	<option value=4>S</option>
+	</select>
+	<br>
+combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x<br>
+<a href='/mfpt' target="_blank">基础pt和乘数表</a>
+<br>
+<br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><br>
+已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
+<br>
+当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
+当前等级 :<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
+当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
+经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
+	<option value=0>正常</option>
+	<option value=1 SELECTED>100级以下减半（日服）</option>
+	</select>(half指100级以下升级所需经验值减半)<br>
+<input type="submit" id="submit" name="submit" value="Calculate" onclick="check()"> <br>
+
+<div id="result" style="display:none">
+<pre>
+注意：
+1、加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考
+2、如果最终点数和目标点数过于接近，请考虑多磕一心。
+</pre>
+需要心数：<nospan id="rloveca"></nospan>心<br>
+MF次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
+总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（1/2/3首按3/5/7分计算）<br>
+最终等级：<nospan id="rlvl"></nospan><br>
+最终exp：<nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan><br>
+最终点数：<nospan id="rcurrent"></nospan><br>
+<nospan id="rwarning" style="color:red"></nospan>
+</div>
+
+</body>
+</html>

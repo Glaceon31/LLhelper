@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="/static/twintailosu.js"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+      button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+   
+   <script language="javascript">
+   function check(){
+      var inputs = document.getElementsByTagName("input");
+      var chou = false;
+      for (var i=0;i<5;i++){
+         if (!isNotNegative(inputs[i].value)){
+            alert("请输入非负整数");
+            return false;
+         }
+      }
+      return true
+   }
+   
+   Math.log1p = Math.log1p || function(x) {
+      var u = 1 + x;
+      if (!(Math.abs(x) < 0.5)) {
+         return Math.log(u);
+      } else if (u == 1) {
+         return x;
+      } else {
+         return Math.log(u) * (x / (u - 1));
+      }
+   };
+   
+   function cpowei1p(real, imag, theta, n) {
+      var r2m1 = real * real + imag * imag + real * 2;
+      var len = Math.exp(Math.log1p(r2m1) * 0.5 * n);
+      var angle = (Math.atan2(imag, 1 + real) + theta) * n;
+      return [len * Math.cos(angle), len * Math.sin(angle)];
+   }
+   
+   function dftpow(prob, expect, n, w0) {
+      if (n == 0) {
+         return [1, 0];
+      }
+      var real = 0, imag = 0;
+      for (var i = 0; i < prob.length; i++) {
+         var w = w0 * (i - expect);
+         var t = Math.sin(w * 0.5);
+         real -= prob[i] * t * t * 2;
+         imag += prob[i] * Math.sin(w);
+      }
+      return cpowei1p(real, imag, w0 * expect, n);
+   }
+   
+   var ElevenBaseProb = [
+      0.8953382542587164451099,
+      0.0994820282509684939011,
+      0.0050243448611600249445,
+      0.0001522528745806068165,
+      0.0000030758156480930670,
+      0.0000000434963829023262,
+      0.0000000004393574030538,
+      0.0000000000031699668330,
+      0.0000000000000160099335,
+      0.0000000000000000539055,
+      0.0000000000000000001089,
+      0.0000000000000000000001
+   ];
+   var ElevenBaseExpect = 0.11;
+   var ElevenRProb = 0.31381059609;
+   var ElevenRChangeUR = 0.1;
+   var SingleProb = [0.99, 0.01];
+   var SingleExpect = 0.01;
+   var SupportProb = [0.8, 0.2];
+   var SupportExpect = 0.2;
+   
+   function calculate() {
+      if (!check()){
+         return;
+      }
+      var changeur = ElevenRChangeUR;
+      // changeur = parseFloat(document.getElementById("changeur").value);
+      var ur = parseInt(document.getElementById("ur").value);
+      var elevennum = parseInt(document.getElementById("11").value);
+      var scoutnum = 11*parseInt(document.getElementById("11n").value)+parseInt(document.getElementById("single").value);
+      var supportnum = parseInt(document.getElementById("support").value);
+      var totalnum = elevennum * 11 + scoutnum + supportnum;
+      if (ur > totalnum){
+         alert("impossible");
+         return;
+      }
+      
+      var ElevenProb = ElevenBaseProb.slice();
+      ElevenProb[0] -= ElevenRProb * changeur;
+      ElevenProb[1] += ElevenRProb * changeur;
+      var ElevenExpect = ElevenBaseExpect + ElevenRProb * changeur;
+      
+      var len = totalnum + 1, len2 = len * 0.5;
+      var w0 = Math.PI * 2 / len;
+      var plt = ur;
+      var peq = 1;
+      for (var i = 1; i < len; i++) {
+         var k = i < len2 ? i : i - len;
+         var w = w0 * k;
+         var ret = dftpow(ElevenProb, ElevenExpect, elevennum, w);
+         var real = ret[0];
+         var imag = ret[1];
+         ret = dftpow(SingleProb, SingleExpect, scoutnum, w);
+         var r = real;
+         real = r * ret[0] - imag * ret[1];
+         imag = r * ret[1] + imag * ret[0];
+         ret = dftpow(SupportProb, SupportExpect, supportnum, w);
+         r = real;
+         real = r * ret[0] - imag * ret[1];
+         imag = r * ret[1] + imag * ret[0];
+         
+         var wu = w * ur;
+         var wl = w * (ur - 1) * 0.5;
+         plt += (real * Math.cos(wl) + imag * Math.sin(wl)) * (Math.sin(wu * 0.5) / Math.sin(w * 0.5));
+         peq += real * Math.cos(wu) + imag * Math.sin(wu);
+      }
+      plt /= len;
+      peq /= len;
+      var yourrank = plt + peq * 0.5;
+      
+      var ltpercent = Math.max(0, Math.min(1, plt)) * 100;
+      var eqpercent = Math.max(0, Math.min(1, peq)) * 100;
+      if (ur == 0)
+         document.getElementById("result").innerHTML = "有"+eqpercent.toFixed(4)+"%的玩家和你人品一样";
+      else
+         document.getElementById("result").innerHTML = "你的人品已经击败了"+ltpercent.toFixed(4)+"%的玩家，有"+eqpercent.toFixed(4)+"%的玩家和你人品一样";
+      var species = '';
+      if (yourrank < 0.01)
+         species = '部落酋长';
+      else if (yourrank < 0.15)
+         species = '非洲人';
+      else if (yourrank < 0.35)
+         species = '偏黑亚洲人';
+      else if (yourrank < 0.65)
+         species = '亚洲人';
+      else if (yourrank < 0.85)
+         species = '偏白亚洲人';
+      else if (yourrank < 0.99)
+         species = '欧洲人';
+      else
+         species = '官托';
+      document.getElementById("species").innerHTML = '鉴定结果： '+species;
+   }
+   </script>
+   
+   </head>
+   <body>
+
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>人种鉴定</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+注意事项：
+1、无保底期间11连次数可以等效转化为11次单抽/招募券次数
+2、有保底期间11连次数不可以转化为其他项，因为保底机制在出现11R时会将其中一张以10%的概率变为UR，90%的概率变为SR
+</pre>
+
+<table>
+<tr><td>有保底期间11连次数: </td><td><input type="text" id="11" name="11" value="0" autocomplete="off"></td></tr>
+<tr><td>无保底期间11连次数: </td><td><input type="text" id="11n" name="11n" value="0" autocomplete="off"></td></tr>
+<tr><td>单抽+招募券次数: </td><td><input type="text" id="single" name="single" value="0" autocomplete="off"></td></tr>
+<tr><td>欧洲券次数: </td><td><input type="text" id="support" name="support" value="0" autocomplete="off"></td><td>（即使用5张补助券抽卡次数）</td></tr>
+<tr><td>抽到UR个数: </td><td><input type="text" id="ur" name="ur" value="0" autocomplete="off"></td><td>（仅输入抽到的，觉醒UR算2个UR）</td></tr>
+</table>
+<input type="button" name="submit" value="Calculate" onclick="calculate()"> <br>
+<p id="species"></p>
+<p id="result"></p>
+</body>
+</html>

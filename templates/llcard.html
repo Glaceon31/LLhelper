@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <meta charset="UTF-8">
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+   
+  </head>
+   <body>
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>卡片强度计算</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+注意：SAE页面有BUG，计算结果无BUG
+<br>
+<form action="" method="POST">
+歌曲：<select name="songchoice">
+	{%for i in songlist %}
+		{% if songlist.index(i) == data.songchoice %}
+			<option value={{songlist.index(i)}} style="color:{{songattlist[songlist.index(i)]}}" SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{songlist.index(i)}} style="color:{{songattlist[songlist.index(i)]}}">{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>
+	<input type="submit" name="songsubmit" value="确认">
+	<input type="submit" name="languagesubmit" value={% if data.language == 0%}"切换日文名"{%else%}"切换中文名"{%endif%}><br>
+	图属性 :<select name="map">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.map %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select><br>
+	位置权重 :<input type="text" name="position" value="{{data.position}}" autocomplete="off" size=1>（即角色所在位置在一首歌内出现的单点的个数+1.25*长按个数）<br>
+	总combo数 :<input type="text" name="combo" value="{{data.combo}}" autocomplete="off" size=1><br>
+	长按比例 :<input type="text" name="slider" value="{{data.slider}}" autocomplete="off" size=1>%<br>
+	perfect数:<input type="text" name="perfect" value="{{data.perfect}}" autocomplete="off" size=1><br>
+	时间:<input type="text" name="time" value="{{data.time}}" autocomplete="off" size=1>秒<br>
+<br>
+想要计算的卡片属性<br>
+卡片：<select name="cardchoice">
+	{%for i in cardlist %}
+		{% if cardlist.index(i) == data.cardchoice %}
+			<option value={{cardlist.index(i)}} style="color:{{cardattlist[cardlist.index(i)]}}" SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{cardlist.index(i)}} style="color:{{cardattlist[cardlist.index(i)]}}">{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>
+	<input type="submit" name="cardsubmit" value="确认">
+	<input type="submit" name="evovlesubmit" value={% if data.evovle == 0%}"未觉醒"{%else%}"觉醒"{%endif%}>
+	<input type="submit" name="languagesubmit" value={% if data.language == 0%}"切换日文名"{%else%}"切换中文名"{%endif%}><br>
+
+	smile :<input type="text" name="smile" value="{{data.smile}}" autocomplete="off" ><br>
+	pure :<input type="text" name="pure" value="{{data.pure}}" autocomplete="off" ><br>
+	cool :<input type="text" name="cool" value="{{data.cool}}" autocomplete="off" ><br>
+	主属性 :<select name="main">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.main %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select><br>
+	绊:<input type="text" name="kizuna" value="{{data.kizuna}}" autocomplete="off" ><br>
+	技能 :<select name="skill">
+	{%for i in skillselect %}
+		{% if skillselect.index(i) == data.skill %}
+			<option value={{skillselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{skillselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select><br>
+	技能效果 :<input type="text" name="require" value="{{data.require}}" autocomplete="off" size=3>分数/note/combo/prefect/秒 <input type="text" name="possibility" value="{{data.possibility}}" autocomplete="off" size=1>%概率增加/增强判定/回复<input type="text" name="score" value="{{data.score}}" autocomplete="off" size=1>分/秒/HP<br>
+
+
+<br>
+
+<br>
+
+队伍属性<br>
+主唱技能 :<select name="bonus">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.bonus %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>增加<select name="percentage">
+	{%for i in percentageselect %}
+		{% if i == data.percentage %}
+			<option value={{i}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{i}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>%的<select name="base">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.base %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select><br>
+好友主唱技能 :<select name="bonus2">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.bonus2 %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>增加<select name="percentage2">
+	{%for i in percentageselect %}
+		{% if i == data.percentage2 %}
+			<option value={{i}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{i}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select>%的<select name="base2">
+	{%for i in attselect %}
+		{% if attselect.index(i) == data.base2 %}
+			<option value={{attselect.index(i)}} SELECTED>{{i}}</option>
+		{% else %}
+			<option value={{attselect.index(i)}}>{{i}}</option>
+		{% endif %}
+	{%endfor%}
+	</select><br>
+
+总对应面板属性 :<input type="text" name="total" value="{{data.total}}" autocomplete="off">（选歌界面的属性值）<br>
+<br>
+分数系加分填写<br>
+总对应等效属性 :<input type="text" name="totalequal" value="{{data.totalequal}}" autocomplete="off">（数值为所有人等效属性之和，即面板属性先加上同色加成再加上所有加分技能的等效属性）<br>
+<br>
+注意：1、计算判定技能的等效属性时，在perfect中填写去掉该判定技能后的大致perfect数；而若perfect数已考虑该判定技能，则不要将该判定技能的等效属性加入总对应等效属性<br>
+2、总对应等效属性的计算方法为面板属性加上同色加成（若纯色就加10%），然后加上所有加分技能的对应属性。在计算分数加分系技能的属性时可以估计一下，误差不会很大，但是计算期望得分时务必精确<br>
+3、若不计算分数系加分卡和期望得分，不必填写总对应等效属性<br>
+<input type="submit" name="submit" value="Calculate"> <br>
+</form>
+{% if data.calculate == 1%}
+原属性 : {{data.attributeo}} （对选歌界面属性值的贡献）<br>
++主唱加成 :  {{data.cbonus}}<br>
++绊 :  {{data.kizunabonus}}<br>
+=界面属性 : {{data.showattribute}} （对选歌界面属性值的贡献）<br>
++同色加成：{{data.colorbonus}}<br>
++技能等效属性：{{data.skillattribute}}<br>
+=最终等效属性 : {{data.attribute}} （衡量对得分的贡献）<br>
+<br>
+技能等效原属性 : {{data.skillattributeo}} （技能对原属性的等效提高值）<br>
+技能等效属性 : {{data.skillattribute}} （技能对面板属性/得分属性的等效提高值）<br>
+{% if data.accuracy > 0 %}
+判定覆盖率：{{data.accuracy}}%（单卡值，note/combo系存在误差）<br>
+{% endif %}
+{% if data.heal > 0 %}
+平均单note回复：{{data.heal}}<br>
+{% endif %}
+<br>
+期望得分：{{data.finalscore}}（需要较准确填写总对应等效属性，注意技能的波动会导致实际得分有较大波动）
+{% endif %}
+
+</body>
+</html>

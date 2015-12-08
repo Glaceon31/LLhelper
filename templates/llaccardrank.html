@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.06"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;margin-left:30px;}
+   	td {size:2}
+   </style>
+   <script>
+   var attcolor = new Array()
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   attcolor["all"] = "purple"
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var cards = eval("("+cardsjson+")")
+
+   function better(card1, card2, type){
+      if (type == 0){
+         if (strength(card1,1,0,1) > strength(card2,1,0,1))
+            return true
+         else
+            return false
+      }
+      else{
+         if (skillstrength(card1,0,1) > skillstrength(card2,0,1))
+            return true
+         else
+            return false
+      }
+      return true
+   }
+
+   function showresult(type){
+      result = []
+      att = document.getElementById("att").value
+      cnhave = document.getElementById("cnhave").value
+      for (i in cards){
+         card = cards[String(i)]
+         if (!card.type) continue
+         if ((type == 1) && (card.skilleffect != 5)) continue
+         if ((card.type.indexOf("活动卡") != -1) && (card.special == 0) && ((att == "") || (att == card.attribute)) && ((cnhave == "") || (cnhave == card.cnhave))){
+            result.push(i)
+         }
+      }
+      len = result.length
+      for (i=0; i<len;i++){
+         for (j=0;j<len-1-i;j++){
+            if (!better(cards[result[j]], cards[result[j+1]],type)){
+               tmp = result[j]
+               result[j] = result[j+1]
+               result[j+1] = tmp
+            }
+         }
+      }
+
+      resulthtml = "<table border='1' style='text-align:center'><tr><td>排行</td><td>头像</td><td style='color:red'>smile</td><td style='color:green'>pure</td><td style='color:blue'>cool</td><td>1级技能强度</td><td>2级技能强度</td><td>判定覆盖率<br>或加分强度</td><td>2级覆盖率<br>或加分强度</td></tr>"
+      for (i in result){
+         cardid = result[i]
+         card = cards[String(cardid)]
+         resulthtml += "<tr>"
+         resulthtml += "<td id=rank"+i+">"+String(parseInt(i)+1)+"</td>"
+         resulthtml += "<td><img height=60px width=60px src='"+card.avatarpath+"'></img><img height=60px width=60px src='"+card.avatarpluspath+"'></img></td>"
+         resulthtml += "<td id='smile"+i+"' style='color:red'>"+card.smile2+"</td>"
+         resulthtml += "<td id='pure"+i+"' style='color:green'>"+card.pure2+"</td>"
+         resulthtml += "<td id='cool"+i+"' style='color:blue'>"+card.cool2+"</td>"
+         resulthtml += "<td id='strength"+i+"'>"+strength(card, 1, 0, 1)+"</td>"
+         resulthtml += "<td id='strengthtwo"+i+"'>"+strength(card, 1, 1, 1)+"</td>"
+         if (card.skilleffect == 5){
+            resulthtml += "<td>"+skillstrength(card, 0, 1)+"%</td>"
+            resulthtml += "<td>"+skillstrength(card, 1, 1)+"%</td>"
+         }
+         else
+            resulthtml += "<td>"+skillstrength(card, 0, 1)+"</td><td>"+skillstrength(card, 1, 1)+"</td>"
+         
+      }
+      resulthtml += "</table>"
+      document.getElementById("resultarea").innerHTML = resulthtml
+      for (i in result){
+         cardid = result[i]
+         card = cards[String(cardid)]
+         document.getElementById(card.attribute+i).style['font-weight'] = 'bold'
+         document.getElementById('strength'+i).style.color = attcolor[card.attribute]
+         document.getElementById('strengthtwo'+i).style.color = attcolor[card.attribute]
+         if (card.cnhave == 1){
+            document.getElementById('rank'+i).style['background-color'] = attcolor[card.attribute]
+            if (card.attribute == 'cool'){
+               document.getElementById('rank'+i).style['background-color'] = '#0080FF'
+            }
+         }
+      }
+   }
+   </script>
+   </head>
+   <body onload="">
+   <nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>活动卡片排行</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+使用方法：
+1. 选择属性，点击排序
+2. 强度均计算觉醒强度，未觉醒强度为觉醒强度减去555
+3. 排行有底色的说明这张卡在国服已经出现
+4. 一张5000属性的未觉醒奶判UR的强度为5950
+</pre>
+
+条件：<select id="att" name="att" onchange="changecardselect()">
+      <option value="">所有属性</option>
+      <option value="smile" style="color:red">smile</option>
+      <option value="pure" style="color:green">pure</option>
+      <option value="cool" style="color:blue">cool</option>
+   </select>
+   <select id="cnhave" name="cnhave" onchange="changecardselect()">
+      <option value="">日服进度</option>
+      <option value=1>国服进度</option>
+   </select>
+   <input type="button" value="按强度排序" onclick="showresult(0)"/>
+   <input type="button" value="按判定覆盖率排序" onclick="showresult(1)"/>
+   <div id="resultarea">
+
+   </div>
+</body>
+</html>
