@@ -18,7 +18,7 @@ function gettime(){
 	month = d.getMonth()
 	year = d.getFullYear()
 	offset = d.getTimezoneOffset()
-	daysByMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+	daysByMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 }
 	
 function twtime(){
@@ -42,7 +42,6 @@ function twtime(){
    	timeleft = 24*(endDay-day)+endHour-hour-Math.ceil(minute/6)/10.0-8-offset/60
    	if (day > endDay){timeleft = 24*(endDay+daysByMonth[month]-day)+endHour-hour-parseInt(minute/6)/10.0-8-offset/60}
    	document.getElementById("timeleft").value=timeleft.toFixed(1)
-   	document.getElementById("expf").value=0
    	document.getElementById("endday").value=endDay
    	document.getElementById("endhour").value=endHour
    }
@@ -50,8 +49,8 @@ function twtime(){
     function cntime(){
     	gettime()
     	var tmpd = new Date()
-      var expectday = 11
-   	var endDay =14
+      var expectday = 10
+   	var endDay =30
    	//endDay = 11
    	/*
    	if ((day > 12) && (day < 30)) {
@@ -76,7 +75,6 @@ function twtime(){
 if (day > endDay){timeleft = 24*(endDay+daysByMonth[month]-day)+endHour-hour-parseInt(minute/6)/10.0-8-offset/60}
    	if (timeleft > 24*expectday-1) timeleft = 24*expectday-1
       document.getElementById("timeleft").value=timeleft.toFixed(1)
-   	document.getElementById("expf").value=0
    	document.getElementById("endday").value=endDay
    	document.getElementById("endhour").value=endHour
    }
@@ -91,7 +89,6 @@ if (day > endDay){timeleft = 24*(endDay+daysByMonth[month]-day)+endHour-hour-par
       if (timeleft > 24*(endDay-startDay)-1)
          timeleft = 24*(endDay-startDay)-1
    	document.getElementById("timeleft").value=timeleft.toFixed(1)
-   	document.getElementById("expf").value=1
    	document.getElementById("endday").value=endDay
    	document.getElementById("endhour").value=endHour
    }

@@ -20,6 +20,14 @@ def llsm():
 def llmf():
     return render_template('llmedleyfestival.html')
 
+@app.route("/llcf", methods=['GET', 'POST'])
+def llcf():
+    return render_template('llchallengefestival.html')
+
 @app.route("/mfpt", methods=['GET', 'POST'])
 def mfpt():
     return render_template('mfpt.html')
+
+@app.route("/cfpt", methods=['GET', 'POST'])
+def cfpt():
+    return render_template('cfpt.html')

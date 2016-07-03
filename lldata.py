@@ -47,3 +47,8 @@ def llaccardrank():
     cardsjson = open('newcardsjson.txt', 'rb').read()
     #print cardsjson['1']['cardpluspath']
     return render_template('llaccardrank.html', cardsjson = cardsjson)
+
+@app.route("/lleventdata")
+def lleventdata():
+    eventdata = open('eventdata.txt', 'rb').read()
+    return eventdata
