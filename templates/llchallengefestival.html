@@ -13,8 +13,9 @@
    	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
    </style>
    <script language="javascript">
-   basept = [[31,64,99],[72,150,234],[126,262,408],[241,500,777]]
-   lpcost = [4, 8, 12, 20]
+   basept = [[39,40,41,42,43],[91,94,97,100,103],[158,164,170,176,182],[301,320,339,358,377]]
+   lpcost = [5, 10, 15, 25]
+   baseexp = [[12,13,14,15,16],[26,29,32,35,38],[46,51,56,61,66],[83,93,103,113,123]]
    expbydiff = [12, 26, 46, 83]
    minutebynum = [3, 5, 7]
    
@@ -24,12 +25,12 @@
    	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
    		if (inputs[i].type == "text")
-   			if (getCookie(inputs[i].name+"mf") != "")
-   				inputs[i].value = getCookie(inputs[i].name+"mf");
+   			if (getCookie(inputs[i].name+"cf") != "")
+   				inputs[i].value = getCookie(inputs[i].name+"cf");
    	}
    	for (var i=0; i<selects.length; i++){
-   		if (getCookie(selects[i].name+"mf") != "")
-   			selects[i].value = getCookie(selects[i].name+"mf");
+   		if (getCookie(selects[i].name+"cf") != "")
+   			selects[i].value = getCookie(selects[i].name+"cf");
    	}
    	document.getElementById('timeleft').style.backgroundColor = '#FFFF80'
    }
@@ -86,17 +87,17 @@
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
-   		setCookie(inputs[i].name+"mf", inputs[i].value, -1);
+   		setCookie(inputs[i].name+"cf", inputs[i].value, -1);
    	}
    	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"mf", selects[i].value, -1);
+   		setCookie(selects[i].name+"cf", selects[i].value, -1);
    	}
-   	window.location.href="/llmf"
+   	window.location.href="/llcf"
    }
    
    function calcu(){
-   	infolist =['timeleft','lpwaste','diff','songnum','rank','combo','target','current','lp','lvl','exp','expf']
-   	remlist =['current', 'lp', 'lvl', 'exp', 'extraplaytime','extraminute']
+   	infolist =['timeleft','lpwaste','diff','songnum','rank','combo','target','current','lp','lvl','exp','expf','bonus','currentround','poolpt','exppool']
+   	remlist =['current', 'lp', 'lvl', 'exp', 'extraplaytime','extraminute','currentround','exppool','poolpt','playtime']
    	for (i in infolist)
    		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
    	expmulti = 1
@@ -114,15 +115,21 @@
    	lvlupwarning = 0
    	safelp = 2
    	lp += parseInt(timeleft*10)-lpwaste*parseInt((timeleft-14)/24+1)-safelp
-   	while ((current < target) || (lp >= 4) || (exp >= expbylvl(lvl, expf))){
-   		while ((lp >= lpcost[diff]*songnum) || (exp >= expbylvl(lvl, expf))){
-   			if (lp >= lpcost[diff]*songnum){
-   				play = parseInt(lp/(lpcost[diff]*songnum))
-   				playtime += play
-   				totalminute += play*minutebynum[songnum-1]
-   				lp -=play*lpcost[diff]*songnum
-   				exp += parseInt((expbydiff[diff]*songnum*play*expmulti).toFixed(0))
-   				current += parseInt((basept[diff][songnum-1]*rank*combo*ptmulti*friendmulti*play).toFixed(0))
+   	while ((current < target) || (lp >= 5) || (exp >= expbylvl(lvl, expf))){
+   		while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
+   			if (lp >= lpcost[diff]){
+   				playtime += 1
+   				lp -= lpcost[diff]
+               exppool += Math.round(baseexp[diff][currentround-1]*expmulti)
+               poolpt += Math.round(basept[diff][currentround-1]*rank*combo*ptmulti*bonus)
+               currentround += 1
+               if (currentround > songnum){
+                  exp += exppool
+                  current += poolpt
+                  poolpt = 0
+                  exppool=0
+                  currentround = 1
+               }
    			}
    			while (exp >= expbylvl(lvl, expf)){
    				exp -= expbylvl(lvl, expf)
@@ -133,46 +140,56 @@
    		//deal with remainings
    		for (i in remlist)
    			eval('tmp'+remlist[i]+' = '+remlist[i])
-   		while ((lp >= 4) || (exp >= expbylvl(lvl, expf))){
-         while ((lp >= lpcost[diff]*songnum) || (exp >= expbylvl(lvl, expf))){
-            if (lp >= lpcost[diff]*songnum){
-               play = parseInt(lp/(lpcost[diff]*songnum))
-               playtime += play
-               totalminute += play*minutebynum[songnum-1]
-               lp -=play*lpcost[diff]*songnum
-               exp += parseInt((expbydiff[diff]*songnum*play*expmulti).toFixed(0))
-               current += parseInt((basept[diff][songnum-1]*rank*combo*ptmulti*friendmulti*play).toFixed(0))
+         //stop in current round
+         exp += exppool
+         current += poolpt
+         poolpt = 0
+         exppool=0
+         currentround = 1
+   		while ((lp >= 5) || (exp >= expbylvl(lvl, expf))){
+            while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
+               if (lp >= lpcost[diff]){
+                  playtime += 1
+                  lp -= lpcost[diff]
+                  exppool += Math.ceil(baseexp[diff][currentround-1]*expmulti)
+                  poolpt += Math.round(basept[diff][currentround-1]*rank*combo*ptmulti*bonus)
+                  currentround += 1
+                  if (currentround > songnum){
+                     exp += exppool
+                     current += poolpt
+                     poolpt = 0
+                     exppool=0
+                     currentround = 1
+                  }
+               }
+               while (exp >= expbylvl(lvl, expf)){
+                  exp -= expbylvl(lvl, expf)
+                  lvl += 1
+                  lp += lpbylvl(lvl)
+               }
             }
-            while (exp >= expbylvl(lvl, expf)){
-               exp -= expbylvl(lvl, expf)
-               lvl += 1
-               lp += lpbylvl(lvl)
-            }
+            exp += exppool
+            current += poolpt
+            poolpt = 0
+            exppool=0
+            currentround = 1
+            if (exp >= expbylvl(lvl, expf))
+               continue
+      		if (lp >= 5){
+      			for (i = diff-1; i >=0; i--){
+      				if (lp >= lpcost[i]){
+      					lp -= lpcost[i]
+      					exp += Math.ceil(baseexp[i][0]*expmulti)
+      					current += Math.round(basept[i][0]*rank*combo*ptmulti*bonus)
+      					extraplaytime += 1
+      				}
+      			}
+      		}
+      		if (exp >= expbylvl(lvl, expf)){
+      			continue
+      		}
          }
-   		if (lp >= 4){
-   			for (i = songnum-1; i >= 1; i--){
-   				if (lp >= lpcost[diff]*i){
-   					lp -= lpcost[diff]*i
-   					exp += parseInt((expbydiff[diff]*i*expmulti).toFixed(0))
-   					current += parseInt((basept[diff][i-1]*rank*combo*ptmulti*friendmulti).toFixed(0))
-   					extraplaytime += 1
-   					extraminute += 3
-   				}
-   			}
-   			for (i = diff-1; i >=0; i--){
-   				if (lp >= lpcost[i]){
-   					lp -= lpcost[i]
-   					exp += parseInt((expbydiff[i]*expmulti).toFixed(0))
-   					current += parseInt((basept[i][0]*rank*combo*ptmulti*friendmulti).toFixed(0))
-   					extraplaytime += 1
-   					extraminute += 3
-   				}
-   			}
-   		}
-   		if (exp >= expbylvl(lvl, expf)){
-   			continue
-   		}
-      }
+         //backtrace
    		if (current < target){
    			for (i in remlist)
    				eval(remlist[i]+' = tmp'+remlist[i])
@@ -186,13 +203,12 @@
    	expneed = expbylvl(lvl, expf)
    	exp = parseInt(exp)
    	current = parseInt(current)
-   	totalminute = parseInt(totalminute)
-   	extraminute = parseInt(extraminute)
+
    	returnlist = ['loveca','playtime','extraplaytime','lvl','exp','expneed','current','totalhour','totalminute','extrahour','extraminute','warning']
-   	totalhour = parseInt(totalminute/60)
-   	totalminute -= 60*totalhour
-   	extrahour = parseInt(extraminute/60)
-   	extraminute -= 60*extrahour
+   	totalhour = parseInt((playtime)*3/60)
+      totalminute = parseInt((playtime)*3)-60*totalhour
+      extrahour = parseInt((extraplaytime)*3/60)
+      extraminute = parseInt((extraplaytime)*3)-60*extrahour
    	warning = ""
    	if (exp-4.1*expmulti*lpbylvl(lvl) < 50)
    		warning = "最后一次升级的时间离活动结束时间较近，请提前规划好时间"
@@ -206,10 +222,10 @@
    	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
    		if (inputs[i].type == "text")
-   			setCookie(inputs[i].name+"mf", inputs[i].value, 1);
+   			setCookie(inputs[i].name+"cf", inputs[i].value, 1);
    	}
    	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"mf", selects[i].value, 1);
+   		setCookie(selects[i].name+"cf", selects[i].value, 1);
    	}
    }
    </script>
@@ -223,7 +239,7 @@
    <div>
       <ul class="nav navbar-nav">
          <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>medley festival助手</a></li>
+         <li class="active"><a href=#>challenge festival助手</a></li>
          <li><a href="/about">关于</a></li>
       </ul>
    </div>
@@ -248,16 +264,27 @@
 
 <input type="checkbox" id="acptbonus" name="acptbonus" checked>活动点数+10%</input>
 <input type="checkbox" id="expbonus" name="expbonus">经验+10%</input><br>
-曲数：<select id="songnum" name="songnum">
+当前Round：<select id="currentround" name="currentround">
+   <option value=1 SELECTED>1</option>
+   <option value=2>2</option>
+   <option value=3>3</option>
+   <option value=4>4</option>
+   <option value=5>5</option>
+</select><br>
+当前未领取pt：<input id="poolpt" type="text" name="poolpt" value="0" style="width:50px" autocomplete="off" ><br>
+当前未领取exp：<input id="exppool" type="text" name="exppool" value="0" style="width:50px" autocomplete="off"><br>
+最大Round数：<select id="songnum" name="songnum">
 	<option value=1>1</option>
 	<option value=2>2</option>
-	<option value=3 SELECTED>3</option>
+   <option value=3>3</option>
+   <option value=4>4</option>
+	<option value=5 SELECTED>5</option>
 </select><br>
 难度选择 :<select id="diff" name="diff">
-	<option value=0>Easy</option>
-	<option value=1>Normal</option>
-	<option value=2>Hard</option>
-	<option value=3 SELECTED>Expert</option>
+	<option value=0>初级</option>
+	<option value=1>中级</option>
+	<option value=2>上级</option>
+	<option value=3 SELECTED>超级</option>
 	</select><br>
 rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
 	<option value=""></option>
@@ -279,10 +306,11 @@ combo（可选）：<select id="comboselect" name="comboselect" onchange="setcom
 	</select>
 	<br>
 combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x<br>
-<a href='/mfpt' target="_blank">基础pt和乘数表</a>
+平均应援加成：<input id="bonus" type="text" name="bonus" value="1.05" style="width:50px" autocomplete="off">x<br>
+<a href='/cfpt' target="_blank">基础pt和乘数表</a>
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><a href="http://tieba.baidu.com/p/4621776838" target="_blank">LLhelper国服六月妖怪妮活动预测线</a><br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><!--<a href="http://tieba.baidu.com/p/4360768659" target="_blank">LLhelper国服二月妖精花活动预测线</a>--><br>
 已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
 <br>
 当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
@@ -290,7 +318,7 @@ combo加成：<input id="combo" type="text" name="combo" value="1.06" style="wid
 当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
 经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
 	<option value=0>正常</option>
-	<option value=1 SELECTED>100级以下减半</option>
+	<option value=1 SELECTED>100级以下减半（日服）</option>
 	</select>(half指100级以下升级所需经验值减半)<br>
 <input type="submit" id="submit" name="submit" value="Calculate" onclick="check()"> <br>
 
@@ -299,10 +327,11 @@ combo加成：<input id="combo" type="text" name="combo" value="1.06" style="wid
 注意：
 1、加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考
 2、如果最终点数和目标点数过于接近，请考虑多磕一心。
+3、CF活动中随机的活动点数加成很多，还有随机的LP回复和经验增加，所以实际需要的心数会因为随机因素而产生误差。可以通过调整“平均应援加成”来设定随机活动点数加成的平均值来获取更好的精度。随机的LP回复和EXP增加暂不考虑。
 </pre>
 需要心数：<nospan id="rloveca"></nospan>心<br>
-MF次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
-总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（1/2/3首按3/5/7分计算）<br>
+打歌次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
+总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（每首按3分钟计算）<br>
 最终等级：<nospan id="rlvl"></nospan><br>
 最终exp：<nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan><br>
 最终点数：<nospan id="rcurrent"></nospan><br>

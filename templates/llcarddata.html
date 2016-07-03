@@ -44,16 +44,26 @@
    nametojp["东条希"] = "東條希"
    nametojp["小泉花阳"] = "小泉花陽"
    nametojp["矢泽妮可"] = "矢澤にこ"
+   nametojp["高海千歌"] = "高海千歌"
+   nametojp["樱内梨子"] = "桜内梨子"
+   nametojp["松浦果南"] = "松浦果南"
+   nametojp["黑泽黛雅"] = "黒澤ダイヤ"
+   nametojp["渡边曜"] = "渡辺曜"
+   nametojp["津岛善子"] = "津島善子"
+   nametojp["国木田花丸"] = "国木田花丸"
+   nametojp["小原鞠莉"] = "小原鞠莉"
+   nametojp["黑泽露比"] = "黒澤ルビィ"
    
    function getcardselect(rarity, chr, att, cnhave, cardtype,special){
    	sel = document.getElementById("cardchoice");
       skilltype = document.getElementById("skilltype").value
       triggertype = document.getElementById("triggertype").value
+      setname = document.getElementById("setname").value
    	sel.options.length = 1;
    	var index = 1;
    	//alert(chr)
    	for (card in cards){
-   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((cnhave == "") || (cnhave == cards[index].cnhave)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype))){
+   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((cnhave == "") || (cnhave == cards[index].cnhave)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
             if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
                index += 1
                continue
@@ -339,6 +349,15 @@
 		<option value="东条希">东条希</option>
 		<option value="小泉花阳">小泉花阳</option>
 		<option value="矢泽妮可">矢泽妮可</option>
+      <option value="高海千歌">高海千歌</option>
+      <option value="樱内梨子">樱内梨子</option>
+      <option value="松浦果南">松浦果南</option>
+      <option value="黑泽黛雅">黑泽黛雅</option>
+      <option value="渡边曜">渡边曜</option>
+      <option value="津岛善子">津岛善子</option>
+      <option value="国木田花丸">国木田花丸</option>
+      <option value="小原鞠莉">小原鞠莉</option>
+      <option value="黑泽露比">黑泽露比</option>  
 	</select>
 	<select id="att" name="att" onchange="changecardselect()">
 		<option value="">属性</option>
@@ -376,7 +395,49 @@
 		<option value="">是否特典卡</option>
 		<option value=0>不是特典</option>
 		<option value=1>是特典</option>
-	</select><br>
+	</select>
+   <select id="setname" name="setname" onchange="changecardselect()">
+      <option value="">套卡名</option>
+      <option value="初期">初期</option>
+      <option value="職業編">职业篇</option>
+      <option value="動物編">动物篇</option>
+      <option value="8月編">8月篇</option>
+      <option value="9月編">9月篇</option>
+      <option value="10月編">10月篇</option>
+      <option value="11月編">11月篇</option>
+      <option value="12月編">12月篇</option>
+      <option value="1月編">1月篇</option>
+      <option value="2月編">2月篇</option>
+      <option value="3月編">3月篇</option>
+      <option value="4月編">4月篇</option>
+      <option value="5月編">5月篇</option>
+      <option value="6月編">6月篇</option>
+      <option value="7月編">7月篇</option>
+      <option value="チャイナドレス編">旗袍篇</option>
+      <option value="カフェメイド編">女仆篇</option>
+      <option value="ハロウィン編">万圣篇</option>
+      <option value="星座編">星座篇</option>
+      <option value="雪山編">雪山篇</option>
+      <option value="七福神編">七福神篇</option>
+      <option value="バレンタイン編">情人节篇</option>
+      <option value="ホワイトデー編">白色情人节篇</option>
+      <option value="職業編(Part2">职业篇2</option>
+      <option value="サイバー編">电玩篇</option>
+      <option value="手品師編">魔术师篇</option>
+      <option value="マリン編">海兵篇</option>
+      <option value="プール編">泳池篇</option>
+      <option value="くのいち編">忍者篇</option>
+      <option value="動物編(Part2)">动物篇2</option>
+      <option value="舞踏会編">舞踏会篇</option>
+      <option value="クリスマス編">圣诞篇</option>
+      <option value="サーカス編">马戏团篇</option>
+      <option value="妖精の国編">妖精之国篇</option>
+      <option value="ベースボール編">棒球篇</option>
+      <option value="大正ロマン編">大正篇</option>
+      <option value="踊り子編">舞娘篇</option>
+      <option value="アイドル衣装編">偶像篇</option>
+      <option value="小悪魔編">小恶魔篇</option>
+   </select><br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changecolor('cardchoice')">
 		<option value=""> </option>
 	</select>

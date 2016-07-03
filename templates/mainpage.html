@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
    <head>
       <title>LLhelper</title>
@@ -44,8 +44,6 @@
    
    //冷门知识
    weight.push(50); tips.push("招募券不能用于限定招募")
-   weight.push(50); tips.push("使用招募券招募进入礼物盒有60天的领取期限，使用心招募则无期限")
-   weight.push(50); tips.push("在日服15年4月的更新前，使用补助券获得的卡片不会出现在好友消息中")
    weight.push(50); tips.push("长按的得分为1.25倍，但是得分受到头尾两次判定的叠乘影响")
    weight.push(50); tips.push("长按的判定在某次大更后（国服仍未更）为条尾判定，旧版本为首尾判定较差的一个。在日服4月的大更中又变成了首尾判定中较差的一个")
    weight.push(50); tips.push("国服与台服开始活动和结束活动的时间不会在周末")
@@ -55,9 +53,6 @@
    weight.push(20); tips.push("所有曲目中唯一的同侧出张出现在Music S.T.A.R.T!!的hard难度中")
    weight.push(20); tips.push("唯一的一张combo系判定是初期SR希，技能覆盖率非常高")
    weight.push(20); tips.push("主属性最低的真UR为新年果，cool值为4880/5180，同时其也是副属性最高的UR，smile值为4530/4830")
-   weight.push(20); tips.push("主属性最低的旧c真UR为初期鸟，pure值为4890/5190")
-   weight.push(20); tips.push("主属性最高的UR为泳池篇凛，smile值为5070/5370")
-   weight.push(20); tips.push("主属性最高的SR为魔术师海，cool值为4710/4990")
    weight.push(20); tips.push("主属性最低的真SR为赛车KKE，cool值为4030/4310")
    weight.push(20); tips.push("已收入曲中BPM最高的为これからのsomeday，BPM为240，但是谱面中没有16分连打")
    weight.push(20); tips.push("活动中相同排名的玩家在总榜的显示顺序为uid字符串倒序，在好友榜的显示为uid数字顺序")
@@ -125,6 +120,16 @@
    weight.push(15); tips.push("南小鸟的生日为9月12日")
    weight.push(15); tips.push("绚濑绘里的生日为10月21日")
    weight.push(15); tips.push("星空凛的生日为11月1日")
+
+   weight.push(15); tips.push("黑泽黛雅的生日为1月1日")
+   weight.push(15); tips.push("松浦果南的生日为2月10日")
+   weight.push(15); tips.push("国木田花丸的生日为3月4日")
+   weight.push(15); tips.push("渡边曜的生日为4月17日")
+   weight.push(15); tips.push("小原鞠莉的生日为6月13日")
+   weight.push(15); tips.push("津岛善子的生日为7月13日")
+   weight.push(15); tips.push("高海千歌的生日为8月1日")
+   weight.push(15); tips.push("樱内梨子的生日为9月19日")
+   weight.push(15); tips.push("黑泽露比的生日为9月21日")
    
    //网站有关
    weight.push(30); tips.push("想要联系作者，请点击查看关于页面")
@@ -132,12 +137,18 @@
    weight.push(50); tips.push("算心算法不会利用最后12分钟回复的LP，以给玩家足够多的保档缓冲时间")
    weight.push(50); tips.push("算心是绝对准确的，但是请尽量避免卡线")
    weight.push(1000); tips.push("关注微博<a href='http://weibo.com/u/2213765792' target='_blank'>Glaceon31</a>以获取LLhelper最新信息")
-   weight.push(1000); tips.push("因为某些原因，人种鉴定器以前测试的结果全部作废，人种鉴定器暂时停止工作。点击“人种鉴定器”以了解详情")
+   //weight.push(1000); tips.push("因为某些原因，人种鉴定器以前测试的结果全部作废，人种鉴定器暂时停止工作。点击“人种鉴定器”以了解详情")
    //彩蛋
    weight.push(10); tips.push("赶走羊驼的方法是：先进入一个看板不出现的界面，再进入一个看板出现但不是首页的界面（例如剧情、社员、商店），正常的看板娘就会出现了")
    weight.push(5); tips.push("（·8·）")
    weight.push(5); tips.push("Fightだよ！")
    weight.push(5); tips.push("う、うぅ……誰か助けて！")
+   weight.push(5); tips.push("にっこにっこにー")
+   weight.push(5); tips.push("希パワー注入！")
+   weight.push(5); tips.push("Love arrow shoot！")
+   weight.push(5); tips.push("喵？")
+   weight.push(5); tips.push("イミワカンナイ")
+   weight.push(5); tips.push("ハラショー")
    weight.push(1); tips.push("哇！！居然被你发现了，出现这条的概率是几千分之一呢")
    
    function gettips(){
@@ -209,7 +220,8 @@ function clickAd(name)
   	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llactivity'"><h3>常规活动<br>用心计算</h3></tbutton>
   	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llsm'"><h3>score match<br>用心计算</h3></tbutton>
   	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llmf'"><h3>medley<br>festival<br>用心计算</h3></tbutton>
-  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llsongdata'"><h3>歌曲数据查询</h3></tbutton>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llcf'"><h3>challenge<br>festival<br>用心计算</h3></tbutton>
+  	<button type="button" class="btn btn-default" style="margin-left:75px;" onclick="window.location='./llsongdata'"><h3>歌曲数据查询</h3></tbutton>
   	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llunit'"><h3>得分计算<br>卡组强度计算</h3><h4>v3.0</h4></button>
 	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llcarddata'"><h3>卡片数据、卡<br>面和立绘查询</h3></button>
    <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llcardladder'"><h3>卡片天梯</h3></button>
@@ -221,9 +233,10 @@ function clickAd(name)
 					<div class="tab-pane" id="panel-link" style="background-color:#66CCFF">
 							<div class="btn-group" >
   	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://www.lovelivewiki.com'"><h3>LoveLive!<br>国服wiki</h3></button>
-  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://www59.atwiki.jp/lovelive-sif/'"><h3>LoveLive!<br>日文wiki</h3></button>
-  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://decaf.kouhi.me/lovelive/index.php?title=Main_Page'"><h3>LoveLive!<br>英文wiki</h3></button>
-   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://lovelive.inven.co.kr/dataninfo/card/'"><h3>LoveLive!<br>韩文wiki</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://www59.atwiki.jp/lovelive-sif/'"><h3>LoveLive!<br>日文wiki</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://decaf.kouhi.me/lovelive/index.php?title=Main_Page'"><h3>LoveLive!<br>英文wiki</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://lovelive.inven.co.kr/dataninfo/card/'"><h3>LoveLive!<br>韩文wiki</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://sifcn.loveliv.es/'"><h3>国服活动数据</h3></button>
   	
 	</div>
 					</div>

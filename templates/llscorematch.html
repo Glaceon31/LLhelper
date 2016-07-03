@@ -100,7 +100,6 @@
    		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
    	playtime = 0
    	extraplaytime = 0
-   	regen = 0
    	loveca = 0
    	lvlupwarning = 0
    	safelp = 2
@@ -117,14 +116,27 @@
    			while (exp >= expbylvl(lvl, expf)){
    				exp -= expbylvl(lvl, expf)
    				lvl += 1
-   				lp += lpbylvl(lvl)-1+regen
-   				regen = 1-regen
+   				lp += lpbylvl(lvl)
    			}
    		}
    		//deal with remainings
    		for (i in remlist)
    			eval('tmp'+remlist[i]+' = '+remlist[i])
-   		//if not enough
+         while ((lp >= 5) || (exp >= expbylvl(lvl, expf))){
+         while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
+            if (lp >= lpcost[diff]){
+               play = parseInt(lp/lpcost[diff])
+               playtime += play
+               lp -=play*lpcost[diff]
+               exp += expbydiff[diff]*play
+               current += parseInt(basept[diff]*rank*order*play)
+            }
+            while (exp >= expbylvl(lvl, expf)){
+               exp -= expbylvl(lvl, expf)
+               lvl += 1
+               lp += lpbylvl(lvl)
+            }
+         }
    		if (lp >= 5){
    			for (i = 3; i >= 0; i--){
    				if (lp >= lpcost[i]){
@@ -138,12 +150,13 @@
    		if (exp >= expbylvl(lvl, expf)){
    			continue
    		}
+      }
+
    		if (current < target){
    			for (i in remlist)
    				eval(remlist[i]+' = tmp'+remlist[i])
    			loveca += 1
-   			lp += lpbylvl(lvl)-1+regen
-   			regen = 1-regen
+   			lp += lpbylvl(lvl)
    			lvlupwarning = 0
    		}	
    	}
@@ -244,7 +257,7 @@ rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:5
 <a href="/smmulti" target="_blank">加成系数表</a>
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4171048661" target="_blank">LLhelper国服十一月手工绘活动预测线</a><br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4587753804" target="_blank">LLhelper国服五月侦探花活动预测线</a><br>
 已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
 <br>
 当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
@@ -252,7 +265,7 @@ rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:5
 当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
 经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
 			<option value=0>正常</option>
-			<option value=1>100级以下减半（日服）</option>
+			<option value=1 SELECTED>100级以下减半</option>
 	</select>(half指100级以下升级所需经验值减半)<br>
 <input type="submit" name="submit" value="Calculate" onclick="check()"><br>
 

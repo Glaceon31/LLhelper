@@ -15,10 +15,18 @@
    </style>
    <script language="javascript">
    var pttable = new Array()
-   pttable[0] = [[52, 53, 54, 55, 56],[55,56,57,58,59],[58,59,60,61,62],[59,60,61,62,64],[60,61,62,64,65]]
-   pttable[1] = [[108,110,113,115,117],[114,116,119,121,124],[120,123,125,128,130],[125,127,130,133,135],[130,132,135,138,140]]
-   pttable[2] = [[173,176,180,185,191],[182,186,190,196,201],[192,196,200,206,212],[202,206,210,216,223],[211,216,220,227,233]]
-   pttable[3] = [[289,295,301,319,328],[305,311,317,336,346],[321,327,334,354,364],[340,347,354,375,386],[356,363,371,393,404]]
+   var oldpttable = new Array()
+   oldpttable[0] = [[52, 53, 54, 55, 56],[55,56,57,58,59],[58,59,60,61,62],[59,60,61,62,64],[60,61,62,64,65]]
+   oldpttable[1] = [[108,110,113,115,117],[114,116,119,121,124],[120,123,125,128,130],[125,127,130,133,135],[130,132,135,138,140]]
+   oldpttable[2] = [[173,176,180,185,191],[182,186,190,196,201],[192,196,200,206,212],[202,206,210,216,223],[211,216,220,227,233]]
+   oldpttable[3] = [[289,295,301,319,328],[305,311,317,336,346],[321,327,334,354,364],[340,347,354,375,386],[356,363,371,393,404]]
+   var newpttable = new Array()
+   newpttable[0] = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,70],[66,67,69,70,71]]
+   newpttable[1] = [[0,0,0,0,0],[0,0,0,0,0],[125,129,132,135,137],[133,135,137,140,143],[137,140,143,145,148]]
+   newpttable[2] = [[0,0,0,0,0],[204,209,213,219,226],[215,220,224,231,237],[226,230,235,242,249],[237,241,246,254,261]]
+   newpttable[3] = [[403,0,0,0,0],[426,435,444,470,484],[448,458,467,495,509],[475,485,495,525,540],[498,508,518,549,565]]
+   pttable[0] = oldpttable
+   pttable[1] = newpttable
    itemcost = [15, 30, 45, 75, 60, 120, 180, 300]
    itemexp = [12, 26, 46, 83, 12, 26, 46, 83]
    expperlp = [2.4, 2.6, 3.1, 3.3]
@@ -41,14 +49,15 @@
    }
    
    function getpt(){
+      afteraquors = document.getElementById("afteraquors").value
    	diff = document.getElementById("diff").value
    	rank = document.getElementById("rank").value
    	combo = document.getElementById("combo").value
    	if ((rank != -1) && (combo != -1)){
    		if (diff >= 4)
-   			document.getElementById("averagept").value = pttable[diff-4][rank][combo]*4
+   			document.getElementById("averagept").value = pttable[afteraquors][diff-4][rank][combo]*4
    		else
-   			document.getElementById("averagept").value = pttable[diff][rank][combo]
+   			document.getElementById("averagept").value = pttable[afteraquors][diff][rank][combo]
    	} 
    }
    
@@ -102,7 +111,6 @@
    	extraplaytime = 0
    	acplaytime = 0
    	extraacplaytime = 0
-   	regen = 0
    	loveca = 0
    	lvlupwarning = 0
    	safelp = 2
@@ -132,13 +140,40 @@
    				//	lvlupwarning = 2
    				exp -= expbylvl(lvl, expf)
    				lvl += 1
-   				lp += lpbylvl(lvl)-1+regen
-   				regen = 1-regen
+   				lp += lpbylvl(lvl)
    			}
    		}
    		//deal with remainings
    		for (i in remlist)
    			eval('tmp'+remlist[i]+' = '+remlist[i])
+         while ((lp >= 4) || (items >= 15) || (exp >= expbylvl(lvl, expf))){
+         while ((lp >= lpnormal) || (items >= itemcost[diff]) || (exp >= expbylvl(lvl, expf))){
+            //can play chosen normal map
+            if (lp >= lpnormal){
+               play = parseInt(lp/lpnormal)
+               playtime += play
+               lp -= play*lpnormal
+               exp += expbylpmin(lpnormal)*play
+               items += itembylp(lpnormal)*play
+               current += itembylp(lpnormal)*play
+            }
+            //clear items
+            if (items >= itemcost[diff]){
+               acplay = parseInt(items/itemcost[diff])
+               acplaytime += acplay
+               exp += itemexp[diff]*acplay
+               items -= itemcost[diff]*acplay
+               current += averagept*acplay
+            }
+            //lvl up
+            while (exp >= expbylvl(lvl, expf)){
+               //if (lvlupwarning == 1)
+               // lvlupwarning = 2
+               exp -= expbylvl(lvl, expf)
+               lvl += 1
+               lp += lpbylvl(lvl)
+            }
+         }
    		if (lp >= 4){
    			exp += expbylpmax(lp)
    			items += itembylp(lp) 
@@ -149,6 +184,7 @@
    				extraplaytime += 1
    			lp = 0
    		}
+         
    		if (exp >= expbylvl(lvl, expf)){
    			continue
    		}
@@ -165,7 +201,7 @@
    					extraacplaytime += 1
    					exp += itemexp[i]
    					items -= itemcost[i]
-   					current += pttable[i][4][4]
+   					current += pttable[document.getElementById('afteraquors').value][i][4][4]
    					i++
    				}
    			}
@@ -173,16 +209,18 @@
    		if (exp >= expbylvl(lvl, expf)){
    			continue
    		}
+      }
+
    		//if not enough
    		if (current < target){
    			for (i in remlist)
    				eval(remlist[i]+' = tmp'+remlist[i])
    			loveca += 1
-   			lp += lpbylvl(lvl)-1+regen
-   			regen = 1-regen
+   			lp += lpbylvl(lvl)
    			lvlupwarning = 0
    		}
    	}
+      //powered by Glaceon
    	expneed = expbylvl(lvl, expf)
    	returnlist = ['loveca','playtime','extraplaytime','acplaytime','extraacplaytime','lvl','exp','expneed','current','totalhour','totalminute','extrahour','extraminute','warning']
    	totalhour = parseInt((playtime+acplaytime)*2.5/60)
@@ -241,8 +279,8 @@
 4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
 </pre>
 
-<input type="submit" id="cntime" name="cntime" value="国服活动" onclick="cntime()">
-<input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime()">
+<input type="submit" id="cntime" name="cntime" value="国服活动" onclick="cntime();document.getElementById('afteraquors').selectedIndex=0;getpt()">
+<input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime();document.getElementById('afteraquors').selectedIndex=1;getpt()">
 <input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
 <input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
 <br>
@@ -266,6 +304,10 @@
 	<option value=6>4倍Hard</option>
 	<option value=7>4倍Expert</option>
 	</select><br>
+活动：<select id="afteraquors" name="afteraquors" onchange="getpt()">
+   <option value=0>水团第一次活动以前</option>
+   <option value=1>水团第一次活动以后</option>
+   </select><br>
 活动曲rank（可选）：<select id="rank" name="rank" onchange="getpt()">
 	<option value=-1></option>
 	<option value=0>-</option>
@@ -286,7 +328,7 @@
 <a href="/activitypt" target="_blank">获得pt表</a>
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4197515392" target="_blank">LLhelper国服12月妖精希活动预测线</a><br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4559936195" target="_blank">LLhelper国服5月军装姬活动预测线</a><br>
 已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
 剩余道具数 :<input type="text" id="items" name="items" autocomplete="off" ><br>
 <br>
@@ -295,8 +337,8 @@
 当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
 经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
 	<option value=0>正常</option>
-	<option value=1>100级以下减半（日服）</option>
-	</select>(half指100级以下升级所需经验值减半)<br>
+	<option value=1 SELECTED>100级以下减半</option>
+	</select><br>
 <input type="submit" id="submit" name="submit" value="Calculate" onclick="check()"> <br>
 
 <div id="result" style="display:none">

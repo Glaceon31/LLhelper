@@ -28,8 +28,8 @@
    	sel = document.getElementById("songchoice");
       diffc = document.getElementById('diff').value
    	var keyword = document.getElementById("search").value
-   	var smnum =document.getElementById("smfilter").value
-      var mfnum =document.getElementById("mffilter").value
+   	var smnum = ''
+      var mfnum = ''
    	sel.options.length = 1;
    	for (index in songs){
    		if (((att == "") || (att == songs[index].attribute)) && ((cnhave == "") || (cnhave == songs[index]['hard']['cnhave'])) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
@@ -140,10 +140,9 @@
    function changesongselect(){
    	diff = document.getElementById("diff").value
    	att = document.getElementById("songatt").value
-   	cnhave = document.getElementById("songcnhave").value
    	type = document.getElementById("songtype").value
    	var songchoice = document.getElementById("songchoice").value
-   	getsongselect(diff, att, cnhave, type)
+   	getsongselect(diff, att, '', type)
    	if (havevalue("songchoice", songchoice)){
    		document.getElementById("songchoice").value = songchoice
    	}
@@ -154,8 +153,8 @@
       savediff = document.getElementById('diffchoice').value
       index = document.getElementById('songchoice').value
       diffc = document.getElementById('diff').value
-      smnum =document.getElementById("smfilter").value
-      mfnum =document.getElementById("mffilter").value
+      //smnum =document.getElementById("smfilter").value
+      //mfnum =document.getElementById("mffilter").value
 
       diffsel = document.getElementById('diffchoice')
       diffsel.options.length = 0;
@@ -166,35 +165,13 @@
       for (i in diffname){
          diff = diffname[i]
          if (songs[index][diff] != null){
-            cnhave = document.getElementById('songcnhave').value
+            cnhave = ''
             if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
-               smhave = false
-               if (smnum != ""){
-                  smList = songs[index][diff].sm.split(" ")
-                  for (i in smList){
-                     if (smnum == smList[i]){
-                        smhave = true
-                        break
-                     }
-                  }
-               }
-               mfhave = false
-               if (mfnum != ""){
-                  mfList = songs[index][diff].mf.split(" ")
-                  for (i in mfList){
-                     if (mfnum == mfList[i]){
-                        mfhave = true
-                        break
-                     }
-                  }
-               }
-               if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
+
                   newOption = new Option(diff, diff)
                   diffsel.options.add(newOption)
                   if (savediff == diff){
                      document.getElementById('diffchoice').value = savediff
-                     finddiff = true
-                  }
                      
                }
             }
@@ -219,9 +196,9 @@
    			document.getElementById(colorList[i]).style.color = c
    		}
    		
-         songinfolist = ["totaltime","bpm","type","name","jpname"]
-   		diffinfolist = ["combo", "time", "stardifficulty", "oldstardifficulty","randomdifficulty","oldrandomdifficulty", "star",  "cnhave", "cscore", "bscore", "ascore", "sscore","lp","exp",'sm','mf']
-   		songextend = ["秒", "", "", "", "",]
+         songinfolist = ["totaltime","bpm","name","jpname"]
+   		diffinfolist = ["combo", "time", "stardifficulty", "randomdifficulty","star",  "cscore", "bscore", "ascore", "sscore","lp","exp"]
+   		songextend = ["秒", "", "", ""]
          diffextend = ["", "秒", "", "", "",  "", "", "", "", "", "", "", "","","","","",""]
    		if (songs[index]['jpname'] == songs[index]['name']){
    			document.getElementById("name").style.display = "none"
@@ -237,11 +214,6 @@
          for (i in diffinfolist){
             document.getElementById(diffinfolist[i]).innerHTML = songs[index][diff][diffinfolist[i]]+diffextend[i]
          }
-   		tmp = songs[index][diff]["cnhave"]
-   		if (tmp == '0')
-   			document.getElementById("cnhave").innerHTML = '无'
-   		else
-   			document.getElementById("cnhave").innerHTML = '有'
    			
          
    		arraylist = ["positionnote", "positionslider", "positionweight"]
@@ -262,7 +234,7 @@
    			document.getElementById("positionmulti"+String(i)).innerHTML=String((10*percentage).toFixed(3))+"%"
    		}
    		//隐藏没有的信息
-   		hidelist = ["randomdifficulty",'oldstardifficulty','oldrandomdifficulty']
+   		hidelist = ["randomdifficulty"]
    		for (i in hidelist){
    			if (songs[index][diff][hidelist[i]] == ""){
    				document.getElementById(hidelist[i]).style.display = "none"
@@ -356,7 +328,7 @@ normal easy和新曲的数据仍不全
 </pre>
 
 搜索：<input type="text" id="search" value="" onchange="changesongselect()"></input><br>
-筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo()">
+筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo()" style="display:none">
 		<option value="">难度</option>
 		<option value="easy">easy</option>
 		<option value="normal">normal</option>
@@ -369,6 +341,7 @@ normal easy和新曲的数据仍不全
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
 	</select>
+   <!--
 	<select id="songcnhave" name="songcnhave" onchange="changesongselect();changediffinfo()">
 		<option value="">国服是否有</option>
 		<option value=1>国服有</option>
@@ -379,7 +352,6 @@ normal easy和新曲的数据仍不全
 		<option value="普通曲">普通曲</option>
 		<option value="活动曲">活动曲</option>
 		<option value="日替">日替</option>
-		<option value="特别配信">特别配信</option>
 	</select>
 	<select id="smfilter" name="smfilter" onchange="changesongselect();changediffinfo()">
 		<option value="">SM查询</option>
@@ -413,7 +385,7 @@ normal easy和新曲的数据仍不全
       <option value="5">第五次MF</option>
       <option value="6">第六次MF</option>
       <option value="7">第七次MF</option>
-   </select><br>
+   </select>--><br>
 歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');">
 		<option value=""> </option>
 	</select>
@@ -434,40 +406,33 @@ normal easy和新曲的数据仍不全
 	<td id='cnametag'>中文名</td>
 	<td>属性</td>
 	<td>难度</td>
-   <td id="oldstardifficultytag">原难度</td>
 	<td id="randomdifficultytag">random谱难度</td>
-   <td id="oldrandomdifficultytag">原random谱难度</td>
-	<td id="lptag">消耗LP</td>
-	<td>经验</td>
+	<td id="lptag" style="display:none">消耗LP</td>
+	<td style="display:none">经验</td>
 	<td>combo数</td>
 	<td>长按比例</td>
 	<td>时间*(1)</td>
 	<td>歌曲长度*(2)</td>
 	<td>BPM</td>
 	<td>星星数</td>
-	<td>歌曲类型</td>
-	<td>国服是否有</td>
 </tr>
 <tr>
 	<td id='jpname'></td>
 	<td id='name'></td>
 	<td id='attribute'> </td>
 	<td id='stardifficulty'> </td>
-   <td id='oldstardifficulty'> </td>
 	<td id='randomdifficulty'> </td>
-   <td id='oldrandomdifficulty'> </td>
-	<td id='lp'> </td>
-	<td id='exp'> </td>
+	<td id='lp' style="display:none"> </td>
+	<td id='exp' style="display:none"> </td>
 	<td id='combo'> </td>
 	<td id='slider'> </td>
 	<td id='time'> </td>
 	<td id='totaltime'> </td>
 	<td id='bpm'> </td>
 	<td id='star'> </td>
-	<td id='type'> </td>
-	<td id='cnhave'> </td>
 </tr>
 </table>
+<!--
 <table border='1'>
    <tr>
       <td>SM收录</td>
@@ -477,7 +442,7 @@ normal easy和新曲的数据仍不全
       <td>MF收录</td>
       <td id='mf'></td>
    </tr>
-</table>
+</table>-->
 
 <h3>分数要求</h3>
 <table border='1'>
