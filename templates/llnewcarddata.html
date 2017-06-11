@@ -5,7 +5,7 @@
       <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
    <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.06"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.12"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
@@ -21,6 +21,11 @@
    var attcolor = new Array();
    var language = 0
    var skilllevel = 0
+   var cslot = 0
+   var maxslot = 0
+   var minslot = 0
+   var naipan = 26666
+   
    attcolor["smile"] = "red"
    attcolor["pure"] = "green"
    attcolor["cool"] = "blue"
@@ -30,6 +35,7 @@
    kizuna["R"] = [100, 200]
    kizuna["SR"] = [250, 500]
    kizuna["UR"] = [500, 1000]
+   kizuna["SSR"] = [375, 750]
    var cskill = new Array()
    cskill['smile'] = "公主"
    cskill['pure'] = "天使"
@@ -53,18 +59,55 @@
    nametojp["国木田花丸"] = "国木田花丸"
    nametojp["小原鞠莉"] = "小原鞠莉"
    nametojp["黑泽露比"] = "黒澤ルビィ"
+   unitgradechr = [[],
+                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
+                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
+                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
+                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
+                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
+                  ["高坂穂乃果","南ことり","小泉花陽"],
+                  ["園田海未","星空凛","東條希"],
+                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
+                  ["高海千歌","渡辺曜","黒澤ルビィ"],
+                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
+                  ["桜内梨子","津島善子","小原鞠莉"]]
+
+
+   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
-   function getcardselect(rarity, chr, att, cnhave, cardtype,special){
+   function isinunitgroup(unitgrade, character){
+      if (unitgrade == 0)
+         return true
+      for (i in unitgradechr[unitgrade]){
+         if (unitgradechr[unitgrade][i] == character)
+            return true
+      }
+      return false
+   }
+
+   function getcardselect(rarity, chr, att, cardtype,special){
    	sel = document.getElementById("cardchoice");
       skilltype = document.getElementById("skilltype").value
       triggertype = document.getElementById("triggertype").value
       setname = document.getElementById("setname").value
+      lowbound = document.getElementById("lowbound").value
+      unitgrade = document.getElementById("unitgrade").value
    	sel.options.length = 1;
    	var index = 1;
    	//alert(chr)
    	for (card in cards){
-   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((cnhave == "") || (cnhave == cards[index].cnhave)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
+   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
             if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
+               index += 1
+               continue
+            }
+            if ((lowbound != "")){
+               if (parseInt(lowbound) > getmaxstrength(cards[index],1)) {
+                  index += 1
+                  continue
+               }
+            }
+            if (!isinunitgroup(unitgrade, cards[index].jpname)){
                index += 1
                continue
             }
@@ -85,6 +128,14 @@
    	//changecolor("cardchoice")
    }
    
+   function changenaipan(){
+      if (!document.getElementById('naipan').checked)
+         naipan = 26667
+      else
+         naipan = 15000
+      changecolor('cardchoice')
+   }
+
    function lvlup(){
       skilllevel += 1
       if (skilllevel == 8)
@@ -99,19 +150,61 @@
       changecolor('cardchoice')
    }
 
+   function slotup(){
+      cslot += 1
+      if (cslot > maxslot)
+         cslot = minslot
+      changecolor('cardchoice')
+   }
+
+   function slotdown(){
+      cslot -= 1
+      if (cslot < minslot)
+         cslot = maxslot
+      changecolor('cardchoice')
+   }
+
    function changecardselect(){
    	rarity = document.getElementById("rarity").value
    	chr = document.getElementById("chr").value
    	att = document.getElementById("att").value
-   	cnhave = document.getElementById("cnhave").value
       cardtype = document.getElementById("cardtype").value
    	special = document.getElementById("special").value
    	var cardchoice = document.getElementById("cardchoice").value
-   	getcardselect(rarity, chr, att, cnhave, cardtype, special)
+   	getcardselect(rarity, chr, att, cardtype, special)
    	if (havevalue("cardchoice", cardchoice)){
    		document.getElementById("cardchoice").value = cardchoice
    	}
    	changecolor("cardchoice")
+   }
+
+   function getmaxstrength(card, mezame){
+      result = 0
+
+         tmpc = card
+         if (card.smile != 0){
+            sl = slots[card['rarity']][1]
+         }
+         else{
+            sl = slots[card['rarity']][3]
+         }
+         att = tmpc[tmpc.attribute+'2']+kizuna[tmpc.rarity][1]
+         skill = skillstrength(tmpc, 7, 1, 1)
+         if (tmpc.skilleffect == 11){
+            if ((skill*1.5 > att*0.208*1.15) && (sl >= 4))
+               result = parseInt(att*(1+0.052*(sl-4))*1.15+skill*2.5)
+            else
+               result = parseInt(att*(1+0.052*(sl))*1.15+skill)
+         }
+         else if (tmpc.skilleffect == 9){
+            if ((skill*naipan > att*0.208*1.15) && (sl >= 4))
+                  result = parseInt(att*(1+0.052*(sl-4))*1.15+skill*naipan)
+               else
+                  result = parseInt(att*(1+0.052*(sl))*1.15)
+         }
+         else
+            result = parseInt(att*(1+0.052*(sl))*1.15)
+      return result
    }
 
    function changecolor(which){
@@ -134,14 +227,15 @@
          document.getElementById('card').style.display = 'none'
          document.getElementById('navi').style.display = 'none'
    		document.getElementById('skill2').style.display = ''
+         document.getElementById('skillslot2').style.display = ''
    		document.getElementById('centerskill2').style.display = ''
    		document.getElementById('skilleffect2').style.display = ''
    		if ((cards[index].special == 0) && (cards[index].support == 0)){
             if (document.getElementById('showcard').checked){
                document.getElementById('card').style.display = ''
                document.getElementById('navi').style.display = ''
-               document.getElementById('card').src = cards[index].cardpath
-               document.getElementById('navi').src = cards[index].navipath
+               document.getElementById('card').src = getimagepath(cards[index]['id'],'card',0)
+               document.getElementById('navi').src = getimagepath(cards[index]['id'],'navi',0)
                if (document.getElementById('smallcard').checked){
                document.getElementById('card').style.height = '422px'
                document.getElementById('card').style.width = '300px'
@@ -153,10 +247,11 @@
                document.getElementById('card').style.width = ''
             }
             }
-   			document.getElementById('avatar1').src = cards[index].avatarpath
+   			document.getElementById('avatar1').src = getimagepath(cards[index]['id'],'avatar',0)
    			document.getElementById('notmezame').style.display = ''
    			document.getElementById('skill2').style.display = 'none'
    			document.getElementById('centerskill2').style.display = 'none'
+            document.getElementById('skillslot2').style.display = 'none'
    			document.getElementById('skilleffect2').style.display = 'none'
    		}
          document.getElementById('card2').style.display = 'none'
@@ -164,8 +259,8 @@
          if (document.getElementById('showcard').checked){
             document.getElementById('card2').style.display = ''
             document.getElementById('navi2').style.display = ''
-            document.getElementById('card2').src = cards[index].cardpluspath
-            document.getElementById('navi2').src = cards[index].navipluspath
+            document.getElementById('card2').src = getimagepath(cards[index]['id'],'card',1)
+            document.getElementById('navi2').src = getimagepath(cards[index]['id'],'navi',1)
             if (document.getElementById('smallcard').checked){
                document.getElementById('card2').style.height = '422px'
                document.getElementById('card2').style.width = '300px'
@@ -178,13 +273,24 @@
             }
                
          }
-   		document.getElementById('avatar2').src = cards[index].avatarpluspath
+   		document.getElementById('avatar2').src = getimagepath(cards[index]['id'],'avatar',1)
    		document.getElementById('hp1').innerHTML = cards[index].hp
    		document.getElementById('hp2').innerHTML = parseInt(cards[index].hp)+1
    		document.getElementById('kizuna1').innerHTML = kizuna[cards[index].rarity][0]
    		document.getElementById('kizuna2').innerHTML = kizuna[cards[index].rarity][1]
    		cnname = cards[index].skillname
    		jpname = cards[index].jpskillname
+         if (cards[index].smile != 0){
+            minslot = slots[cards[index]['rarity']][0]
+            maxslot = slots[cards[index]['rarity']][1]
+         }
+         else{
+            minslot = slots[cards[index]['rarity']][2]
+            maxslot = slots[cards[index]['rarity']][3]
+         }
+         if (cslot == -1)
+            cslot = minslot
+         document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
    		if (cnname == jpname){
    			if (!cnname)
    				document.getElementById('skill').innerHTML = changeskilltext(cards[index])
@@ -194,6 +300,7 @@
    		else
    			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+changeskilltext(cards[index])
    		document.getElementById('skill2').innerHTML = document.getElementById('skill').innerHTML
+         document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
    		document.getElementById('centerskill').innerHTML = cskilltext(cards[index])
    		document.getElementById('centerskill2').innerHTML = cskilltext(cards[index])
    		changeskilleffect(cards[index])
@@ -203,16 +310,88 @@
    			document.getElementById(infolist2[i]+'2').innerHTML = cards[index][infolist2[i]+'2']
    			document.getElementById(infolist2[i]+'2').style.color = attcolor[infolist2[i]]
    		}
-   		if (cards[index].smile != 0){
-   			document.getElementById('strength1').innerHTML = strength(cards[index], 0, skilllevel)
-   			document.getElementById('strength1').style.color = attcolor[cards[index].attribute]
-   			document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(cards[index], 0, skilllevel))
-   			document.getElementById('strengthlevel1').style.color = attcolor[cards[index].attribute]
-   		}
-   		document.getElementById('strength2').innerHTML = strength(cards[index], 1, skilllevel)
-   		document.getElementById('strength2').style.color = attcolor[cards[index].attribute]
-   		document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(cards[index], 1, skilllevel))
-   		document.getElementById('strengthlevel2').style.color = attcolor[cards[index].attribute]
+         colors = ['smile','pure','cool']
+         for (i in colors){
+            atttype = colors[i]
+      		if (cards[index].smile != 0){
+               tmpc = cards[index]
+               att = tmpc[atttype]
+               if (tmpc.attribute != atttype)
+                  att /= 1.1
+               else
+                  att += kizuna[tmpc.rarity][0]
+               skill = skillstrength(tmpc, skilllevel, 1, 1)
+               if (tmpc.skilleffect == 11){
+                  if ((skill*1.5 > att*0.208*1.15) && (minslot >= 4)){
+                     document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot-4))*1.15+skill*2.5)+'<br>(加分宝石)'
+                     //document.getElementById('3pstrength1').innerHTML = parseInt(0.03*att*(1+0.052*(minslot-4))*1.15)
+                  }
+                  else{
+      			      document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot))*1.15+skill)
+                     //document.getElementById('3pstrength1').innerHTML = parseInt(0.03*att*(1+0.052*(minslot))*1.15)
+                  }
+               }
+               else if (tmpc.skilleffect == 9){
+                  if ((skill*naipan > att*0.208*1.15) && (minslot >= 4)){
+                     document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot-4))*1.15+skill*naipan)+'<br>(回血宝石)'
+                     //document.getElementById('3pstrength1').innerHTML = parseInt(0.03*att*(1+0.052*(minslot-4))*1.15)
+                     }
+                  else{
+                     document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot))*1.15)
+                     //document.getElementById('3pstrength1').innerHTML = parseInt(0.03*att*(1+0.052*(minslot))*1.15)
+                  }
+               }
+               else{
+                  document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot))*1.15)
+                  //document.getElementById('3pstrength1').innerHTML = parseInt(0.03*att*(1+0.052*(minslot))*1.15)
+               }
+               if (minslot != cslot){
+                  document.getElementById(atttype+'strength1').innerHTML = ''
+                  //document.getElementById('3pstrength1').innerHTML = ''
+               }
+      			document.getElementById(atttype+'strength1').style.color = attcolor[atttype]
+               //document.getElementById('3pstrength1').style.color = attcolor[cards[index].attribute]
+      			//document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(cards[index], 0, skilllevel, 0, 1))
+      			//document.getElementById('strengthlevel1').style.color = attcolor[cards[index].attribute]
+      		}
+            tmpc = cards[index]
+            att = tmpc[atttype+'2']
+            if (tmpc.attribute != atttype)
+                  att /= 1.1
+               else
+                  att += kizuna[tmpc.rarity][1]
+            skill = skillstrength(tmpc, skilllevel, 1, 1)
+            if (tmpc.skilleffect == 11){
+               if ((skill*1.5 > att*0.208*1.15) && (cslot >= 4)){
+                  document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot-4))*1.15+skill*2.5)+'<br>(加分宝石)'
+                  //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot-4))*1.15)
+               }
+               else{
+                  document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot))*1.15+skill)
+                  //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot))*1.15)
+               }
+            }
+            else if (tmpc.skilleffect == 9){
+
+               if ((skill*naipan > att*0.208*1.15) && (cslot >= 4)){
+                     document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot-4))*1.15+skill*naipan)+'<br>(回血宝石)'
+                     //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot-4))*1.15)
+                  }
+                  else{
+                     document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot))*1.15)
+                     //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot))*1.15)
+                  }
+            }
+            else{
+               document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot))*1.15)
+               //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot))*1.15)
+            }
+      		//document.getElementById('strength2').innerHTML = strength(cards[index], 1, skilllevel, 0, 1)
+      		document.getElementById(atttype+'strength2').style.color = attcolor[atttype]
+            //document.getElementById('3pstrength2').style.color = attcolor[cards[index].attribute]
+      		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(cards[index], 1, skilllevel, 0, 1))
+      		//document.getElementById('strengthlevel2').style.color = attcolor[cards[index].attribute]
+         }
    	}
    }
    
@@ -226,19 +405,23 @@
          document.getElementById('skilleffect2').style.display = 'none'
    	}
    	else if (c.skilleffect == 11){
-   		document.getElementById('skilleffecttitle').innerHTML = '加分强度*(6)'
-   		document.getElementById('skilleffect').innerHTML = skillstrength(c, skilllevel)+'<br>修正:'+skillstrength(c, skilllevel, 1)
-   		document.getElementById('skilleffect2').innerHTML = skillstrength(c, skilllevel)+'<br>修正:'+skillstrength(c, skilllevel, 1)
+   		document.getElementById('skilleffecttitle').innerHTML = '加分强度'
+   		document.getElementById('skilleffect').innerHTML = skillstrength(c, skilllevel, 0, 1)+'<br>修正:'+skillstrength(c, skilllevel, 1, 1)
+   		document.getElementById('skilleffect2').innerHTML = skillstrength(c, skilllevel, 0, 1)+'<br>修正:'+skillstrength(c, skilllevel, 1, 1)
    	}
    	else if (c.skilleffect == 9){
-   		document.getElementById('skilleffecttitle').innerHTML = '回血期望*(6)'
+   		document.getElementById('skilleffecttitle').innerHTML = '回血期望'
    		document.getElementById('skilleffect').innerHTML = skillstrength(c, skilllevel)+'/note'+'<br>修正:'+skillstrength(c, skilllevel, 1)+'/note'
    		document.getElementById('skilleffect2').innerHTML = skillstrength(c, skilllevel)+'/note'+'<br>修正:'+skillstrength(c, skilllevel, 1)+'/note'
    	}
    	else if ((c.skilleffect == 4) || (c.skilleffect == 5)){
-   		document.getElementById('skilleffecttitle').innerHTML = '判定覆盖率*(6)'
+         document.getElementById('skilleffecttitle').style.display = 'none'
+         document.getElementById('skilleffect').style.display = 'none'
+         document.getElementById('skilleffect2').style.display = 'none'
+         /*
+   		document.getElementById('skilleffecttitle').innerHTML = '判定覆盖率'
    		document.getElementById('skilleffect').innerHTML = skillstrength(c, skilllevel)+'%'+'<br>修正:'+skillstrength(c, skilllevel, 1)+'%'
-   		document.getElementById('skilleffect2').innerHTML = skillstrength(c, skilllevel)+'%'+'<br>修正:'+skillstrength(c, skilllevel, 1)+'%'
+   		document.getElementById('skilleffect2').innerHTML = skillstrength(c, skilllevel)+'%'+'<br>修正:'+skillstrength(c, skilllevel, 1)+'%'*/
    	}
    }
    
@@ -251,24 +434,34 @@
    
    
    function cskilltext(c){
+      
       if (!c.Cskill)
          return '无'
    	if (parseInt(c.Cskillpercentage) == 3){
    		cpostfix = '的力量'
-   		ceffect = c.attribute+'P小幅提升(+3%)'
+   		ceffect = c.attribute+'P提升3%'
    	}
    	else if (parseInt(c.Cskillpercentage) == 6){
    		cpostfix = '之心'
-   		ceffect = c.attribute+'P提升(+6%)'
+   		ceffect = c.attribute+'P提升6%'
    	}
+      else if (parseInt(c.Cskillpercentage) == 7){
+         cpostfix = '之星'
+         ceffect = c.attribute+'P提升7%'
+      }
    	else if (parseInt(c.Cskillpercentage) == 9){
    		cpostfix = cskill[c.Cskillattribute]
-   		ceffect = c.attribute+'P大幅提升(+9%)'
+   		ceffect = c.attribute+'P提升9%'
    	}
    	else if (parseInt(c.Cskillpercentage) == 12){
    		cpostfix = cskill[c.Cskillattribute]
-   		ceffect = c.attribute+'P随着'+c.Cskillattribute+'P增加(+12%)'
+   		ceffect = c.attribute+'P提升'+c.Cskillattribute+'的12%'
    	}
+      if (parseInt(c.Cskillpercentage) >= 7){
+         csecondeffect = member[parseInt(c.Csecondskilllimit)]+'成员'+c.attribute+'P提升'+c.Csecondskillattribute+'%'
+         return c.attribute+cpostfix+'<br>'+ceffect+'<br>'+csecondeffect
+      }
+      
    	return c.attribute+cpostfix+'<br>'+ceffect
    }
    
@@ -322,12 +515,12 @@
 
 <pre>
 说明：
-1. 通用强度指的是一张卡片在技能等级为1，combo为500，长按比例为8%，P率为95%，时间为120秒，星星为65个，队伍强度为52500，C位为普通URc技能（不抱腿）（若该卡为新C，则C位为该卡）时的卡片强度*(4)，一张非加分主属性为5000的普通UR的强度为5950。由于实际情况下卡片的强度会因为不同图、不同P率以及不同Center效果产生一定的不同，想要详细计算请使用<a href="/llunit">队伍强度计算</a>进行计算
-2. 强度等级从高到低为SS、S、A+、A、A-、B+、B、B-、C+、C、C-、D+、D，强度等级列表参考<a href="/llcardladder">卡片天梯</a>
-3. 满技能强度指的是卡片技能等级为8，其余假设和(1)相同时的卡片强度
-4. 卡片强度的定义为卡片属性+主唱加成+绊+加分技能对应的属性
-5. <a href="http://tieba.baidu.com/p/4170872773?see_lz=1">卡组养成攻略</a>
-6. 关于修正：所谓技能的修正，是因为技能在打歌的最后一次不能完全发动，在设定的情况和均匀分布的随机余数条件下计算的技能的真实效果
+1. 通用强度指的是一张卡片在，combo为700，长按比例为8%，滑键比例为4%，P率为95%，时间为120秒，星星为65个，队伍强度为80000，C位加成为15%，单槽加成为5.2%时（或者当4槽的加分、回血宝石更优时使用对应宝石）对得分的贡献程度。由于实际情况下卡片的强度会因为不同图(尤其是<b>滑键比例</b>)、不同P率以及不同Center效果产生一定的不同，想要详细计算请使用<a href="/llunit">队伍强度计算</a>进行计算
+2. 卡片强度的定义为卡片属性（包括绊、宝石加成）+加分技能（或回血宝石对应加分）对应的属性
+3. 关于修正：所谓技能的修正，是因为技能在打歌的最后一次不能完全发动，在设定的情况和均匀分布的随机余数条件下计算的技能的真实效果
+4. 如果当前状态下4槽加分、回血宝石对强度加成更高，则使用4槽加分、回血宝石计算强度，此时在强度数值下会显示标记
+
+当前版本：4.1及以上。
 </pre>
 
 <h3>卡片库</h3>
@@ -336,6 +529,7 @@
       <option value="N">N</option>
 		<option value="R">R</option>
 		<option value="SR">SR</option>
+      <option value="SSR">SSR</option>
 		<option value="UR">UR</option>
 	</select>
 	<select id="chr" name="chr" onchange="changecardselect()">
@@ -359,17 +553,26 @@
       <option value="小原鞠莉">小原鞠莉</option>
       <option value="黑泽露比">黑泽露比</option>  
 	</select>
+   <select id="unitgrade" name="unitgrade" onchange="changecardselect()">
+      <option value="">年级小队</option>
+      <option value="4">μ's</option>
+      <option value="5">Aqours</option>
+      <option value="1">一年级</option>
+      <option value="2">二年级</option>
+      <option value="3">三年级</option>
+      <option value="6">Printemps</option>
+      <option value="7">lilywhite</option>
+      <option value="8">BiBi</option>
+      <option value="9">CYaRon!</option>
+      <option value="10">AZALEA</option>
+      <option value="11">Guilty Kiss</option>
+   </select>
 	<select id="att" name="att" onchange="changecardselect()">
 		<option value="">属性</option>
 		<option value="smile" style="color:red">smile</option>
 		<option value="pure" style="color:green">pure</option>
 		<option value="cool" style="color:blue">cool</option>
 	</select>
-	<select id="cnhave" name="cnhave" onchange="changecardselect()">
-		<option value="">国服是否有</option>
-		<option value=1>国服有</option>
-	</select>
-   </select>
    <select id="triggertype" name="triggertype" onchange="changecardselect()">
       <option value="">触发类型</option>
       <option value="1">时间</option>
@@ -438,7 +641,8 @@
       <option value="アイドル衣装編">偶像篇</option>
       <option value="小悪魔編">小恶魔篇</option>
    </select><br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changecolor('cardchoice')">
+高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" onchange="changecardselect()" style="width:50px"><br>
+卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1;skilllevel=0;changecolor('cardchoice')">
 		<option value=""> </option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
@@ -446,6 +650,7 @@
    <input type="checkbox" id="showcard" name="showcard" onchange="changecolor('cardchoice')" checked>显示图片</input>
    <input type="checkbox" id="smallcard" name="smallcard" onchange="changecolor('cardchoice')" checked>小图</input>
    <input type="checkbox" id="showncard" name="showncard" onchange="changecardselect()">显示N卡</input>
+   <input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>
    <br>
 	
 <div id="result" style="display:none">
@@ -461,9 +666,13 @@
 	<td>技能</td>
 	<td id='skilleffecttitle'></td>
 	<td id='skilleffecttitle8' style="display:none"></td>
+   <td>技能槽数</td>
 	<td>主唱技能</td>
-	<td>通用强度*(1)</td>
-	<td>强度等级*(2)</td>
+   <td style="display:none">3%强度</td>
+	<td>smile强度*(1)</td>
+   <td>pure强度</td>
+   <td>cool强度</td>
+	<td style="display:none">强度等级*(2)</td>
 	<td id='strength8' style="display:none">满技能强度*(3)</td>
 	<td id='strengthlevel8' style="display:none">强度等级</td>
 	
@@ -477,9 +686,13 @@
 	<td id="kizuna1"></td>
 	<td id="skill" rowspan="2"></td>
 	<td id='skilleffect' rowspan="2"></td>
+   <td id="skillslot" rowspan="2"></td>
 	<td id="centerskill" rowspan="2"></td>
-	<td id="strength1"></td>
-	<td id="strengthlevel1"></td>
+   <td id="3pstrength1" style="display:none"></td>
+	<td id="smilestrength1"></td>
+   <td id="purestrength1"></td>
+   <td id="coolstrength1"></td>
+	<td id="strengthlevel1" style="display:none"></td>
 </tr>
 <tr>
 	<td><img id="avatar2" height="75px" width="75px"></img></td>
@@ -490,12 +703,17 @@
 	<td id="kizuna2"></td>
 	<td id="skill2" style="display:none"></td>
 	<td id="skilleffect2" style="display:none"></td>
+   <td id="skillslot2" style="display:none"></td>
 	<td id="centerskill2" style="display:none"></td>
-	<td id="strength2"></td>
-	<td id="strengthlevel2"></td>
+   <td id="3pstrength2" style="display:none"></td>
+	<td id="smilestrength2"></td>
+   <td id="purestrength2"></td>
+   <td id="coolstrength2"></td>
+	<td id="strengthlevel2" style="display:none"></td>
 </tr>
 </table>
 <br>
+<div>
 <h3>卡面</h3>
 <table>
    <tr>
@@ -503,6 +721,7 @@
       <td><img id="card2"></img></td>
    </tr>
 </table>
+</div>
 <h3>立绘（在新标签页内打开以查看大图）</h3>
 <table>
    <tr>
@@ -514,4 +733,5 @@
 <br>
 
 </body>
+{% include 'footer.html' %}
 </html>

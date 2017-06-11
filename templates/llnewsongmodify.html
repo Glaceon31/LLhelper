@@ -104,7 +104,7 @@
 
       diffsel = document.getElementById('diffchoice')
       diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert']
+      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
       for (i in diffname){
          diff = diffname[i]
          if (songs[index][diff] != null){
@@ -173,11 +173,11 @@
    	if (index != "") {
    		c = attcolor[songs[index].attribute]
    		document.getElementById(which).style.color = c
-   		songinfolist = ["name", "bpm", "type","totaltime"]
+   		songinfolist = ["bpm","totaltime","muse","aqours"]
          for (i in songinfolist){
             document.getElementById(songinfolist[i]).value = songs[index][songinfolist[i]]
          }
-   		diffinfolist = ["sm",'mf', "time",  "oldstardifficulty","oldrandomdifficulty", "star",  "cnhave", "lp","exp"]
+   		diffinfolist = ["time","star"]
    		for (i in diffinfolist){
    			document.getElementById(diffinfolist[i]).value = songs[index][diff][diffinfolist[i]]
    		}
@@ -299,49 +299,37 @@
       <option value="normal">normal</option>
       <option value="hard" SELECTED>hard</option>
       <option value="expert">expert</option>
+      <option value="master">master</option>
    </select>
 
 <h3>基本信息</h3>
 <table border='1'>
 <tr>
-	<td>中文名</td>
-   
    <td>歌曲长度*(2)</td>
    <td>BPM</td>
-   <td>歌曲类型</td>
-   <td>抓取用名</td>
+   <td>muse</td>
+   <td>aqours</td>
 </tr>
-<tr>
-	<td><input type='text'  id='name' name='name' size=40 autocomplete="off"></td>
-   
+<tr> 
    <td><input type='text' size=3 id='totaltime' name='totaltime' autocomplete="off"> </td>
    <td><input type='text' size=3 id='bpm' name='bpm' autocomplete="off"> </td>
-   <td><input type='text' size=3 id='type' name='type'> </td>
-   <td><input type='text'  id='weightname' name='weightname' size=40 autocomplete="off"></td>
+   <td><input type='text' size=3 id='muse' name='muse' autocomplete="off"> </td>
+   <td><input type='text' size=3 id='aqours' name='aqours' autocomplete="off"> </td>
+
 </tr>
 </table>
 <table border='1'>
 <tr>
-   <td>原难度</td>
-   <td>原random谱难度</td>
-	<td>消耗LP</td>
-	<td>经验</td>
 	<td>时间*(1)</td>
 	<td>星星数</td>
-	<td>国服是否有</td>
+
 </tr>
 <tr>
-   <td><input type='text' size=3 id='oldstardifficulty' name='oldstardifficulty' autocomplete="off"> </td>
-   <td><input type='text' size=3 id='oldrandomdifficulty' name='oldrandomdifficulty' autocomplete="off"> </td>
-	<td><input type='text' size=3 id='lp' name='lp' autocomplete="off"> </td>
-	<td><input type='text' size=3 id='exp' name='exp' autocomplete="off"> </td>
 	<td><input type='text' size=3 id='time' name='time' autocomplete="off"> </td>
 	<td><input type='text' size=3 id='star' name='star' autocomplete="off"> </td>
-	<td><input type='text' size=3 id='cnhave' name='cnhave'> </td>
+   
 </tr>
 </table>
-SM出现场次：<input type='text' size=25 id='sm' name='sm' autocomplete="off">
-MF出现场次：<input type='text' size=25 id='mf' name='mf' autocomplete="off">
 <!--
 <h3>分数要求</h3>
 <table border='1'>

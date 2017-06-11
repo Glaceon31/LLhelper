@@ -18,7 +18,7 @@ function gettime(){
 	month = d.getMonth()
 	year = d.getFullYear()
 	offset = d.getTimezoneOffset()
-	daysByMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+	daysByMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 }
 	
 function twtime(){
@@ -50,7 +50,7 @@ function twtime(){
     	gettime()
     	var tmpd = new Date()
       var expectday = 10
-   	var endDay =30
+   	var endDay =25
    	//endDay = 11
    	/*
    	if ((day > 12) && (day < 30)) {

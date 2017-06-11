@@ -3,6 +3,37 @@ var kizuna = new Array();
    kizuna["R"] = [100, 200]
    kizuna["SR"] = [250, 500]
    kizuna["UR"] = [500, 1000]
+   kizuna["SSR"] = [375, 750]
+
+var slots = new Array();
+   slots["N"] = [0,1,0,0]
+   slots["R"] = [1,2,1,1]
+   slots["SR"] = [2,4,1,1]
+   slots["UR"] = [4,8,2,2]
+   slots["SSR"] = [3,6,1,1]
+
+function getimagepath(cardid,imagetype,mezame){
+  if (imagetype == 'avatar'){
+    if (mezame)
+      return 'http://gitcdn.xyz/repo/iebb/SIFStatic/master/icon/rankup/'+cardid+'.png'
+    else
+      return 'http://gitcdn.xyz/repo/iebb/SIFStatic/master/icon/normal/'+cardid+'.png'
+  }
+  else if (imagetype == 'card'){
+    if (mezame)
+      return 'https://gitcdn.xyz/repo/iebb/SIFStatic/master/unit/rankup/'+cardid+'.png'
+    else
+      return 'https://gitcdn.xyz/repo/iebb/SIFStatic/master/unit/normal/'+cardid+'.png'
+  }
+  else if (imagetype == 'navi'){
+    if (mezame)
+      return 'https://db.loveliv.es/png/navi/'+cardid+'/1'
+    else
+      return 'https://db.loveliv.es/png/navi/'+cardid+'/0'
+  }
+  else
+  return ''
+}
    
 function getQuery(name) 
      {
@@ -141,8 +172,9 @@ function itembylp(lp){
       }
    }
 
-   function strength(c, mezame, level, tail){
+   function strength(c, mezame, level, tail, newv){
     tail = tail || 0
+    newv = newv || 0
    	basic = 0
     if (c.support == 1)
       return 0
@@ -162,17 +194,22 @@ function itembylp(lp){
       return basic
    	skill = 0
    	if (c.skilleffect == 11)
-      skill = skillstrength(c, level, tail)
+      skill = skillstrength(c, level, tail, newv)
    	return basic+skill
    }
 
    
    
-   function skillstrength(c, level, tail){
+   function skillstrength(c, level, tail, newv){
     tail = tail || 0
-    combo = 500
+    newv = newv || 0
+    combo = 700
+    comboweight = 1.2
     perfectrate = 0.95
     time = 120
+    teamstrength = 80000
+    totalscore = 1000000
+    noteweight = 1
     score = c['skilldetail'][level].score
     possibility = c['skilldetail'][level].possibility
     require = c['skilldetail'][level].require
@@ -191,28 +228,34 @@ function itembylp(lp){
       //recover
       if (c.skilleffect == 9){
         if (c.triggertype == 1)
-          skill = parseInt(1000*120*score*possibility/100/require/500)/1000
+          skill = parseInt(1000*time*score*possibility/100/require/combo)/1000
         else if (c.triggertype == 3)
           skill = parseInt(1000*score*possibility/100/require)/1000
         else if (c.triggertype == 4)
           skill = parseInt(1000*score*possibility/100/require)/1000
         else if (c.triggertype == 6)
-          skill = parseInt(1000*0.95*score*possibility/100/require)/1000
+          skill = parseInt(1000*perfectrate*score*possibility/100/require)/1000
       }
       //score
       if (c.skilleffect == 11){
         if (c.triggertype == 1)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*120/500*score*possibility/100/require)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*time/combo*score*possibility/100/require)
         else if (c.triggertype == 3)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*possibility/100/require)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*possibility/100/require)
         else if (c.triggertype == 4)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*possibility/100/require)
-        else if (c.triggertype == 5)
-          skill = parseInt(52500*score*possibility/100/require)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*possibility/100/require)
+        else if (c.triggertype == 5){
+          if (newv == 0)
+            skill = parseInt(52500*score*possibility/100/require)
+          else
+            skill = parseInt(teamstrength*score*possibility/100/require)
+        }
         else if (c.triggertype == 6)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*0.95*possibility/100/require)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*perfectrate*possibility/100/require)
         else if (c.triggertype == 12)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*65/500*0.95*possibility/100/require)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*65/combo*perfectrate*possibility/100/require)
+        if ((c.triggertype != 5) && (newv == 1))
+          skill = parseInt(skill/1.1)
       }
     }
     else if (tail == 1){
@@ -236,28 +279,34 @@ function itembylp(lp){
       //recover
       if (c.skilleffect == 9){
         if (c.triggertype == 1)
-          skill = parseInt(1000*120*score*possibility/100/require/500*(120-require/2)/120)/1000
+          skill = parseInt(1000*time*score*possibility/100/require/combo*(time-require/2)/time)/1000
         else if (c.triggertype == 3)
-          skill = parseInt(1000*score*possibility/100/require*(500-require/2)/500)/1000
+          skill = parseInt(1000*score*possibility/100/require*(combo-(require-1)/2)/combo)/1000
         else if (c.triggertype == 4)
-          skill = parseInt(1000*score*possibility/100/require*(500-require/2)/500)/1000
+          skill = parseInt(1000*score*possibility/100/require*(combo-(require-1)/2)/combo)/1000
         else if (c.triggertype == 6)
-          skill = parseInt(1000*0.95*score*possibility/100/require*(475-require/2)/475)/1000
+          skill = parseInt(1000*perfectrate*score*possibility/100/require*(combo*perfectrate-(require-perfectrate)/2)/combo*perfectrate)/1000
       }
       //score
       if (c.skilleffect == 11){
         if (c.triggertype == 1)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*120/500*score*possibility/100/require*(120-require/2)/120)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*time/combo*score*possibility/100/require*(time-require/2)/time)
         else if (c.triggertype == 3)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*possibility/100/require*(500-require/2)/500)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*possibility/100/require*(combo-(require-1)/2)/combo)
         else if (c.triggertype == 4)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*possibility/100/require*(500-require/2)/500)
-        else if (c.triggertype == 5)
-          skill = parseInt(52500*score*possibility/100/require*(450000-require/2)/450000)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*possibility/100/require*(combo-(require-1)/2)/combo)
+        else if (c.triggertype == 5){
+          if (newv == 0)
+            skill = parseInt(52500*score*possibility/100/require*(450000-require/2)/450000)
+          else
+            skill = parseInt(teamstrength*score*possibility/100/require*(totalscore-require/2)/totalscore)
+        }
         else if (c.triggertype == 6)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*0.95*possibility/100/require*(475-require/2)/475)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*perfectrate*possibility/100/require*(combo*perfectrate-(require-perfectrate)/2)/(combo*perfectrate))
         else if (c.triggertype == 12)
-          skill = parseInt(80/1.1/1.17/1.02/0.994*score*65/500*0.95*possibility/100/require*(65-require/2)/65)
+          skill = parseInt(80/1.1/comboweight/noteweight/(0.88+0.12*perfectrate)*score*65/combo*perfectrate*possibility/100/require*(65-(require-1)/2)/65)
+        if ((c.triggertype != 5) && (newv == 1))
+          skill = parseInt(skill/1.1)
       }
     }
     return skill

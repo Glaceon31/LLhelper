@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.03"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;margin-left:30px;}
+   	td {size:2}
+   </style>
+   <script>
+   var attcolor = new Array()
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   attcolor["all"] = "purple"
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var cards = eval("("+cardsjson+")")
+
+  
+
+   function getmaxstrength(card, atttype, mezame){
+      st = 0
+
+         tmpc = card
+         if (atttype == '')
+            atttype = tmpc.attribute
+         sl = slots[card['rarity']][1]
+         attv = tmpc[atttype+'2']
+         if (tmpc.attribute == atttype)
+            attv += kizuna[tmpc.rarity][1]
+         skill = skillstrength(tmpc, 7, 1, 1)
+         if (tmpc.skilleffect == 11){
+            if ((skill*1.5 > attv*0.208*1.15) && (sl >= 4))
+               st = parseInt(attv*(1+0.052*(sl-4))*1.15+skill*2.5)
+            else
+               st = parseInt(attv*(1+0.052*(sl))*1.15+skill)
+         }
+         else if (tmpc.skilleffect == 9){
+            if ((skill*15000 > attv*0.208*1.15) && (sl >= 4))
+                  st = parseInt(attv*(1+0.052*(sl-4))*1.15+skill*15000)
+               else
+                  st = parseInt(attv*(1+0.052*(sl))*1.15)
+         }
+         else
+            st = parseInt(attv*(1+0.052*(sl))*1.15)
+      return st
+   }
+
+    function better(card1, card2,atttype){
+         if (getmaxstrength(card1,atttype,1) > getmaxstrength(card2,atttype,1))
+            return true
+         else
+            return false
+
+   }
+
+   function showresult(){
+      result = []
+      att = document.getElementById("att").value
+      sort = document.getElementById("sort").value
+      for (i in cards){
+         card = cards[String(i)]
+         
+
+         if (!card) continue
+         if (!card.type) continue
+            if (!card.rarity) continue
+               if (card.smile == 0) continue
+               //alert(i)
+            //alert(card['rarity'])
+            //alert(getmaxstrength(card,'smile',1))
+         
+         if ((card.rarity == 'UR') && (card.special == 0) && ((card.attribute == att) || (att == "")) && (card.smile != 0)){
+            //alert(card['id'])
+            //alert(getmaxstrength(card,'smile',1))
+            if (getmaxstrength(card,card.attribute,1) >18000)
+            result.push(i)
+         }
+      }
+      len = result.length
+      //alert(result)
+      for (i=0; i<len;i++){
+         for (j=0;j<len-1-i;j++){
+            if (!better(cards[result[j]], cards[result[j+1]],sort)){
+               tmp = result[j]
+               result[j] = result[j+1]
+               result[j+1] = tmp
+            }
+         }
+      }
+
+      resulthtml = "<table border='1' style='text-align:center'><tr><td>排行</td><td>编号</td><td>头像</td><td>smile强度</td><td>pure强度</td><td>cool强度</td><td>技能条件</td></tr>"
+      ttype = new Array()
+      ttype['3'] = '图标'
+      ttype['4'] = 'combo'
+      ttype['6'] = 'perfect'
+      for (i in result){
+         cardid = result[i]
+         card = cards[String(cardid)]
+         resulthtml += "<tr>"
+         resulthtml += "<td id=rank"+i+">"+String(parseInt(i)+1)+"</td>"
+         resulthtml += "<td id=id"+i+">"+card['id']+"</td>"
+         resulthtml += "<td><img height=75px width=75px src='"+getimagepath(card['id'],'avatar',0)+"'></img><img height=75px width=75px src='"+getimagepath(card['id'],'avatar',1)+"'></img></td>"
+         resulthtml += "<td id='smilestrength"+i+"' style='color:red'>"+getmaxstrength(card,'smile',1)+"</td>"
+         resulthtml += "<td id='purestrength"+i+"' style='color:green'>"+getmaxstrength(card,'pure',1)+"</td>"
+         resulthtml += "<td id='coolstrength"+i+"' style='color:blue'>"+getmaxstrength(card,'cool',1)+"</td>"
+         resulthtml += "<td>"+ttype[String(card['triggertype'])]+"</td>"
+         //resulthtml += "<td id='strength"+i+"'>"+strength(card, 1, 0, 1)+"</td>"
+         //resulthtml += "<td id='strengthtwo"+i+"'>"+strength(card, 1, 1, 1)+"</td>"
+         
+      }
+      resulthtml += "</table>"
+      document.getElementById("resultarea").innerHTML = resulthtml
+      for (i in result){
+         cardid = result[i]
+         card = cards[String(cardid)]
+         document.getElementById(card.attribute+'strength'+i).style['font-weight'] = 'bold'
+      }
+   }
+   </script>
+   </head>
+   <body onload="">
+   <nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>UR卡片排行</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+强度均按8槽8级技能觉醒计算，只包括加分UR
+</pre>
+
+筛选：<select id="att" name="att">
+      <option value="">所有属性</option>
+      <option value="smile" style="color:red">smile</option>
+      <option value="pure" style="color:green">pure</option>
+      <option value="cool" style="color:blue">cool</option>
+      </select>
+      ，按照<select id="sort" name="sort">
+      <option value="">最强属性</option>
+      <option value="smile" style="color:red">smile</option>
+      <option value="pure" style="color:green">pure</option>
+      <option value="cool" style="color:blue">cool</option>
+   </select>
+   <input type="button" value="排序" onclick="showresult(0)"/>
+   <div id="resultarea">
+
+   </div>
+</body>
+{% include 'footer.html' %}
+</html>

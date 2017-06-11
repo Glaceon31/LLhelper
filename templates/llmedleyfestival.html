@@ -236,7 +236,6 @@
 3、点击Calculate
 </pre>
 
-<input type="submit" id="cntime" name="cntime" value="国服活动" onclick="cntime()">
 <input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime()">
 <input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
 <input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
@@ -282,7 +281,7 @@ combo加成：<input id="combo" type="text" name="combo" value="1.06" style="wid
 <a href='/mfpt' target="_blank">基础pt和乘数表</a>
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><a href="http://tieba.baidu.com/p/4621776838" target="_blank">LLhelper国服六月妖怪妮活动预测线</a><br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><br>
 已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
 <br>
 当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
@@ -310,4 +309,5 @@ MF次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></n
 </div>
 
 </body>
+{% include 'footer.html' %}
 </html>

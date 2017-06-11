@@ -21,10 +21,10 @@
    oldpttable[2] = [[173,176,180,185,191],[182,186,190,196,201],[192,196,200,206,212],[202,206,210,216,223],[211,216,220,227,233]]
    oldpttable[3] = [[289,295,301,319,328],[305,311,317,336,346],[321,327,334,354,364],[340,347,354,375,386],[356,363,371,393,404]]
    var newpttable = new Array()
-   newpttable[0] = [[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,70],[66,67,69,70,71]]
-   newpttable[1] = [[0,0,0,0,0],[0,0,0,0,0],[125,129,132,135,137],[133,135,137,140,143],[137,140,143,145,148]]
-   newpttable[2] = [[0,0,0,0,0],[204,209,213,219,226],[215,220,224,231,237],[226,230,235,242,249],[237,241,246,254,261]]
-   newpttable[3] = [[403,0,0,0,0],[426,435,444,470,484],[448,458,467,495,509],[475,485,495,525,540],[498,508,518,549,565]]
+   newpttable[0] = [[57,58,59,60,61],[60,61,62,63,64],[63,64,65,66,68],[64,65,66,68,70],[66,67,69,70,71]]
+   newpttable[1] = [[114,117,120,122,124],[121,123,126,128,131],[125,129,132,135,137],[133,135,137,140,143],[137,140,143,145,148]]
+   newpttable[2] = [[194,197,202,207,214],[204,209,213,219,226],[215,220,224,231,237],[226,230,235,242,249],[237,241,246,254,261]]
+   newpttable[3] = [[403,413,421,446,459],[426,435,444,470,484],[448,458,467,495,509],[475,485,495,525,540],[498,508,518,549,565]]
    pttable[0] = oldpttable
    pttable[1] = newpttable
    itemcost = [15, 30, 45, 75, 60, 120, 180, 300]
@@ -279,7 +279,6 @@
 4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
 </pre>
 
-<input type="submit" id="cntime" name="cntime" value="国服活动" onclick="cntime();document.getElementById('afteraquors').selectedIndex=0;getpt()">
 <input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime();document.getElementById('afteraquors').selectedIndex=1;getpt()">
 <input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
 <input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
@@ -305,8 +304,8 @@
 	<option value=7>4倍Expert</option>
 	</select><br>
 活动：<select id="afteraquors" name="afteraquors" onchange="getpt()">
-   <option value=0>水团第一次活动以前</option>
-   <option value=1>水团第一次活动以后</option>
+   <option value=0>旧pt（SS 404）</option>
+   <option value=1 SELECTED>新pt（SS 565）</option>
    </select><br>
 活动曲rank（可选）：<select id="rank" name="rank" onchange="getpt()">
 	<option value=-1></option>
@@ -324,11 +323,11 @@
 	<option value=3 SELECTED>A</option>
 	<option value=4>S</option>
 	</select><br>
-活动图平均pt :<input type="text" id="averagept" name="averagept" value="393" autocomplete="off" onchange="clearchoice()"> 
-<a href="/activitypt" target="_blank">获得pt表</a>
+活动图平均pt :<input type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
+<!--<a href="/activitypt" target="_blank">获得pt表</a>-->
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <a href="http://tieba.baidu.com/p/4559936195" target="_blank">LLhelper国服5月军装姬活动预测线</a><br>
+目标点数 :<input type="text" id="target" name="target" autocomplete="off" > <br>
 已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
 剩余道具数 :<input type="text" id="items" name="items" autocomplete="off" ><br>
 <br>
@@ -360,4 +359,5 @@
 
 </div>
 </body>
+{% include 'footer.html' %}
 </html>

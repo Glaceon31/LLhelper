@@ -96,7 +96,7 @@
    }
    
    function calcu(){
-   	infolist =['timeleft','lpwaste','diff','songnum','rank','combo','target','current','lp','lvl','exp','expf','bonus','currentround','poolpt','exppool']
+   	infolist =['timeleft','lpwaste','diff','songnum','rank','combo','target','current','lp','recover','lvl','exp','expf','bonus','currentround','poolpt','exppool']
    	remlist =['current', 'lp', 'lvl', 'exp', 'extraplaytime','extraminute','currentround','exppool','poolpt','playtime']
    	for (i in infolist)
    		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
@@ -119,7 +119,7 @@
    		while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
    			if (lp >= lpcost[diff]){
    				playtime += 1
-   				lp -= lpcost[diff]
+   				lp -= lpcost[diff]-recover
                exppool += Math.round(baseexp[diff][currentround-1]*expmulti)
                poolpt += Math.round(basept[diff][currentround-1]*rank*combo*ptmulti*bonus)
                currentround += 1
@@ -150,7 +150,7 @@
             while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
                if (lp >= lpcost[diff]){
                   playtime += 1
-                  lp -= lpcost[diff]
+                  lp -= lpcost[diff]-recover
                   exppool += Math.ceil(baseexp[diff][currentround-1]*expmulti)
                   poolpt += Math.round(basept[diff][currentround-1]*rank*combo*ptmulti*bonus)
                   currentround += 1
@@ -249,7 +249,8 @@
 使用方法：
 1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
 2、填写剩下所有文本框，其中rank和combo加成可以通过填写rank与combo评价自动填入，也可以参考乘数表手动填入
-3、点击Calculate
+3、关于平均应援加成和平均每局获得LP，根据（不足量的）统计在超级难度下（假设所有年级/小队任务都能达成）平均应援加成约为1.06，平均每局获得LP约为1。<b style="color:red">其他难度的加成会比超级难度小，不要忘记修改这两项数据</b>
+4、点击Calculate
 </pre>
 
 <input type="submit" id="cntime" name="cntime" value="国服活动" onclick="cntime()">
@@ -307,6 +308,7 @@ combo（可选）：<select id="comboselect" name="comboselect" onchange="setcom
 	<br>
 combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x<br>
 平均应援加成：<input id="bonus" type="text" name="bonus" value="1.05" style="width:50px" autocomplete="off">x<br>
+平均每局获得LP：<input id="recover" type="text" name="recover" value="1" style="width:50px" autocomplete="off"><br>
 <a href='/cfpt' target="_blank">基础pt和乘数表</a>
 <br>
 <br>
@@ -339,4 +341,5 @@ combo加成：<input id="combo" type="text" name="combo" value="1.06" style="wid
 </div>
 
 </body>
+{% include 'footer.html' %}
 </html>

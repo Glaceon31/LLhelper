@@ -16,8 +16,9 @@
    <script language="javascript">
    lpcost = [5, 10, 15, 25]
    var basept = new Array()
-   basept[0] = [36, 89, 163, 272]
-   basept[1] = [42,100,177,357]
+   basept[0] = [42, 99, 173, 343]
+   basept[1] = [42, 99, 173, 343]
+   pt = [50,200,400,600,800,1000]
    expbydiff = [12, 26, 46, 83]
    
    function init(){
@@ -47,16 +48,16 @@
    	document.getElementById("rankselect").value=""
    }
    
-   function setorder(){
-   	om = [1.1125, 1.25, 1.15, 1.05, 1, 1.2]
-   	order = document.getElementById("orderselect").value
-   	if (order != ""){
-   		document.getElementById("order").value = om[parseInt(order)]
+   function setcombo(){
+   	om = [1.08, 1.06, 1.04, 1.02, 1]
+   	combo = document.getElementById("comboselect").value
+   	if (combo != ""){
+   		document.getElementById("combo").value = om[parseInt(combo)]
    	}
    }
    
-   function clearorder(){
-   	document.getElementById("orderselect").value = ""
+   function clearcombo(){
+   	document.getElementById("comboselect").value = ""
    }
    
    function saveToCookie(){
@@ -96,17 +97,18 @@
    }
    
    function calcu(){
-   	infolist = ['timeleft', 'lpwaste','diff','rank','order','target','current','lp','lvl','exp','expf']
+   	infolist = ['timeleft', 'lpwaste','diff','rank','combo','target','current','lp','lvl','exp','expf', 'storyselect']
    	remlist = ['current','lp','lvl','exp','extraplaytime']
    	for (i in infolist)
    		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
-   	afteraquors = document.getElementById("afteraquors").value
+   	afteraquors = 0
       playtime = 0
    	extraplaytime = 0
    	loveca = 0
    	lvlupwarning = 0
    	safelp = 2
    	lp += parseInt(timeleft*10)-lpwaste*parseInt((timeleft-14)/24+1)-safelp
+      current += storyselect
    	while ((current < target) || (lp >= 5) || (exp >= expbylvl(lvl, expf))){
    		while ((lp >= lpcost[diff]) || (exp >= expbylvl(lvl, expf))){
    			if (lp >= lpcost[diff]){
@@ -114,7 +116,7 @@
    				playtime += play
    				lp -=play*lpcost[diff]
    				exp += expbydiff[diff]*play
-   				current += parseInt(basept[afteraquors][diff]*rank*order*play)
+   				current += parseInt(basept[afteraquors][diff]*rank*combo*play)
    			}
    			while (exp >= expbylvl(lvl, expf)){
    				exp -= expbylvl(lvl, expf)
@@ -132,7 +134,7 @@
                playtime += play
                lp -=play*lpcost[diff]
                exp += expbydiff[diff]*play
-               current += parseInt(basept[afteraquors][diff]*rank*order*play)
+               current += parseInt(basept[afteraquors][diff]*rank*combo*play)
             }
             while (exp >= expbylvl(lvl, expf)){
                exp -= expbylvl(lvl, expf)
@@ -145,7 +147,7 @@
    				if (lp >= lpcost[i]){
    					lp -= lpcost[i]
    					exp += expbydiff[i]
-   					current += parseInt(basept[afteraquors][i]*rank*order)
+   					current += parseInt(basept[afteraquors][i]*rank*combo)
    					extraplaytime += 1
    				}
    			}
@@ -210,7 +212,7 @@
    <div>
       <ul class="nav navbar-nav">
          <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>Score Match助手</a></li>
+         <li class="active"><a href=#>散步拉力赛助手</a></li>
          <li><a href="/about">关于</a></li>
       </ul>
    </div>
@@ -220,7 +222,6 @@
 1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
 2、填写剩下所有文本框，其中rank加成和顺位加成可以参考系数表，也可以通过选择rank和顺位自动填入系数
 3、点击Calculate
-4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
 </pre>
 <input type="submit" name="jptime" value="日服活动" onclick="jptime();document.getElementById('afteraquors').selectedIndex=1;">
 <input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
@@ -236,10 +237,16 @@
 	<option value=2>Hard</option>
 	<option value=3 SELECTED>Expert</option>
 	</select><br>
-活动：<select id="afteraquors" name="afteraquors">
-   <option value=0>旧pt（最高408）</option>
-   <option value=1 SELECTED>新pt（最高536）</option>
-   </select><br>
+剧情进度：<select id="storyselect" name="storyselect">
+   <option value=1000>无</option>
+   <option value=950>序章</option>
+   <option value=800>第一章</option>
+   <option value=600>第二章</option>
+   <option value=400>第三章</option>
+   <option value=200>第四章</option>
+   <option value=0>第五章</option>
+   </select>
+   <br>
 rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
 	<option value=""></option>
 	<option value=0>-</option>
@@ -250,18 +257,16 @@ rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()
 	</select>
 	<br>
 rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
-顺位（可选）：<select id="orderselect" name="orderselect" onchange="setorder()">
+combo（可选）：<select id="comboselect" name="comboselect" onchange="setcombo()">
 	<option value=""></option>
-	<option value=0 SELECTED>一位~四位平均</option>
-	<option value=5>一位~二位平均</option>
-   <option value=1>一位</option>
-	<option value=2>二位</option>
-	<option value=3>三位</option>
-	<option value=4>四位</option>
+	<option value=0>S</option>
+   <option value=1 SELECTED>A</option>
+	<option value=2>B</option>
+	<option value=3>C</option>
+	<option value=4>D</option>
 	</select>
 	<br>
-顺位加成：<input id="order" type="text" name="order" value="1.1125" style="width:50px" autocomplete="off" onchange="clearorder()">x
-<a href="/smmulti" target="_blank">加成系数表</a>
+combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x
 <br>
 <br>
 目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <br>

@@ -1,0 +1,1076 @@
+﻿<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
+   <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
+   <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
+   <script src="https://app.lovelivewiki.com/Maps/songsjson.js"></script>
+   <script src="https://app.lovelivewiki.com/Maps/CoverageCalculator.js"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   	table {position:relative;}
+	img {height:65px;width:65px}
+   	td {size:2}
+   </style>
+   <meta charset="utf-8">
+   <script>
+   var regS = new RegExp("&#34;", "g")
+   var regS2 = new RegExp("&#39;", "g")
+   var regSand = new RegExp("&amp;", "g")
+   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
+   var cards = eval("("+cardsjson+")")
+   var attcolor = new Array();
+   var mezame = 0
+   var language = 0
+   attcolor["smile"] = "red"
+   attcolor["pure"] = "green"
+   attcolor["cool"] = "blue"
+   nametojp = new Array()
+   nametojp["高坂穗乃果"] = "高坂穂乃果"
+   nametojp["绚濑绘里"] = "絢瀬絵里"
+   nametojp["南小鸟"] = "南ことり"
+   nametojp["园田海未"] = "園田海未"
+   nametojp["星空凛"] = "星空凛"
+   nametojp["西木野真姬"] = "西木野真姫"
+   nametojp["东条希"] = "東條希"
+   nametojp["小泉花阳"] = "小泉花陽"
+   nametojp["矢泽妮可"] = "矢澤にこ"
+   nametojp["高海千歌"] = "高海千歌"
+   nametojp["樱内梨子"] = "桜内梨子"
+   nametojp["松浦果南"] = "松浦果南"
+   nametojp["黑泽黛雅"] = "黒澤ダイヤ"
+   nametojp["渡边曜"] = "渡辺曜"
+   nametojp["津岛善子"] = "津島善子"
+   nametojp["国木田花丸"] = "国木田花丸"
+   nametojp["小原鞠莉"] = "小原鞠莉"
+   nametojp["黑泽露比"] = "黒澤ルビィ"
+   unitgradechr = [[],
+                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
+                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
+                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
+                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
+                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
+                  ["高坂穂乃果","南ことり","小泉花陽"],
+                  ["園田海未","星空凛","東條希"],
+                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
+                  ["高海千歌","渡辺曜","黒澤ルビィ"],
+                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
+                  ["桜内梨子","津島善子","小原鞠莉"]]
+
+
+   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
+   
+   var skilllevel = 0
+
+   function threetonumber(three){
+      result = three
+      if (result[0] == '0'){
+         result = result[1]+result[2]
+      }
+      if (result[0] == '0'){
+         result = result[1]
+      }
+      return result
+   }
+   
+   function lvlup(){
+      skilllevel += 1
+      if (skilllevel == 8)
+         skilllevel = 0
+      changeskilllevel()
+   }
+
+   function lvldown(){
+      skilllevel -= 1
+      if (skilllevel == -1)
+         skilllevel = 7
+      changeskilllevel()
+   }
+
+   function offsetup(){
+    if (document.getElementById('offset').value < 50)
+	{
+	    document.getElementById('offset').value = Number(document.getElementById('offset').value) + 1;
+	}
+	else
+	    return;
+   }
+   
+   function offsetdown(){
+    if (document.getElementById('offset').value > -50)
+	{
+	    document.getElementById('offset').value = Number(document.getElementById('offset').value) - 1;
+	}
+	else
+	    return;
+   }
+   
+   function offsetzero(){
+	    document.getElementById('offset').value = 0;
+   }
+   
+   function isinunitgroup(unitgrade, character){
+      if (unitgrade == 0)
+         return true
+      for (i in unitgradechr[unitgrade]){
+         if (unitgradechr[unitgrade][i] == character)
+            return true
+      }
+      return false
+   }
+
+   function changeskilllevel(){
+      document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
+      index = document.getElementById('cardchoice').value
+      if (cards[index].skill){
+         document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
+         document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
+         document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
+      }
+   }
+
+   function cardtoskilltype(c){
+      if (!c.skill)
+         return 0
+      if ((c.skilleffect == 4) || (c.skilleffect == 5)){
+         if (c.triggertype == 1)
+            return 5
+         else if (c.triggertype == 3)
+            return 6
+         else if (c.triggertype == 4)
+            return 12
+      }
+      else if (c.skilleffect == 9){
+         if (c.triggertype == 1)
+            return 8
+         else if (c.triggertype == 3)
+            return 7
+         else if (c.triggertype == 4)
+            return 13
+         else if (c.triggertype == 6)
+            return 9
+      }
+      else if (c.skilleffect == 11){
+         if (c.triggertype == 1)
+            return 4
+         else if (c.triggertype == 3)
+            return 1
+         else if (c.triggertype == 4)
+            return 11
+         else if (c.triggertype == 5)
+            return 3
+         else if (c.triggertype == 6)
+            return 2
+         else if (c.triggertype == 12)
+            return 10
+      }
+   }
+
+   function changeavatar(n){
+   	cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
+   	if ((cardid == 0) || (cardid == "") || (cardid == "0") || (cardid == NaN))
+   		document.getElementById('avatar'+String(n)).src = '/static/null.png'
+   	else if (document.getElementById('mezame'+String(n)).value == 0){
+        document.getElementById('avatar'+String(n)).style.display = ""
+		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
+   	}
+	else {
+   		document.getElementById('avatar'+String(n)).style.display = ""
+		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
+    }
+   }
+   
+   function getcardselect(rarity, chr, att, cardtype, special){
+      sel = document.getElementById("cardchoice");
+      skilltype = "5"
+      triggertype = document.getElementById("triggertype").value
+      setname = document.getElementById("setname").value
+      unitgrade = document.getElementById("unitgrade").value
+      sel.options.length = 1;
+      var index = 1;
+      //alert(chr)
+      for (card in cards){
+         if (!cards[index]) continue
+         if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
+            //if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
+             //  index += 1
+            //   continue
+            //}
+            if (!isinunitgroup(unitgrade, cards[index].jpname)){
+               index += 1
+               continue
+            }
+            var newOption
+            if (cards[index].eponym) {eponym = "【"+cards[index].eponym+"】"} else eponym = ""
+            if (cards[index].series && (cards[index].series != '')) {series = "("+cards[index].series+")"} else series = ""
+            if (cards[index].jpeponym) {jpeponym = "【"+cards[index].jpeponym+"】"} else jpeponym = ""
+            if (cards[index].jpseries && (cards[index].jpseries != '')) {jpseries = "("+cards[index].jpseries+")"} else jpseries = ""
+            if (language == 0)
+               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+eponym+cards[index].name+" "+series, index)
+            else
+               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+jpeponym+cards[index].jpname+" "+jpseries, index)
+            newOption.style.color = attcolor[cards[index].attribute]
+            sel.options.add(newOption)
+         }
+         index += 1
+      }
+      //changecolor("cardchoice")
+   }
+   
+   function havevalue(selectId, value){
+   	objSelect = document.getElementById(selectId)
+   	for (var i = 0; i < objSelect.options.length; i++){
+   		if (objSelect.options[i].value == value)
+   			return true;
+   	}
+   	return false;
+   }
+   
+   function changecardselect(){
+      rarity = document.getElementById("rarity").value
+      chr = document.getElementById("chr").value
+      att = document.getElementById("att").value
+      cardtype = document.getElementById("cardtype").value
+      special = 0
+      var cardchoice = document.getElementById("cardchoice").value
+      getcardselect(rarity, chr, att, cardtype, special)
+      if (havevalue("cardchoice", cardchoice)){
+         document.getElementById("cardchoice").value = cardchoice
+      }
+      changecolor("cardchoice")
+   }
+   
+   function changecolor(which){
+   	index = document.getElementById(which).value
+   	if (index != "") {
+   		c = attcolor[cards[index].attribute]
+   		document.getElementById(which).style.color = c
+   		//document.getElementById("main").value = cards[index].attribute
+   		
+         //document.getElementById('skill').value = cardtoskilltype(cards[index])
+         if (cards[index].skill){
+            //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
+            document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
+            document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
+            document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
+         }
+   		infolist2 = ["smile", "pure", "cool"]
+   		if (mezame == 0){
+   			for (i in infolist2){
+   				//document.getElementById(infolist2[i]).value = cards[index][infolist2[i]]
+   				document.getElementById("mezame").value = "未觉醒"
+   			}
+   		}
+   		else{
+   			for (i in infolist2){
+   				//document.getElementById(infolist2[i]).value = cards[index][infolist2[i]+"2"]
+   				document.getElementById("mezame").value = "已觉醒"
+   			}
+   		}
+   		//document.getElementById("kizuna").value = kizuna[cards[index].rarity][mezame]
+   		changeskilltext("")
+   	}
+   	changeavatarselect()
+   }
+    
+   function tothree(string){
+   	str = String(string)
+   	while (str.length < 3){
+   		str = '0'+str
+   	}
+   	return str
+   }
+ 
+   function changeavatarselect(){
+   	document.getElementById('imageselect').src = '/static/null.png'
+   	cardid = 0
+   	if (document.getElementById('cardchoice').value != '')
+   		cardid = cards[document.getElementById('cardchoice').value].id
+   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
+   		document.getElementById('imageselect').src = '/static/null.png'
+   	else if (mezame == 0)
+   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',0)
+   	else
+   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',1)
+   }
+   
+   function changeLanguage(){
+   	var cardchoice = document.getElementById("cardchoice").value
+   	var songchoice = document.getElementById("songchoice").value
+   	language = 1-language
+   	changecardselect()
+   	changesongselect()
+   	document.getElementById("cardchoice").value = cardchoice
+   	document.getElementById("songchoice").value = songchoice
+   }
+   
+   function changeskilltext(n){
+   	var postfix = ""
+   	if ((n != "") || (String(n) == "0")) 
+   		postfix = String(n)
+      var skilltype = cardtoskilltype(cards[document.getElementById("cardchoice").value])
+   	//var skilltype = document.getElementById("skill"+postfix).value
+   	//if (skilltype == 0)
+   	//	document.getElementById("skilltext"+postfix).style.display = "none"
+   	//else 
+   	//	document.getElementById("skilltext"+postfix).style.display = ""
+   	//require
+   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
+   		document.getElementById("requiretext"+postfix).innerHTML = "个图标"
+   	else if ((skilltype == 2) || (skilltype == 9))
+   		document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
+   	else if (skilltype == 3)
+   		document.getElementById("requiretext"+postfix).innerHTML = "分"
+   	else if (skilltype == 10)
+   		document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
+   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
+   		document.getElementById("requiretext"+postfix).innerHTML = "秒"
+   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
+   		document.getElementById("requiretext"+postfix).innerHTML = "combo"
+   	//effect
+   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
+   		document.getElementById("effecttext"+postfix).innerHTML = "增加"
+   		document.getElementById("unittext"+postfix).innerHTML = "分"
+   	}
+   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
+   		document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
+   		document.getElementById("unittext"+postfix).innerHTML = "秒"
+   	}
+   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
+   		document.getElementById("effecttext"+postfix).innerHTML = "回复"
+   		document.getElementById("unittext"+postfix).innerHTML = "点体力"
+   	}
+   }
+   
+   function toMezame(){
+   	mezame = 1-mezame
+   	changecolor("cardchoice")
+   	changeavatarselect()
+   }
+
+   function getsongselect(diff, att, cnhave, type){
+   	sel = document.getElementById("songchoice");
+      diffc = document.getElementById('diff').value
+   	var keyword = document.getElementById("songsearch").value
+   	var smnum = ''
+      var mfnum = ''
+   	sel.options.length = 1;
+   	for (index in songs){
+   		if (((att == "") || (att == songs[index].attribute)) && ((cnhave == "") || (cnhave == songs[index]['hard']['cnhave'])) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
+   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
+   			smhave = false
+   			if (smnum != ""){
+               if (diffc == ''){
+   			      smList = songs[index]['hard'].sm.split(" ")
+                  if (songs[index]['expert'] != null)
+                     smList = (songs[index]['hard'].sm+' '+songs[index]['expert'].sm).split(" ")
+               }
+               else if (diffc == 'expert'){
+                  smList = []
+                  if (songs[index]['expert'] != null)
+                     smList = songs[index]['expert'].sm.split(" ")
+               }
+               else{
+                  smList = songs[index]['hard'].sm.split(" ")
+               }
+   				for (i in smList){
+   					if (smnum == smList[i]){
+   						smhave = true
+   						break
+   					}
+   				}
+   			}
+            mfhave = false
+            if (mfnum != ""){
+               if (diffc == ''){
+                  mfList = songs[index]['hard'].mf.split(" ")
+                  if (songs[index]['expert'] != null)
+                     mfList = (songs[index]['hard'].mf+' '+songs[index]['expert'].mf).split(" ")
+               }
+               else if (diffc == 'expert'){
+                  mfList = []
+                  if (songs[index]['expert'] != null)
+                     mfList = songs[index]['expert'].mf.split(" ")
+               }
+               else{
+                  mfList = songs[index]['hard'].mf.split(" ")
+               }
+               for (i in mfList){
+                  if (mfnum == mfList[i]){
+                     mfhave = true
+                     break
+                  }
+               }
+            }
+   			//alert(smhave)
+   			if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
+   				var newOption
+   				if (language == 0)
+   					newOption = new Option(songs[index].name, index)
+   				else
+   					newOption = new Option(songs[index].jpname, index)
+   				newOption.style.color = attcolor[songs[index].attribute]
+   				sel.options.add(newOption)
+   			}
+            
+   		}
+   		}
+   		index += 1
+   	}
+   	//changesongcolor("songchoice")
+   }
+   
+   function changesongselect(){
+   	diff = document.getElementById("diff").value
+   	att = document.getElementById("songatt").value
+   	//type = document.getElementById("songtype").value
+   	var songchoice = document.getElementById("songchoice").value
+   	getsongselect(diff, att, '', '')
+   	if (havevalue("songchoice", songchoice)){
+   		document.getElementById("songchoice").value = songchoice
+   	}
+   	changesonginfo("songchoice")
+   }
+   
+   function changediffinfo(){
+      savediff = document.getElementById('diffchoice').value
+      index = document.getElementById('songchoice').value
+      diffc = document.getElementById('diff').value
+      //smnum =document.getElementById("smfilter").value
+      //mfnum =document.getElementById("mffilter").value
+
+      diffsel = document.getElementById('diffchoice')
+      diffsel.options.length = 0;
+      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
+      finddiff = false
+      //if (index == '')
+      //   return
+      for (i in diffname){
+         diff = diffname[i]
+         if (songs[index][diff] != null){
+            cnhave = ''
+            if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
+
+                  newOption = new Option(diff, diff)
+                  diffsel.options.add(newOption)
+                  if (savediff == diff){
+                     document.getElementById('diffchoice').value = savediff
+                     finddiff = true
+               }
+            }
+         }
+      }
+      if (!finddiff)
+         document.getElementById('diffchoice').value = 'expert'
+      return 
+   }
+   
+   function changespeeds(){
+        switch (document.getElementById("diffchoice").value)
+        {
+            case "easy":
+                document.getElementById("speeds")[1].selected = true;
+                break;
+            case "normal":
+                document.getElementById("speeds")[3].selected = true;
+                break;
+            case "hard":
+                document.getElementById("speeds")[5].selected = true;
+                break;
+            case "expert":
+                document.getElementById("speeds")[7].selected = true;
+                break;
+            case "master":
+                document.getElementById("speeds")[8].selected = true;
+                break;
+        }
+    }
+   
+   function changesonginfo(which){
+    index = document.getElementById(which).value
+   	diff = document.getElementById('diffchoice').value
+	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
+   }
+   
+   function copyTo(n){
+    document.getElementById('avatar'+String(n)).style.display = "";
+	document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
+	if (document.getElementById("requiretext").innerHTML == "个图标")
+	{
+	    document.getElementById("member"+String(n))[1].selected = true;
+	}
+	else if (document.getElementById("requiretext").innerHTML == "秒")
+	{
+	    document.getElementById("member"+String(n))[2].selected = true;
+	}
+	else if (document.getElementById("requiretext").innerHTML == "combo")
+	{
+	    document.getElementById("member"+String(n))[3].selected = true;
+	}
+	else
+	{
+	    return;
+	}
+	document.getElementById("skilllevel"+String(n)).innerHTML = document.getElementById("skilllevel").innerHTML;
+	document.getElementById("require"+String(n)).value = document.getElementById('require').innerHTML;
+	document.getElementById("probability"+String(n)).value = document.getElementById('possibility').innerHTML;
+	document.getElementById("time"+String(n)).value = document.getElementById('score').innerHTML;
+   	document.getElementById("mezame"+String(n)).value = mezame;
+   	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id;
+   }
+   
+   function decopyTo(n){
+    if (n == 0)
+	{
+	    document.getElementById('avatar'+String(n)).src = '/static/null.png';
+	}
+	else
+	{
+	    document.getElementById('avatar'+String(n)).style.display = "none";
+		document.getElementById('avatar'+String(n)).src = "";
+	}
+    document.getElementById("member"+String(n))[0].selected = true;
+	document.getElementById("skilllevel"+String(n)).innerHTML = 1;
+	document.getElementById("require"+String(n)).value = 0;
+	document.getElementById("probability"+String(n)).value = 0;
+	document.getElementById("time"+String(n)).value = 0;
+	document.getElementById("mezame"+String(n)).value = 0;
+   	document.getElementById("cardid"+String(n)).value = 0;
+   }
+
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+	var nospan = document.getElementsByTagName("nospan");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			setCookie(inputs[i].name+"perfect", inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		setCookie(selects[i].name+"perfect", selects[i].value, 1);
+   	}
+	for (var i=1; i<nospan.length; i++){
+   		setCookie("nospan"+String(i)+"perfect", nospan[i].innerHTML, 1);
+   	}
+   	setCookie("mezame"+"perfect", mezame, 1)
+   	setCookie("language"+"perfect", language, 1)
+   }
+   
+   function check(){
+   	var inputs = document.getElementsByTagName("input");
+   	for (i in inputs){
+   		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
+   			continue
+   		if (!isNumber(inputs[i].value)){
+   			alert("请输入数字");
+   			return false;
+   		}
+   	}
+	if (window.innerHeight - 20 < 977 && window.innerHeight - 20 > 700)
+	{
+	    document.getElementById('container').style.height = String(window.innerHeight - 20) + "px";
+	}
+	else if (window.innerHeight - 20 >= 977)
+	{
+	    document.getElementById('container').style.height = "977px";
+	}
+	else
+	{
+	    document.getElementById('container').style.height = "700px";
+	}
+	containerheight = parseInt(document.getElementById('container').style.height) - 165;
+   	saveToCookie();
+	document.getElementById('container').style.display = "";
+	document.getElementById('separater').style.display = "";
+    CoverageCalculator();
+   	return true;
+   }
+   
+   function init(){
+   	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
+      skilllevel = 0
+   	mezame = getCookie("mezameperfect")
+   	language = getCookie("languageperfect")
+   	if (mezame == "")
+   		mezame = 0
+   	if (language == "")
+   		language = 0
+   	
+   	getcardselect("", "", "", "", "");
+   	getsongselect("", "", "", "");
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+	var nospan = document.getElementsByTagName("nospan");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text")
+   			if (getCookie(inputs[i].name+"perfect") != "")
+   				inputs[i].value = getCookie(inputs[i].name+"perfect");
+   	}
+   	for (var i=0; i<selects.length; i++){
+   		if (getCookie(selects[i].name+"perfect") != "")
+   			selects[i].value = getCookie(selects[i].name+"perfect");
+   	}
+   	for (var i=1; i<nospan.length; i++){
+   		if (getCookie("nospan"+String(i)+"perfect") != "")
+   			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
+   	}
+   	if (mezame == 1)
+   		document.getElementById("mezame").checked = mezame
+   	//selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
+   	//selects["songchoice"].value = getCookie(selects["songchoice"].name);
+   	changeskilltext("")
+      changeskilllevel()
+   	changeavatarselect()
+   	for (i = 0; i < 9; i++){
+	    if (document.getElementById("member"+String(i)).value != 0){
+   		    //changeskilltext(i)
+   		    changeavatar(i)
+            //calslot(i)
+		}
+   	}
+   	document.getElementById("songsearch").value = ""
+   	//changecolor("cardchoice")
+   	//changesongcolor("songchoice")
+   	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
+   	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+   }
+   
+   </script>
+   
+  </head>
+   <body onload="init()">
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>判定覆盖分布计算</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+	1.选择歌曲以及<b>难度</b>；
+	2.设置速度；
+	3.设置击打节奏；
+	4.配置判定队伍，可以从卡片库中选择卡片，也可以直接填写数据；
+	5.计算；
+	6.鼠标在图纸区域<b>上下框选可以进行放大</b>，移动端可<b>手势缩放</b>，或者<b>两指拖动平移</b>；
+	7.当选择了多张判卡时，可以点击右侧的按钮<b>单独显示</b>某一判卡的“<b>边际覆盖率</b>”分布，即撤掉这张卡片后，卡组的覆盖率损失；
+	8.详细使用<a href="http://tieba.baidu.com/p/4774274250" target="_blank">说明&反馈</a>点击此处；
+
+该功能由 <b>各种化肥</b> 提供
+</pre>
+
+<form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
+<h3>Live信息</h3>
+搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
+筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo();changespeeds()" style="display:none">
+		<option value="">难度</option>
+		<option value="easy">easy</option>
+		<option value="normal">normal</option>
+		<option value="hard">hard</option>
+		<option value="expert">expert</option>
+	</select>
+	<select id="songatt" name="songatt" onchange="changesongselect()">
+		<option value="">属性</option>
+		<option value="smile">smile</option>
+		<option value="pure">pure</option>
+		<option value="cool">cool</option>
+	</select>
+<br>
+歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');changespeeds()">
+		<option value=""> </option>
+	</select>
+	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+	<br>
+难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice');changespeeds()">
+      <option value="easy">easy</option>
+      <option value="normal">normal</option>
+      <option value="hard">hard</option>
+      <option value="expert" SELECTED>expert</option>
+      <option value="master">master</option>
+   </select>
+<br>
+
+速度：<select name="speeds" id="speeds">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+    <option value="7">7</option>
+    <option value="8" SELECTED>8</option>
+    <option value="9">9</option>
+    <option value="10">10</option>
+  </select>
+<br>
+击打节奏：<input type="button" style="height:24px;width:24px;padding:0" value="-" onclick="offsetdown()"></input>
+<input name="offset" type="text" id="offset" value="0" size="3" />
+<input type="button" style="height:24px;width:24px;padding:0" value="+" onclick="offsetup()"></input>
+<input type="button" style="height:24px;width:24px;padding:0" value="0" onclick="offsetzero()"></input>
+<br>
+
+<h3>判卡库</h3>
+筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
+      <option value="">稀有度</option>
+      <option value="SR">SR</option>
+      <option value="SSR">SSR</option>
+      <option value="UR">UR</option>
+   </select>
+   <select id="chr" name="chr" onchange="changecardselect()">
+      <option value="">角色</option>
+      <option value="高坂穗乃果">高坂穗乃果</option>
+      <option value="绚濑绘里">绚濑绘里</option>
+      <option value="南小鸟">南小鸟</option>
+      <option value="园田海未">园田海未</option>
+      <option value="星空凛">星空凛</option>
+      <option value="西木野真姬">西木野真姬</option>
+      <option value="东条希">东条希</option>
+      <option value="小泉花阳">小泉花阳</option>
+      <option value="矢泽妮可">矢泽妮可</option>
+      <option value="高海千歌">高海千歌</option>
+      <option value="樱内梨子">樱内梨子</option>
+      <option value="松浦果南">松浦果南</option>
+      <option value="黑泽黛雅">黑泽黛雅</option>
+      <option value="渡边曜">渡边曜</option>
+      <option value="津岛善子">津岛善子</option>
+      <option value="国木田花丸">国木田花丸</option>
+      <option value="小原鞠莉">小原鞠莉</option>
+      <option value="黑泽露比">黑泽露比</option>
+   </select>
+   <select id="unitgrade" name="unitgrade" onchange="changecardselect()">
+      <option value="">年级小队</option>
+      <option value="4">μ's</option>
+      <option value="5">Aqours</option>
+      <option value="1">一年级</option>
+      <option value="2">二年级</option>
+      <option value="3">三年级</option>
+      <option value="6">Printemps</option>
+      <option value="7">lilywhite</option>
+      <option value="8">BiBi</option>
+      <option value="9">CYaRon!</option>
+      <option value="10">AZALEA</option>
+      <option value="11">Guilty Kiss</option>
+   </select>
+   <select id="att" name="att" onchange="changecardselect()">
+      <option value="">属性</option>
+      <option value="smile" style="color:red">smile</option>
+      <option value="pure" style="color:green">pure</option>
+      <option value="cool" style="color:blue">cool</option>
+   </select>
+   <select id="triggertype" name="triggertype" onchange="changecardselect()">
+      <option value="">触发类型</option>
+      <option value="1">时间</option>
+      <option value="3">图标</option>
+      <option value="4">combo</option>
+   </select>
+   <select id="cardtype" name="cardtype" onchange="changecardselect()">
+      <option value="">卡片类型</option>
+      <option value="活动卡">活动卡</option>
+      <option value="登录奖励">登录奖励</option>
+   </select>
+   <select id="setname" name="setname" onchange="changecardselect()">
+      <option value="">套卡名</option>
+      <option value="初期">初期</option>
+      <option value="職業編">职业篇</option>
+      <option value="動物編">动物篇</option>
+      <option value="8月編">8月篇</option>
+      <option value="9月編">9月篇</option>
+      <option value="10月編">10月篇</option>
+      <option value="11月編">11月篇</option>
+      <option value="12月編">12月篇</option>
+      <option value="1月編">1月篇</option>
+      <option value="2月編">2月篇</option>
+      <option value="3月編">3月篇</option>
+      <option value="4月編">4月篇</option>
+      <option value="5月編">5月篇</option>
+      <option value="6月編">6月篇</option>
+      <option value="7月編">7月篇</option>
+      <option value="チャイナドレス編">旗袍篇</option>
+      <option value="カフェメイド編">女仆篇</option>
+      <option value="ハロウィン編">万圣篇</option>
+      <option value="星座編">星座篇</option>
+      <option value="雪山編">雪山篇</option>
+      <option value="七福神編">七福神篇</option>
+      <option value="バレンタイン編">情人节篇</option>
+      <option value="ホワイトデー編">白色情人节篇</option>
+      <option value="職業編(Part2">职业篇2</option>
+      <option value="サイバー編">电玩篇</option>
+      <option value="手品師編">魔术师篇</option>
+      <option value="マリン編">海兵篇</option>
+      <option value="プール編">泳池篇</option>
+      <option value="くのいち編">忍者篇</option>
+      <option value="動物編(Part2)">动物篇2</option>
+      <option value="舞踏会編">舞踏会篇</option>
+      <option value="クリスマス編">圣诞篇</option>
+      <option value="サーカス編">马戏团篇</option>
+      <option value="妖精の国編">妖精之国篇</option>
+   </select>
+   <br>
+卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel();changecolor('cardchoice')">
+		<option value=""> </option>
+	</select>
+	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+<br>
+</div>
+   <div style="float:left">
+<img id="imageselect">
+</div>
+<div style="clear:both">
+   技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
+   </input></nobr><br>
+   技能效果 :每<nobr id="require" name="require"></nobr>
+   <nobr id="requiretext"></nobr>
+   <nobr id="possibility" name="possibility"></nobr>%概率
+   <nobr id="effecttext"></nobr>
+   <nobr id="score" name="score"></nobr>
+   <nobr id="unittext"></nobr>
+   </nobr><br><br>
+	</p>
+
+<h3>队伍配置</h3>
+<div style="float:left">
+<table border='1'>
+    <tr>
+        <td>判卡1：</td>
+		<td><img  id='avatar0' src='/static/null.png'/></td>
+        <td><select name="member0" id="member0">
+            <option value="0">无</option>
+            <option value="1" SELECTED>N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel0">1</nospan>　</td>
+        <td>条件：<input name="require0" type="text" id="require0" value="25" size="2" />　</td>
+        <td>概率：<input name="probability0" type="text" id="probability0" value="36" size="2" />%　</td>
+        <td>时间：<input name="time0" type="text" id="time0" value="4.5" size="3" />秒</td>
+		<td><input type="button" value="放卡1" onclick="copyTo(0)"></td>
+		<td><input type="button" value="清空1" onclick="decopyTo(0)"></td>
+    </tr>
+    <tr>
+        <td>判卡2：</td>
+		<td><img style="display:none" id='avatar1'/></td>
+        <td><select name="member1" id="member1">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel1">1</nospan>　</td>
+        <td>条件：<input name="require1" type="text" id="require1" value="0" size="2" />　</td>
+        <td>概率：<input name="probability1" type="text" id="probability1" value="0" size="2" />%　</td>
+        <td>时间：<input name="time1" type="text" id="time1" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡2" onclick="copyTo(1)"></td>
+		<td><input type="button" value="清空2" onclick="decopyTo(1)"></td>
+	</tr>
+    <tr>
+        <td>判卡3：</td>
+		<td><img style="display:none" id='avatar2'/></td>
+        <td><select name="member2" id="member2">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel2">1</nospan>　</td>
+        <td>条件：<input name="require2" type="text" id="require2" value="0" size="2" />　</td>
+        <td>概率：<input name="probability2" type="text" id="probability2" value="0" size="2" />%　</td>
+        <td>时间：<input name="time2" type="text" id="time2" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡3" onclick="copyTo(2)"></td>
+		<td><input type="button" value="清空3" onclick="decopyTo(2)"></td>
+	</tr>
+    <tr>
+        <td>判卡4：</td>
+		<td><img style="display:none" id='avatar3'/></td>
+        <td><select name="member3" id="member3">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel3">1</nospan>　</td>
+        <td>条件：<input name="require3" type="text" id="require3" value="0" size="2" />　</td>
+        <td>概率：<input name="probability3" type="text" id="probability3" value="0" size="2" />%　</td>
+        <td>时间：<input name="time3" type="text" id="time3" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡4" onclick="copyTo(3)"></td>
+		<td><input type="button" value="清空4" onclick="decopyTo(3)"></td>
+	</tr>
+    <tr>
+        <td>判卡5：</td>
+		<td><img style="display:none" id='avatar4'/></td>
+        <td><select name="member4" id="member4">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel4">1</nospan>　</td>
+        <td>条件：<input name="require4" type="text" id="require4" value="0" size="2" />　</td>
+        <td>概率：<input name="probability4" type="text" id="probability4" value="0" size="2" />%　</td>
+        <td>时间：<input name="time4" type="text" id="time4" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡5" onclick="copyTo(4)"></td>
+		<td><input type="button" value="清空5" onclick="decopyTo(4)"></td>
+	</tr>
+    <tr>
+        <td>判卡6：</td>
+		<td><img style="display:none" id='avatar5'/></td>
+        <td><select name="member5" id="member5">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel5">1</nospan>　</td>
+        <td>条件：<input name="require5" type="text" id="require5" value="0" size="2" />　</td>
+        <td>概率：<input name="probability5" type="text" id="probability5" value="0" size="2" />%　</td>
+        <td>时间：<input name="time5" type="text" id="time5" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡6" onclick="copyTo(5)"></td>
+		<td><input type="button" value="清空6" onclick="decopyTo(5)"></td>
+	</tr>
+    <tr>
+        <td>判卡7：</td>
+		<td><img style="display:none" id='avatar6'/></td>
+        <td><select name="member6" id="member6">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel6">1</nospan>　</td>
+        <td>条件：<input name="require6" type="text" id="require6" value="0" size="2" />　</td>
+        <td>概率：<input name="probability6" type="text" id="probability6" value="0" size="2" />%　</td>
+        <td>时间：<input name="time6" type="text" id="time6" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡7" onclick="copyTo(6)"></td>
+		<td><input type="button" value="清空7" onclick="decopyTo(6)"></td>
+	</tr>
+    <tr>
+        <td>判卡8：</td>
+		<td><img style="display:none" id='avatar7'/></td>
+        <td><select name="member7" id="member7">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel7">1</nospan>　</td>
+        <td>条件：<input name="require7" type="text" id="require7" value="0" size="2" />　</td>
+        <td>概率：<input name="probability7" type="text" id="probability7" value="0" size="2" />%　</td>
+        <td>时间：<input name="time7" type="text" id="time7" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡8" onclick="copyTo(7)"></td>
+		<td><input type="button" value="清空8" onclick="decopyTo(7)"></td>
+	</tr>
+    <tr>
+        <td>判卡9：</td>
+		<td><img style="display:none" id='avatar8'/></td>
+        <td><select name="member8" id="member8">
+            <option value="0">无</option>
+            <option value="1">N判</option>
+            <option value="2">T判</option>
+            <option value="3">C判</option>
+        </select></td>
+		<td>Lv<nospan id="skilllevel8">1</nospan>　</td>
+        <td>条件：<input name="require8" type="text" id="require8" value="0" size="2" />　</td>
+        <td>概率：<input name="probability8" type="text" id="probability8" value="0" size="2" />%　</td>
+        <td>时间：<input name="time8" type="text" id="time8" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡9" onclick="copyTo(8)"></td>
+		<td><input type="button" value="清空9" onclick="decopyTo(8)"></td>
+	</tr>
+	<tr style="display:none">
+      <td>id</td>
+      
+      <td><input type="text" id="cardid0" name="cardid0" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid1" name="cardid1" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid2" name="cardid2" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid3" name="cardid3" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid4" name="cardid4" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid5" name="cardid5" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid6" name="cardid6" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid7" name="cardid7" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid8" name="cardid8" size=1 value=0 autocomplete="off"></td>
+      
+    </tr>
+    <tr style="display:none">
+      <td>mezame</td>
+      
+      <td><input type="text" id="mezame0" name="mezame0" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame1" name="mezame1" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame2" name="mezame2" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame3" name="mezame3" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame4" name="mezame4" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame5" name="mezame5" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame6" name="mezame6" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame7" name="mezame7" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame8" name="mezame8" size=1 value=0 autocomplete="off"></td>
+      
+    </tr>
+</table>
+
+<div id="calculate">
+<input type="button" value="calculate" onclick="check()">
+<b>注意：4.1版本与之前的版本判定覆盖结果有所不同（当前计算版本：4.1）</b><a href="llcoverage40">to 4.0</a>
+</div>
+
+</div>
+<div style="clear:both">
+</div>
+<br>
+</form>
+
+<iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
+
+<pre>
+说明：
+1、该计算器<font style='color:red'><b>不适用于</b></font>MF活动的第二第三首歌；
+2、计算结果图纸右侧为卡组综合覆盖率随时间的分布，纵轴为时间轴，横轴为覆盖概率。计算结果图纸左侧为对应歌曲的谱面参考；
+3、由于“击打点≠判定点”，靠近覆盖区间边缘的note可能存在“半覆盖”现象，此时将鼠标移动至对应的note上将显示出“判定对该note的<b>Good区间</b>覆盖率”；
+4、图纸下方显示总覆盖率（P+G+G区间），括号内包含Combo和长条的权重，意义为“FC前提当前覆盖状态下判定宝石的加成效果相对于100%覆盖下加成效果的比例”；
+5、SIF 4.1版本修复了技能时间bug，因此现在计算对于N判（时间轴）误差小于1帧（16ms），对于T判误差小于7帧；
+6、由于C判的触发条件与玩家的操作有关，因此C判的覆盖理论分布计算过于复杂，此处对于C判只给出“FC前提下的覆盖分布数学期望”；
+7、若想了解具体<a href="https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB" target="_blank">计算原理</a>请看文档第四章。
+</pre>
+<br>
+<div id="container" style="display:none;width:550px;height:700px;float:left"></div>
+<div id="separater" style="display:none;width:50px;height:700px;float:left">
+    <div style="height:50px"></div>
+	<input type="button" id="separater0" value="1" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(0)"><p></p>
+    <input type="button" id="separater1" value="2" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(1)"><p></p>
+    <input type="button" id="separater2" value="3" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(2)"><p></p>
+    <input type="button" id="separater3" value="4" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(3)"><p></p>
+    <input type="button" id="separater4" value="5" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(4)"><p></p>
+    <input type="button" id="separater5" value="6" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(5)"><p></p>
+    <input type="button" id="separater6" value="7" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(6)"><p></p>
+    <input type="button" id="separater7" value="8" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(7)"><p></p>
+    <input type="button" id="separater8" value="9" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(8)"><p></p>
+</div>
+<div style="clear:both">
+</div>
+<div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center"><b>运行中…</b></div>
+</body>
+{% include 'footer.html' %}
+</html>

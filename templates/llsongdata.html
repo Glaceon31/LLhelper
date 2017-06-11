@@ -140,9 +140,9 @@
    function changesongselect(){
    	diff = document.getElementById("diff").value
    	att = document.getElementById("songatt").value
-   	type = document.getElementById("songtype").value
+   	//type = document.getElementById("songtype").value
    	var songchoice = document.getElementById("songchoice").value
-   	getsongselect(diff, att, '', type)
+   	getsongselect(diff, att, '', '')
    	if (havevalue("songchoice", songchoice)){
    		document.getElementById("songchoice").value = songchoice
    	}
@@ -158,7 +158,7 @@
 
       diffsel = document.getElementById('diffchoice')
       diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert']
+      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
       finddiff = false
       //if (index == '')
       //   return
@@ -172,13 +172,13 @@
                   diffsel.options.add(newOption)
                   if (savediff == diff){
                      document.getElementById('diffchoice').value = savediff
-                     
+                     finddiff = true
                }
             }
          }
       }
       if (!finddiff)
-         document.getElementById('diffchoice').value = 'hard'
+         document.getElementById('diffchoice').value = 'expert'
       return 
    }
 
@@ -191,7 +191,7 @@
    		
    		document.getElementById("attribute").innerHTML = songs[index].attribute
    		//改颜色
-   		colorList = ["attribute", "clowatt", "blowatt", "alowatt", "slowatt", "cstableatt", "bstableatt", "astableatt", "sstableatt","name","jpname"]
+   		colorList = ["attribute", "name","jpname"]
    		for (i in colorList){
    			document.getElementById(colorList[i]).style.color = c
    		}
@@ -216,7 +216,7 @@
          }
    			
          
-   		arraylist = ["positionnote", "positionslider", "positionweight"]
+   		arraylist = ["positionweight"]
    		for (i in arraylist){
    			for (j = 0; j < 9; j++){
    				document.getElementById(arraylist[i]+String(j)).innerHTML=songs[index][diff][arraylist[i]][j]
@@ -227,7 +227,7 @@
             totalweight += parseFloat(songs[index][diff]['positionweight'][i])
    		c = parseInt(songs[index][diff].combo)
    		sl = (totalweight-c)*100/0.25/c
-         document.getElementById('slider').innerHTML = String(sl.toFixed(1))+'%'
+         document.getElementById('noteweight').innerHTML = String(totalweight)
    		for (i = 0; i < 9; i++){
    			p = parseFloat(songs[index][diff].positionweight[i])
    			percentage = p/(c*(1+0.0025*sl))
@@ -248,7 +248,7 @@
    		//其他信息
    		document.getElementById("kizunaget").innerHTML = kizuna(parseInt(songs[index][diff].combo))
    		document.getElementById("combomulti").innerHTML = combomulti(parseInt(songs[index][diff].combo)).toFixed(3)
-   		document.getElementById("scoreperstrength").innerHTML = (1.1/80*c*combomulti(c)*(1+0.25*sl/100)).toFixed(3)
+   		document.getElementById("scoreperstrength").innerHTML = (1.1*1.1/80*combomulti(c)*totalweight).toFixed(3)
    		
    		//属性需求信息
    		cbmulti = combomulti(parseInt(songs[index][diff].combo))
@@ -394,8 +394,9 @@ normal easy和新曲的数据仍不全
 难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice')">
       <option value="easy">easy</option>
       <option value="normal">normal</option>
-      <option value="hard" SELECTED>hard</option>
-      <option value="expert">expert</option>
+      <option value="hard">hard</option>
+      <option value="expert" SELECTED>expert</option>
+      <option value="master">master</option>
    </select>
 	
 <h3>基本信息</h3>
@@ -410,7 +411,7 @@ normal easy和新曲的数据仍不全
 	<td id="lptag" style="display:none">消耗LP</td>
 	<td style="display:none">经验</td>
 	<td>combo数</td>
-	<td>长按比例</td>
+	<td>按键权重</td>
 	<td>时间*(1)</td>
 	<td>歌曲长度*(2)</td>
 	<td>BPM</td>
@@ -425,7 +426,7 @@ normal easy和新曲的数据仍不全
 	<td id='lp' style="display:none"> </td>
 	<td id='exp' style="display:none"> </td>
 	<td id='combo'> </td>
-	<td id='slider'> </td>
+	<td id='noteweight'> </td>
 	<td id='time'> </td>
 	<td id='totaltime'> </td>
 	<td id='bpm'> </td>
@@ -453,6 +454,7 @@ normal easy和新曲的数据仍不全
 	<td>A</td>
 	<td>S</td>
 </tr>
+
 <tr>
 	<td>分数需求</td>
 	<td id="cscore"></td>
@@ -460,6 +462,7 @@ normal easy和新曲的数据仍不全
 	<td id="ascore"></td>
 	<td id="sscore"></td>
 </tr>
+<!--
 <tr>
 	<td>最低属性*(5)</td>
 	<td id="clowatt"></td>
@@ -473,7 +476,7 @@ normal easy和新曲的数据仍不全
 	<td id="bstableatt"></td>
 	<td id="astableatt"></td>
 	<td id="sstableatt"></td>
-</tr>
+</tr>-->
 </table>
 
 <h3>谱面分布</h3>
@@ -485,38 +488,26 @@ normal easy和新曲的数据仍不全
 	{% endfor %}
 </tr>
 <tr>
-	<td>单点</td>
-	{% for i in range(0, 9)%}
-		<td id="positionnote{{i}}"></td>
-	{% endfor %}
-</tr>
-<tr>
-	<td>长按</td>
-	{% for i in range(0, 9)%}
-		<td id="positionslider{{i}}"></td>
-	{% endfor %}
-</tr>
-<tr>
 	<td>权重</td>
 	{% for i in range(0, 9)%}
 		<td id="positionweight{{i}}"></td>
 	{% endfor %}
 </tr>
 <tr>
-	<td>同色加成*(3)</td>
+	<td>同色同团加成*(3)</td>
 	{% for i in range(0, 9)%}
 		<td id="positionmulti{{i}}"></td>
 	{% endfor %}
 </tr>
 </table>
-<p style="margin-left:30px">*异色卡放在红色位置最好，其次橙色、黄色位置</p>
+<p style="margin-left:30px">*异色卡和异团卡放在红色位置最好，其次橙色、黄色位置</p>
 
 <h3>其他</h3>
 <table border='1'>
 <tr>
 	<td>combo乘数*(4)</td>
 	<td>获得绊</td>
-	<td>单位强度得分*(8)</td>
+	<td>单位强度得分*(7)</td>
 </tr>
 <tr>
 	<td id="combomulti"></td>
@@ -529,13 +520,13 @@ normal easy和新曲的数据仍不全
 说明：
 1、时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量
 2、歌曲长度大约为封面到full combo/live成功字样出现的总时间
-3、同色加成指的是在某个位置放置与歌曲颜色相同的卡对总分的增加量
+3、同色同团加成指的是在某个位置放置与歌曲颜色相同或相同组合（μ's，Aquors）的卡对总分的增加量，两者叠乘
 4、combo乘数指的是FC比起max combo不到50时的得分的倍数
 5、最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
 6、安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
      若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
-7、SM分数线为SM时的分数线，数据仍不全
-8、单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差
+7、单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差
 </pre>
 </body>
+{% include 'footer.html' %}
 </html>

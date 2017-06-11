@@ -58,7 +58,7 @@ def llcardmodify():
         print request.form
         if request.form.get('passwd') == 'prpr' or True:
             now = request.form.get('cardchoice')
-            element = ['type' ,'cnhave', 'series', 'jpseries']
+            element = ['type' , 'series', 'jpseries']
             for key in element:
                 cards[now][key] = request.form.get(key)
 
@@ -83,28 +83,17 @@ def llnewsongmodify():
         if request.form.get('passwd') == 'prpr' or True:
             now = request.form.get('songchoice')
             diff = request.form.get('diffchoice')
-            songelement = ['type' ,'name', 'bpm', 'totaltime']
-            diffelement = ['oldstardifficulty', 'oldrandomdifficulty', 'lp', 'exp', 'time', 'sm', 'mf','star','cnhave']
-            mfmodify = False
-            if songs[now].has_key('expert'):
-                if songs[now]['expert']['mf'] == songs[now]['hard']['mf']:
-                    mfmodify = True
+            songelement = ['bpm', 'totaltime', 'muse','aqours']
+            diffelement = ['time', 'star']
             for key in songelement:
                 songs[now][key] = request.form.get(key)
             for key in diffelement:
-                songs[now][diff][key] = request.form.get(key)
-            if diff == 'expert':
-                if mfmodify:
-                    songs[now]['easy']['mf'] = request.form.get('mf')
-                    songs[now]['normal']['mf'] = request.form.get('mf')
-                    songs[now]['hard']['mf'] = request.form.get('mf')
-            if diff == 'hard':
-                songs[now]['easy']['sm'] = request.form.get('sm')
-                songs[now]['normal']['sm'] = request.form.get('sm')
-                songs[now]['easy']['mf'] = request.form.get('mf')
-                songs[now]['normal']['mf'] = request.form.get('mf')
+                songs[now][diff][key] = request.form.get(key) 
+            songs[now][diff]['positionweight'] = [0]*9
             for i in range(0, 9):
+                
                 songs[now][diff]['positionweight'][i] = request.form.get('positionweight'+str(i))
+
             newsongsjson = open('newsongsjson.txt','wb')
             newsongsjson.write(json.dumps(songs))
             newsongsjson.close()

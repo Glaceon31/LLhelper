@@ -12,12 +12,12 @@
    <style type="text/css">
       button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
    </style>
-   
+
    <script language="javascript">
    function check(){
       var inputs = document.getElementsByTagName("input");
       var chou = false;
-      for (var i=0;i<5;i++){
+      for (var i=0;i<9;i++){
          if (!isNotNegative(inputs[i].value)){
             alert("请输入非负整数");
             return false;
@@ -25,7 +25,7 @@
       }
       return true
    }
-   
+
    Math.log1p = Math.log1p || function(x) {
       var u = 1 + x;
       if (!(Math.abs(x) < 0.5)) {
@@ -36,14 +36,14 @@
          return Math.log(u) * (x / (u - 1));
       }
    };
-   
+
    function cpowei1p(real, imag, theta, n) {
       var r2m1 = real * real + imag * imag + real * 2;
       var len = Math.exp(Math.log1p(r2m1) * 0.5 * n);
       var angle = (Math.atan2(imag, 1 + real) + theta) * n;
       return [len * Math.cos(angle), len * Math.sin(angle)];
    }
-   
+
    function dftpow(prob, expect, n, w0) {
       if (n == 0) {
          return [1, 0];
@@ -57,7 +57,7 @@
       }
       return cpowei1p(real, imag, w0 * expect, n);
    }
-   
+
    var ElevenBaseProb = [
       0.8953382542587164451099,
       0.0994820282509684939011,
@@ -73,34 +73,51 @@
       0.0000000000000000000001
    ];
    var ElevenBaseExpect = 0.11;
-   var ElevenRProb = 0.31381059609;
-   var ElevenRChangeUR = 0.1;
+   var ElevenRProb1 = 0.31381059609;
+   var ElevenRChangeUR1 = 0.1;
+   var ElevenRProb4 = 0.08589934592;
+   var ElevenRChangeUR4 = 0.05;
+   var ElevenRProbS = 0.5688000922764599609375;
+   var ElevenRChangeURS = 0.2;
    var SingleProb = [0.99, 0.01];
    var SingleExpect = 0.01;
    var SupportProb = [0.8, 0.2];
    var SupportExpect = 0.2;
-   
+   var MHProb = [0.9, 0.1];
+   var MHExpect = 0.1;
+
    function calculate() {
       if (!check()){
          return;
       }
-      var changeur = ElevenRChangeUR;
-      // changeur = parseFloat(document.getElementById("changeur").value);
       var ur = parseInt(document.getElementById("ur").value);
-      var elevennum = parseInt(document.getElementById("11").value);
+      var elevennum1 = parseInt(document.getElementById("11").value);
+      var elevennum4 = parseInt(document.getElementById("11_4").value);
+      var elevennums = parseInt(document.getElementById("11_ssr").value);
       var scoutnum = 11*parseInt(document.getElementById("11n").value)+parseInt(document.getElementById("single").value);
-      var supportnum = parseInt(document.getElementById("support").value);
-      var totalnum = elevennum * 11 + scoutnum + supportnum;
+      var supportnum = parseInt(document.getElementById("support").value) + parseInt(document.getElementById("ssr").value);
+      var mhnum = parseInt(document.getElementById("mh").value);
+      var totalnum = (elevennum1 + elevennum4 + elevennums) * 11 + scoutnum + supportnum + mhnum;
       if (ur > totalnum){
          alert("impossible");
          return;
       }
-      
-      var ElevenProb = ElevenBaseProb.slice();
-      ElevenProb[0] -= ElevenRProb * changeur;
-      ElevenProb[1] += ElevenRProb * changeur;
-      var ElevenExpect = ElevenBaseExpect + ElevenRProb * changeur;
-      
+
+      var ElevenProb1 = ElevenBaseProb.slice();
+      ElevenProb1[0] -= ElevenRProb1 * ElevenRChangeUR1;
+      ElevenProb1[1] += ElevenRProb1 * ElevenRChangeUR1;
+      var ElevenExpect1 = ElevenBaseExpect + ElevenRProb1 * ElevenRChangeUR1;
+
+      var ElevenProb4 = ElevenBaseProb.slice();
+      ElevenProb4[0] -= ElevenRProb4 * ElevenRChangeUR4;
+      ElevenProb4[1] += ElevenRProb4 * ElevenRChangeUR4;
+      var ElevenExpect4 = ElevenBaseExpect + ElevenRProb4 * ElevenRChangeUR4;
+
+      var ElevenProbS = ElevenBaseProb.slice();
+      ElevenProbS[0] -= ElevenRProbS * ElevenRChangeURS;
+      ElevenProbS[1] += ElevenRProbS * ElevenRChangeURS;
+      var ElevenExpectS = ElevenBaseExpect + ElevenRProbS * ElevenRChangeURS;
+
       var len = totalnum + 1, len2 = len * 0.5;
       var w0 = Math.PI * 2 / len;
       var plt = ur;
@@ -108,18 +125,36 @@
       for (var i = 1; i < len; i++) {
          var k = i < len2 ? i : i - len;
          var w = w0 * k;
-         var ret = dftpow(ElevenProb, ElevenExpect, elevennum, w);
+
+         var ret = dftpow(ElevenProb4, ElevenExpect4, elevennum4, w);
          var real = ret[0];
          var imag = ret[1];
+
          ret = dftpow(SingleProb, SingleExpect, scoutnum, w);
          var r = real;
          real = r * ret[0] - imag * ret[1];
          imag = r * ret[1] + imag * ret[0];
+
          ret = dftpow(SupportProb, SupportExpect, supportnum, w);
          r = real;
          real = r * ret[0] - imag * ret[1];
          imag = r * ret[1] + imag * ret[0];
-         
+
+         ret = dftpow(MHProb, MHExpect, mhnum, w);
+         r = real;
+         real = r * ret[0] - imag * ret[1];
+         imag = r * ret[1] + imag * ret[0];
+
+         ret = dftpow(ElevenProb1, ElevenExpect1, elevennum1, w);
+         r = real;
+         real = r * ret[0] - imag * ret[1];
+         imag = r * ret[1] + imag * ret[0];
+
+         ret = dftpow(ElevenProbS, ElevenExpectS, elevennums, w);
+         r = real;
+         real = r * ret[0] - imag * ret[1];
+         imag = r * ret[1] + imag * ret[0];
+
          var wu = w * ur;
          var wl = w * (ur - 1) * 0.5;
          plt += (real * Math.cos(wl) + imag * Math.sin(wl)) * (Math.sin(wu * 0.5) / Math.sin(w * 0.5));
@@ -128,7 +163,7 @@
       plt /= len;
       peq /= len;
       var yourrank = plt + peq * 0.5;
-      
+
       var ltpercent = Math.max(0, Math.min(1, plt)) * 100;
       var eqpercent = Math.max(0, Math.min(1, peq)) * 100;
       if (ur == 0)
@@ -153,7 +188,7 @@
       document.getElementById("species").innerHTML = '鉴定结果： '+species;
    }
    </script>
-   
+
    </head>
    <body>
 
@@ -172,19 +207,38 @@
 
 <pre>
 注意事项：
-1、无保底期间11连次数可以等效转化为11次单抽/招募券次数
-2、有保底期间11连次数不可以转化为其他项，因为保底机制在出现11R时会将其中一张以10%的概率变为UR，90%的概率变为SR
+1、填入相应的抽卡<b>次数</b>与抽到<b>UR个数</b>，包括重复的UR
+2、4.0后的<b>pick up 11连</b>，卡池不含SSR的，算作<b>4.0前有保底11连</b>
+3、必得UR卡池中抽到的UR，不计入抽到UR个数
+
+该功能由 <b>statementreply</b> 提供
 </pre>
 
 <table>
-<tr><td>有保底期间11连次数: </td><td><input type="text" id="11" name="11" value="0" autocomplete="off"></td></tr>
-<tr><td>无保底期间11连次数: </td><td><input type="text" id="11n" name="11n" value="0" autocomplete="off"></td></tr>
+<tr><td>4.0后11连次数: </td><td><input type="text" id="11_4" name="11_4" value="0" autocomplete="off"></td></tr>
+<tr><td>保底SSR 11连次数: </td><td><input type="text" id="11_ssr" name="11_ssr" value="0" autocomplete="off"></td><td>（Step up最后一轮）</td></tr>
 <tr><td>单抽+招募券次数: </td><td><input type="text" id="single" name="single" value="0" autocomplete="off"></td></tr>
-<tr><td>欧洲券次数: </td><td><input type="text" id="support" name="support" value="0" autocomplete="off"></td><td>（即使用5张补助券抽卡次数）</td></tr>
-<tr><td>抽到UR个数: </td><td><input type="text" id="ur" name="ur" value="0" autocomplete="off"></td><td>（仅输入抽到的，觉醒UR算2个UR）</td></tr>
+<tr><td>SR·UR招募+SSR·UR招募次数: </td><td><input type="text" id="support" name="support" value="0" autocomplete="off"></td><td>（即使用5或10张补助券抽卡的总次数）</td></tr>
+<tr><td>SR以上确定招募次数: </td><td><input type="text" id="mh" name="mh" value="0" autocomplete="off"></td><td>（新手礼包、月初礼包单抽券）</td></tr>
+<tr><td>SSR以上确定招募次数: </td><td><input type="text" id="ssr" name="ssr" value="0" autocomplete="off"></td><td>（部分活动礼包单抽券）</td></tr>
+<tr><td>4.0前有保底11连次数: </td><td><input type="text" id="11" name="11" value="0" autocomplete="off"></td></tr>
+<tr><td>4.0前无保底11连次数: </td><td><input type="text" id="11n" name="11n" value="0" autocomplete="off"></td></tr>
+<tr><td>抽到UR个数: </td><td><input type="text" id="ur" name="ur" value="0" autocomplete="off"></td><td>（仅输入抽到的）</td></tr>
 </table>
 <input type="button" name="submit" value="Calculate" onclick="calculate()"> <br>
 <p id="species"></p>
 <p id="result"></p>
 </body>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89698905-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
 </html>
