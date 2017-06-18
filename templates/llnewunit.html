@@ -97,8 +97,27 @@
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var skilllevel = 0
-
-   function threetonumber(three){
+	attr = new Array();//↓成员属性值*0
+	HN = new Array();//每张卡的槽数//↓z0
+	grade = new Array();//↓每个成员的年级*
+	Match_c = new Array(0,0,0,0,0,0,0,0,0);//是否满足副c
+	skillP = new Array();//z
+	skind = new Array();//z0
+	var Precal;
+	comb=[];
+	arms=new Array();//√
+	P_up=new Array();//每个成员的对应宝石贡献属性增值
+	P_sum = 0;
+	Sum_Max_Mem=0;
+	MPM=new Array();
+	Team_Method=[];
+	Current_MP=0;
+	IsPrecalced=false;
+	gradecount=new Array();
+	skillcount=new Array();
+	SNum = new Array();//↓每种宝石的数量*z0
+   
+function threetonumber(three){
       result = three
       if (result[0] == '0'){
          result = result[1]+result[2]
@@ -1561,6 +1580,12 @@
       {% for i in range(0,9) %}
       <td><input type="text" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
       {% endfor %}
+	</tr>
+	<tr>
+      <td>总槽数</td>
+      {% for i in range(0,9) %}
+      <td>Lv<input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitmaxcost({{i}})"></td>
+      {% endfor %}
    </tr>
    <tr>
       <td>技能</td>
@@ -1676,7 +1701,9 @@
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
-
+<br><br><br>
+<div id="sisreserves">
+</div>
 </div>
 </div>
 <div style="clear:both">
@@ -1768,7 +1795,8 @@
    </select>%<br>
 点击得分增加：<input id="tapup" name="tapup" value="0" size=2></input>%<br>
 技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
-<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input><!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
+<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
+<input type="checkbox" id="autoarm0" name="autoarm0" onclick="autoarm()">自动配饰<!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
    <br><br><br>
 </form>
 
