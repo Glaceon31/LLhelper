@@ -187,6 +187,8 @@ function threetonumber(three){
             document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
             document.getElementById(at+String(i)).value = tmp
          } 
+	 calslot(pos)
+	 calslot(i)
          changeavatar(pos)
          changeavatar(i)
          pos = -1 
@@ -592,7 +594,7 @@ function threetonumber(three){
    
    function saveunit(){
    	member = [{}, {}, {},{},{},{},{},{},{}]
-   	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
+   	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
    	for (i=0;i<9;i++){
    		for (j in saveatt){
    			member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
@@ -712,7 +714,7 @@ function threetonumber(three){
    }
    
    ///////////
-   var sisrecord=new Array();
+var sisrecord=new Array();
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
@@ -1143,6 +1145,7 @@ function calc_bestarm(){
          for (var j = 0; j < int_element.length; j++) {
             member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
          }
+		  if(Precal)  member[i]['gemskill']=1; 
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
@@ -1577,6 +1580,9 @@ function calc_bestarm(){
          document.getElementById('cardstrength'+String(i)).innerHTML = (rawattst[i]+skillst[i]).toString()
          document.getElementById('strength'+String(i)).innerHTML = (attst[i]+skillst[i]).toString()
          document.getElementById('skillstrength'+String(i)).innerHTML = skillst[i].toString()
+		 /////
+		if(Precal) skillP[i]=skillst[i];
+		 /////
          document.getElementById('heal'+String(i)).innerHTML = averageheal[i].toString()
          ttstrength += (attst[i]+skillst[i])
       }
@@ -1917,13 +1923,13 @@ function calc_bestarm(){
 	<tr>
       <td>总槽数</td>
       {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitmaxcost({{i}})"></td>
+      <td><input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="changeunitmaxcost({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
       <td>技能</td>
       {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitskilllevel({{i}})"></td>
+      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="changeunitskilllevel({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
