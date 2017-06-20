@@ -874,16 +874,25 @@ function calc_arms(){
 	}
 }
 function P_Matrix(){
-	for (i = 0; i < 9; i++)
+	var P_sumtri=0;
+	var P_sumfor=0;
+	for (i = 0; i < 9; i++){
+		pa=Math.ceil(attr[i]*0.018);
+		pa=Math.ceil(pa*(1 + Match_c[i]));
+		pb=Math.ceil(attr[i]*0.024);
+		pb=Math.ceil(pa*(1 + Match_c[i]));
+		P_sumtri+=pa;
+		P_sumfor+=pb;
 		P_sum += (1 + Match_c[i])*attr[i];
+		}
 	for (i = 0; i < 9; i++) {
 		P_up[i]=new Array();
 		P_up[i][0] = 200 * (1.0 + Match_c[i]);
 		P_up[i][1] = 450 * (1.0 + Match_c[i]);
 		P_up[i][2] = 0.1*(1.0 + Match_c[i])*attr[i];
 		P_up[i][3] = 0.16*(1.0  + Match_c[i])*attr[i];
-		P_up[i][4] = 0.018*P_sum;
-		P_up[i][5] = 0.024*P_sum;
+		P_up[i][4] = P_sumtri;
+		P_up[i][5] = P_sumfor;
 		P_up[i][6] = skillP[i];
 	}//书写宝石强度加成矩阵
 }
@@ -1289,7 +1298,7 @@ function calc_bestarm(){
          if (isinunitgroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
 		if(Precal)
-		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage']/100);
+		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage2']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
