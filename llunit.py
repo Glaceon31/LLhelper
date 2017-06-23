@@ -49,7 +49,7 @@ def llnewunitload():
         print memberinfo[0]
         script = ''
         attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', \
-                   'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
+                   'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
         for i in range(0, 9):
             for j in attlist:
                 script = script+'parent.document.getElementById("'+j+str(i)+'").value="'+str(memberinfo[i][j])+'";\n'
