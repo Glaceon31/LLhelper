@@ -791,7 +791,18 @@ var sisrecord=new Array();
 			document.getElementById("maxcost"+String(i)).value="8";
 		}
 	}
-	
+	for(var i=0;i<9;i++){
+		for(var j=1;j<4;j++){
+		for(var k in unitgradechr[j]){
+		if(unitgradechr[j][k]==cards[parseInt(document.getElementById("cardid" + i.toString()).value)]["jpname"]){
+		gradecount[j-1]++;
+		}
+		}
+		}
+		}
+		for(var i=0;i<9;i++){
+		skillcount[skind[i]]++;
+		}
 	SNum[0]=9;
 	for(var i=1;i<16;i++){
 		SNum[i]=parseInt(document.getElementById("sis"+i.toString()).value);
@@ -883,7 +894,6 @@ function P_Matrix(){
 		pb=Math.ceil(pb*(1 + Match_c[i]));
 		P_sumtri+=pa;
 		P_sumfor+=pb;
-		P_sum += (1 + Match_c[i])*attr[i];
 		}
 	for (i = 0; i < 9; i++) {
 		P_up[i]=new Array();
@@ -1011,7 +1021,6 @@ function calc_bestarm(){
    	saveToCookie();
 	/////////////
 	if(document.getElementById('autoarm0').checked){
-		P_sum=0;
 		Sum_Max_Mem=0;
 		Current_MP=0;
 		Team_Method=[];
@@ -1021,6 +1030,7 @@ function calc_bestarm(){
 		}
 		for(var i=0;i<3;i++) gradecount[i]=0;
 		for(var i=0;i<6;i++) skillcount[i]=0;
+		
 		Precal=true;
 		calculate();
 		Precal=false;
