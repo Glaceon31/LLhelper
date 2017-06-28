@@ -786,9 +786,9 @@ var sisrecord=new Array();
 			HN[i]=8;
 			document.getElementById("maxcost"+String(i)).value="8";
 		}
-		if(HN[i]<0){
-			HN[i]=0;
-			document.getElementById("maxcost"+String(i)).value="8";
+		if(HN[i]<=0){
+			HN[i]=1;
+			document.getElementById("maxcost"+String(i)).value="1";
 		}
 	}
 	SNum[0]=9;
