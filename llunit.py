@@ -49,7 +49,7 @@ def llnewunitload():
         print memberinfo[0]
         script = ''
         attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', \
-                   'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
+                   'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
         for i in range(0, 9):
             for j in attlist:
                 script = script+'parent.document.getElementById("'+j+str(i)+'").value="'+str(memberinfo[i][j])+'";\n'
@@ -249,6 +249,12 @@ def llnewunit():
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template("llnewunit.html", cardsjson = cardsjson, songsjson = songsjson)
+	
+@app.route("/llnewunitsis", methods=['GET', 'POST'])
+def llnewunitsis():
+    songsjson = open('newsongsjson.txt', 'rb').read()
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson)
 
 @app.route("/llnewunit40", methods=['GET', 'POST'])
 def llnewunit40():
