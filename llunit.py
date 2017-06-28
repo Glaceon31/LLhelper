@@ -249,6 +249,12 @@ def llnewunit():
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template("llnewunit.html", cardsjson = cardsjson, songsjson = songsjson)
+	
+@app.route("/llnewunitsis", methods=['GET', 'POST'])
+def llnewunitsis():
+    songsjson = open('newsongsjson.txt', 'rb').read()
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson)
 
 @app.route("/llnewunit40", methods=['GET', 'POST'])
 def llnewunit40():
