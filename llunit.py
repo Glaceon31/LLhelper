@@ -73,7 +73,10 @@ def llnewunitloadsis():
                    'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
         for i in range(0, 9):
             for j in attlist:
-                script = script+'parent.document.getElementById("'+j+str(i)+'").value="'+str(memberinfo[i][j])+'";\n'
+				if j in memberinfo[i]:
+					script = script+'parent.document.getElementById("'+j+str(i)+'").value="'+str(memberinfo[i][j])+'";\n'
+				else:
+					script = script+'parent.document.getElementById("'+j+str(i)+'").value="'+str(0)+'";\n'
             script = script+'parent.document.getElementById("main'+str(i)+'").value= parent.cards[parent.cardidtoindex("'+str(memberinfo[i]['cardid'])+'")].attribute;\n'
             script = script+'parent.changeavatar('+str(i)+');parent.calslot('+str(i)+');\n'
             #script = script+'parent.changeskilltext('+str(i)+');parent.changeavatar('+str(i)+');\n'
