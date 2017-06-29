@@ -714,7 +714,7 @@ function threetonumber(three){
    }
    
    ///////////
-var sisrecord=new Array();
+sisrecord=new Array(9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
@@ -761,10 +761,10 @@ var sisrecord=new Array();
 		}
 		else{
 			document.getElementById("sisreserves").innerHTML=sishtml
-			for(var i=1;i<16;i++){
+		}
+		for(var i=1;i<16;i++){
 				document.getElementById("sis"+String(i)).value=sisrecord[i];
 			}
-		}
 	}
 	else{
 		for(var i=1;i<16;i++){
@@ -2155,9 +2155,11 @@ function calc_bestarm(){
 <pre>
 注意：
    勾选“计算分布”来计算得分分布。得分分布使用真实分布计算，计算速度比较慢。
+   计算“自动配饰”的时候建议先不勾选“计算分布”以免时间过长，得到最优宝石配置后取消“自动配饰”再计算得分分布。
    由于使用歌曲信息计算，最终结果可能会有千分之一的误差
    判定覆盖率仅供参考
    判定期间属性1.25倍的宝石计算有误，暂时按无效计算。
+   在队伍中有爆分SR时，由于技能强度会随着队伍强度变化而变化，可能出现多次计算“自动配饰”得到的结果不唯一的情况，此时只需重复计算多次取强度最高者即可。
 说明：   
    1、在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率
    2、卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度
