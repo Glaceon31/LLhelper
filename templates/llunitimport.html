@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>LLhelper</title>
+      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
+   <link rel="shortcut icon" href="static/shortcuticon.png" />
+   <style type="text/css">
+    button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+      .img-responsive {width: 90%}
+      .col-md-1 {}
+      hr {border: 0;height: 1px;background: #333;background-image: -webkit-linear-gradient(left, #ccc, #333, #ccc);background-image: -moz-linear-gradient(left, #ccc, #333, #ccc);background-image: -ms-linear-gradient(left, #ccc, #333, #ccc);background-image: -o-linear-gradient(left, #ccc, #333, #ccc)}
+   table {border-collapse: collapse;}
+   table, td, th {border: 1px solid black;text-align:center;padding: 3px;margin: 15px auto;}
+   </style>
+  </head>
+ <body>
+ <nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>队伍识别、导入</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+<pre>
+使用方法：
+   1、在游戏里把队伍中觉醒的队员全部以觉醒表示
+   2、用手机或平板电脑对你的队伍进行截图
+   3、用下面的按钮把截图提交
+
+注意：图像识别由另一服务器完成，可能有数据不同步的情况。
+
+该功能由 <b>liaocm</b> 提供</a>
+</pre>
+<div class="container">
+   <div class="row">
+   <div class="col-md-6 col-xs-12">
+      <h3>示例</h3>
+      <img src='static/example.jpg' class="img-responsive"/>
+      <br/>
+      <p>如上图，把该页面截图后上传即可。</p>
+   </div>
+   <div class="col-md-6 col-xs-12">
+      <h3>上传图片</h3>
+      <input name="file" type="file" id="file-upload"/>
+      <br/>
+      <input type="button" value="上传"/>
+   </div>
+   </div>
+   <hr id="resline" style="display:none"/>
+   <div class="row" id="result" style="display:none">
+      <h3 align="center" id="restext">运行结果</h3>
+      <div class="col-md-4 col-xs-12">
+         <h4 id="result-text">输入</h4>
+         <img id="reflect" src="static/dev/main_file.jpg" style="max-width:100%;margin=10px auto"/>
+      </div>
+      <div class="col-md-8 col-xs-12" id="restable" style="display:none">
+         <center>
+         <h4>识别区域</h4>
+         <img id="scaled" src="static/dev/scaled.jpg" style="max-width:80%;margin=10px auto"/>
+         <h4>识别内容</h4>
+<table>
+  <tr>
+    <th><img id="img1" src="static/null.png" style="max-width:50%;margin=2px auto"/></th>
+    <th id="name1">[0] Glaceon</th>
+    <th><img id="img2" src="static/null.png" style="max-width:50%;margin=2px auto"/></th>
+    <th id="name2">[0] Glaceon</th>
+    <th><img id="img3" src="static/null.png" style="max-width:50%;margin=2px auto"/></th>
+    <th id="name3">[0] Glaceon</th>
+      </tr>
+  <tr>
+    <th><img id="img4" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name4">[0] Glaceon</th>
+    <th><img id="img5" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name5">[0] Glaceon</th>
+    <th><img id="img6" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name6">[0] Glaceon</th>
+      </tr>
+  <tr>
+    <th><img id="img7" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name7">[0] Glaceon</th>
+    <th><img id="img8" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name8">[0] Glaceon</th>
+    <th><img id="img9" src="static/null.png" style="max-width:50%;margin=2px"/></th>
+    <th id="name9">[0] Glaceon</th>
+  </tr>
+</table>
+         </center>
+<div align="right">
+<a id="sis" href="/llnewunitsis">自动配宝石</a> · <a id="unitstrength" href="/llnewunit">查询强度</a> · <a id="dlunit" download="export.sd" href="data:text/plain,null">下载队伍</a></div>
+      </div>
+   </div>
+</div>
+<br/>
+
+<script type="text/javascript">
+
+$(function() {
+   $(":button").click(function() {
+      changeImg();
+      imgUpload();
+      $(":button").attr("value", "正在上传...");
+      $(":button").attr("disabled", true);
+   })
+})
+
+function uploadDone(event) {
+    console.log(event.target.responseText);
+    $(":button").attr("value", "上传");
+    $(":button").attr("disabled", false);
+    var result = JSON.parse(event.target.responseText);
+    var handle = result.handle;
+    var team = result.team;
+    var names = result.names;
+    
+    document.getElementById("scaled").src="http://api.sif.lcm.im/temp/"+handle+"/scaled.jpg";
+    document.getElementById("dlunit").href="data:text/plain,"+JSON.stringify(team);
+    for(var i=1; i<10; i++) {
+        var strI = i.toString();
+        document.getElementById("img"+strI).src="http://api.sif.lcm.im/temp/"+handle+"/"+strI+".png";
+        document.getElementById("name"+strI).title=names[i];
+        $("#name"+strI).html("["+team[i-1].cardid.toString()+"] "+names[i-1]);
+    }
+    $("#restext").html("运行结果");
+    document.getElementById("resline").style.display="block";
+    document.getElementById("result").style.display="block";
+    document.getElementById("restable").style.display="block";
+}
+
+function uploadFailed(event) {
+    console.log("failed!");
+    $("#restext").html("失败：图片有误");
+    document.getElementById("resline").style.display="block";
+    document.getElementById("result").style.display="block";
+    $(":button").attr("value", "上传");
+    $(":button").attr("disabled", false);
+}
+
+function imgUpload() {
+   var fd = document.getElementById("file-upload").files[0];
+   var url = "http://api.sif.lcm.im/teamview";
+   var form = new FormData();
+   form.append("file", fd);
+   var xhr = new XMLHttpRequest();
+   xhr.open("post", url, true);
+   xhr.onload = uploadDone;
+   xhr.onerror = uploadFailed;
+   xhr.send(form);
+}
+
+function changeImg() {
+    var imgTag = document.getElementById("reflect");
+    if　(typeof FileReader == 'undefined') {
+        imgTag.style.display = "none";
+        return;
+    }
+    var imgFd = document.getElementById("file-upload").files[0];
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var img = document.getElementById("reflect");
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(imgFd);
+}
+
+</script>
+</body>
+{% include 'footer.html' %}
+</html>

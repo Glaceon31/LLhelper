@@ -285,3 +285,7 @@ def llnewunit40():
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson4.txt', 'rb').read()
     return render_template("llnewunit40.html", cardsjson = cardsjson, songsjson = songsjson)
+
+@app.route("/llunitimport", methods=['GET', 'POST'])
+def llunitimport():
+    return render_template("llunitimport.html")
