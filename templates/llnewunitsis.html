@@ -395,14 +395,14 @@ function threetonumber(three){
    	if (index != "") {
    		c = attcolor[songs[index].attribute]
    		document.getElementById(which).style.color = c
-         document.getElementById("secondbase").innerHTML = songs[index].attribute
+//         document.getElementById("secondbase").innerHTML = songs[index].attribute
          document.getElementById("secondbase2").innerHTML = songs[index].attribute
-   		selectlist = ["map", "bonus", "bonus2"]
+   		selectlist = ["map",  "bonus2"]
    		for (i in selectlist){
    			document.getElementById(selectlist[i]).value = songs[index].attribute
    		}
-   		if (document.getElementById("percentage").value != 12)
-   			document.getElementById("base").value = songs[index].attribute
+//   		if (document.getElementById("percentage").value != 12)
+//   			document.getElementById("base").value = songs[index].attribute
    		if (document.getElementById("percentage2").value != 12)
    			document.getElementById("base2").value = songs[index].attribute
    		infolist = ["combo",  "time"]
@@ -478,7 +478,7 @@ function threetonumber(three){
       document.getElementById("secondpercentage").value = "0"
       if (cards[index]["rarity"] == "SSR" || cards[index]["rarity"] == "UR"){
          document.getElementById("secondlimit").value = cards[index]["Csecondskilllimit"]
-         //document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
+         document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
          document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
       }
    }
@@ -1623,7 +1623,7 @@ function calc_bestarm(){
    }
 
    function changemapcolor(){
-      document.getElementById('secondbase').innerHTML = document.getElementById('map').value
+ //     document.getElementById('secondbase').innerHTML = document.getElementById('map').value
       document.getElementById('secondbase2').innerHTML = document.getElementById('map').value
       document.getElementById('base2').value = document.getElementById('map').value
       document.getElementById('bonus2').value = document.getElementById('map').value
@@ -2089,7 +2089,7 @@ function calc_bestarm(){
       <option value="10">AZALEA</option>
       <option value="11">Guilty Kiss</option>
    </select>的<nospan id="secondbase" name="secondbase">
-   歌曲属性
+   属性
    <!--
       <option value="smile" style="color:red">smile</option>
       <option value="pure" style="color:green">pure</option>
