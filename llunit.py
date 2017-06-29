@@ -260,7 +260,10 @@ def llnewunit():
     argv = request.args.get("unit")
     addon = ""
     if argv:
-        addon = genllunitloadscript(argv)
+        try:
+            addon = genllunitloadscript(argv)
+        except BaseException:
+            pass
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template("llnewunit.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)
@@ -270,7 +273,10 @@ def llnewunitsis():
     argv = request.args.get("unit")
     addon = ""
     if argv:
-        addon = genllunitloadscript(argv)
+        try:
+            addon = genllunitloadscript(argv)
+        except BaseException:
+            pass
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)

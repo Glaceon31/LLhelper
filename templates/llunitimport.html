@@ -35,7 +35,7 @@
    2、用手机或平板电脑对你的队伍进行截图
    3、用下面的按钮把截图提交
 
-注意：图像识别由另一服务器完成，可能有数据不同步的情况。
+注意：图像识别由另一台服务器完成。数据不同步时，队伍强度查询等页面将无法读取最新的卡片。
 
 该功能由 <b>liaocm</b> 提供</a>
 </pre>
@@ -94,7 +94,7 @@
 </table>
          </center>
 <div align="right">
-<a id="sis" href="/llnewunitsis">自动配宝石</a> · <a id="unitstrength" href="/llnewunit">查询强度</a> · <a id="dlunit" download="export.sd" href="data:text/plain,null">下载队伍</a></div>
+<a id="sis" href="/llnewunitsis" target="_blank">自动配宝石</a> · <a id="unitstrength" href="/llnewunit" target="_blank">查询强度</a> · <a id="dlunit" download="export.sd" href="data:text/plain,null">下载队伍</a></div>
       </div>
    </div>
 </div>
@@ -119,9 +119,12 @@ function uploadDone(event) {
     var handle = result.handle;
     var team = result.team;
     var names = result.names;
+    var teamjson = JSON.stringify(team);
     
     document.getElementById("scaled").src="http://api.sif.lcm.im/temp/"+handle+"/scaled.jpg";
-    document.getElementById("dlunit").href="data:text/plain,"+JSON.stringify(team);
+    document.getElementById("dlunit").href="data:text/plain,"+teamjson;
+    document.getElementById("sis").href="/llnewunitsis?unit="+teamjson;
+    document.getElementById("unitstrength").href="/llnewunit?unit="+teamjson;
     for(var i=1; i<10; i++) {
         var strI = i.toString();
         document.getElementById("img"+strI).src="http://api.sif.lcm.im/temp/"+handle+"/"+strI+".png";
@@ -132,6 +135,9 @@ function uploadDone(event) {
     document.getElementById("resline").style.display="block";
     document.getElementById("result").style.display="block";
     document.getElementById("restable").style.display="block";
+    for (var i = 1; i< 1000; i++) {
+      self.scroll(1, i);
+    }
 }
 
 function uploadFailed(event) {
