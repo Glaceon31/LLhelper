@@ -1268,7 +1268,7 @@ function calc_bestarm(){
          if (mapcenter['base'] == mainatt){
             attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage']/100)
 		//////////
-		if(Precal)
+		if(Precal&&(mapcenter['bonus']==mainatt))
 		Match_c[i]+=(mapcenter['percentage']/100);
 		//////////
             for (var j = 0; j < 9; j++)
@@ -1281,8 +1281,7 @@ function calc_bestarm(){
       for (var i = 0; i < 9; i++) {
          if (isinunitgroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
-		if(Precal)
-		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage']/100);
+		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
@@ -1296,7 +1295,7 @@ function calc_bestarm(){
          result['bonusatt'][mapcenter['bonus2']] += Math.ceil(mapcenter['percentage2']*member[i][mapcenter['base2']]/100);
          if (mapcenter['base2'] == mainatt){
 		 //////////
-		if(Precal){
+		if(Precal &&(mapcenter['bonus2']==mainatt)){
 		
 		Match_c[i]+=(mapcenter['percentage2']/100);
 		}
@@ -1312,8 +1311,8 @@ function calc_bestarm(){
       for (var i = 0; i < 9; i++) {
          if (isinunitgroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
-		if(Precal)
-		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage2']/100);
+		if(Precal &&(mapcenter['bonus2']==mainatt))
+		 Match_c[i]+=(mapcenter['secondpercentage2']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
