@@ -69,7 +69,7 @@ def llnewunitload():
 def llnewunitloadsis():
     print request.files
     for f in request.files['file']:
-        return '<script>'+genllunitloadscript(f)+'</script>'
+        return '<script>'+genllunitloadscript(f, sis=True)+'</script>'
 
 @app.route("/llunit", methods=['GET', 'POST'])
 def llunit():
