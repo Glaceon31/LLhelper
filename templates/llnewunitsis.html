@@ -103,7 +103,7 @@
 	Match_c = new Array(0,0,0,0,0,0,0,0,0);//是否满足副c
 	skillP = new Array();//z
 	skind = new Array();//z0
-	var Precal;
+	var Precal=false;
 	comb=[];
 	arms=new Array();//√
 	P_up=new Array();//每个成员的对应宝石贡献属性增值
@@ -116,7 +116,7 @@
 	gradecount=new Array();
 	skillcount=new Array();
 	SNum = new Array();//↓每种宝石的数量*z0
-   
+   currslot=0;
 function threetonumber(three){
       result = three
       if (result[0] == '0'){
@@ -395,14 +395,14 @@ function threetonumber(three){
    	if (index != "") {
    		c = attcolor[songs[index].attribute]
    		document.getElementById(which).style.color = c
-         document.getElementById("secondbase").innerHTML = songs[index].attribute
+//         document.getElementById("secondbase").innerHTML = songs[index].attribute
          document.getElementById("secondbase2").innerHTML = songs[index].attribute
-   		selectlist = ["map", "bonus", "bonus2"]
+   		selectlist = ["map",  "bonus2"]
    		for (i in selectlist){
    			document.getElementById(selectlist[i]).value = songs[index].attribute
    		}
-   		if (document.getElementById("percentage").value != 12)
-   			document.getElementById("base").value = songs[index].attribute
+//   		if (document.getElementById("percentage").value != 12)
+//   			document.getElementById("base").value = songs[index].attribute
    		if (document.getElementById("percentage2").value != 12)
    			document.getElementById("base2").value = songs[index].attribute
    		infolist = ["combo",  "time"]
@@ -456,13 +456,26 @@ function threetonumber(three){
       document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
    	document.getElementById("mezame"+String(n)).value = mezame
    	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id
+	index=document.getElementById("cardchoice").value;
+	if(cards[index].type=='卡池卡' || cards[index].type=='活动卡'){
+			if(cards[index].rarity=='UR') currslot=4;
+			if(cards[index].rarity=='SSR') currslot=3;
+			if(cards[index].rarity=='SR') currslot=2;
+			if(cards[index].rarity=='R') currslot=1;
+		}
+		else{
+			if(cards[index].rarity=='UR') currslot=2;
+			if(cards[index].rarity=='SR') currslot=1;
+			if(cards[index].rarity=='R') currslot=1;
+		}
+	document.getElementById("maxcost"+String(n)).value=currslot;
    	//changeskilltext(n)
    	if (n == 4){
    		changecenter()
    	}
    	changeavatar(n)
+	
    }
-   
    function changecenter(){
    	cardid = parseInt(document.getElementById("cardid4").value)
    	index = 0
@@ -478,7 +491,7 @@ function threetonumber(three){
       document.getElementById("secondpercentage").value = "0"
       if (cards[index]["rarity"] == "SSR" || cards[index]["rarity"] == "UR"){
          document.getElementById("secondlimit").value = cards[index]["Csecondskilllimit"]
-         //document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
+         document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
          document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
       }
    }
@@ -508,6 +521,7 @@ function threetonumber(three){
    	else
    		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
    }
+   
    
    function changeavatarselect(){
    	document.getElementById('imageselect').src = '/static/null.png'
@@ -589,7 +603,7 @@ function threetonumber(three){
    		setCookie(selects[i].name+"unit", selects[i].value, -1);
    	}
    	setCookie("mezame"+"unit", mezame, -1)
-   	window.location.href="/llnewunit"
+   	window.location.href="/llnewunitsis"
    }
    
    function saveunit(){
@@ -718,7 +732,7 @@ function threetonumber(three){
    }
    
    ///////////
-var sisrecord=new Array();
+sisrecord=new Array(9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
@@ -765,10 +779,10 @@ var sisrecord=new Array();
 		}
 		else{
 			document.getElementById("sisreserves").innerHTML=sishtml
-			for(var i=1;i<16;i++){
+		}
+		for(var i=1;i<16;i++){
 				document.getElementById("sis"+String(i)).value=sisrecord[i];
 			}
-		}
 	}
 	else{
 		for(var i=1;i<16;i++){
@@ -1258,7 +1272,7 @@ function calc_bestarm(){
          if (mapcenter['base'] == mainatt){
             attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage']/100)
 		//////////
-		if(Precal)
+		if(Precal&&(mapcenter['bonus']==mainatt))
 		Match_c[i]+=(mapcenter['percentage']/100);
 		//////////
             for (var j = 0; j < 9; j++)
@@ -1271,8 +1285,7 @@ function calc_bestarm(){
       for (var i = 0; i < 9; i++) {
          if (isinunitgroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
-		if(Precal)
-		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage']/100);
+		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
@@ -1286,7 +1299,7 @@ function calc_bestarm(){
          result['bonusatt'][mapcenter['bonus2']] += Math.ceil(mapcenter['percentage2']*member[i][mapcenter['base2']]/100);
          if (mapcenter['base2'] == mainatt){
 		 //////////
-		if(Precal){
+		if(Precal &&(mapcenter['bonus2']==mainatt)){
 		
 		Match_c[i]+=(mapcenter['percentage2']/100);
 		}
@@ -1302,8 +1315,8 @@ function calc_bestarm(){
       for (var i = 0; i < 9; i++) {
          if (isinunitgroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
-		if(Precal)
-		if (mapcenter['base'] == mainatt) Match_c[i]+=(mapcenter['secondpercentage2']/100);
+		if(Precal &&(mapcenter['bonus2']==mainatt))
+		 Match_c[i]+=(mapcenter['secondpercentage2']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
@@ -1499,7 +1512,7 @@ function calc_bestarm(){
          }
       }
       
-      if (document.getElementById('distribution').checked){
+      if (document.getElementById('distribution').checked && (!Precal)){
          var t0 = window.performance.now();
          
          var percentiles = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.98, 0.99];
@@ -1627,7 +1640,7 @@ function calc_bestarm(){
    }
 
    function changemapcolor(){
-      document.getElementById('secondbase').innerHTML = document.getElementById('map').value
+ //     document.getElementById('secondbase').innerHTML = document.getElementById('map').value
       document.getElementById('secondbase2').innerHTML = document.getElementById('map').value
       document.getElementById('base2').value = document.getElementById('map').value
       document.getElementById('bonus2').value = document.getElementById('map').value
@@ -1659,7 +1672,7 @@ function calc_bestarm(){
 	4、可以点击”保存队伍“将队伍配置文件保存到本地
 	5、第2、3步可以从保存的文件中读取队伍信息来代替：点击”选择文件“选择本地配置文件，再点击”读取队伍“
 	6、选择主唱技能和好友主唱技能 <font style='color:red'><b>计算SM得分时将好友主唱加成设为0%</b></font>
-	7、勾选或取消“自动配饰”选择是否在点击Calculate计算时自动计算最优策略 勾选后请填写每种偶像技能的拥有数量
+	7、勾选或取消“自动配饰”选择是否在点击Calculate计算时自动计算最优策略 勾选后请填写每种偶像技能的拥有数量 <a href=https://tieba.baidu.com/p/5190964992><font color="#FF0000"><b>问题反馈</b></font></a>
 	8、点击Calculate
 
 当前版本：4.1及以上。</a>
@@ -2093,7 +2106,7 @@ function calc_bestarm(){
       <option value="10">AZALEA</option>
       <option value="11">Guilty Kiss</option>
    </select>的<nospan id="secondbase" name="secondbase">
-   歌曲属性
+   属性
    <!--
       <option value="smile" style="color:red">smile</option>
       <option value="pure" style="color:green">pure</option>
@@ -2159,9 +2172,11 @@ function calc_bestarm(){
 <pre>
 注意：
    勾选“计算分布”来计算得分分布。得分分布使用真实分布计算，计算速度比较慢。
+   计算“自动配饰”的时候建议先不勾选“计算分布”以免时间过长，得到最优宝石配置后取消“自动配饰”再计算得分分布。
    由于使用歌曲信息计算，最终结果可能会有千分之一的误差
    判定覆盖率仅供参考
    判定期间属性1.25倍的宝石计算有误，暂时按无效计算。
+   在队伍中有爆分SR时，由于技能强度会随着队伍强度变化而变化，可能出现多次计算“自动配饰”得到的结果不唯一的情况，此时只需重复计算多次取强度最高者即可。
 说明：   
    1、在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率
    2、卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度
