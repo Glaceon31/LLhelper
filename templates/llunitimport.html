@@ -35,7 +35,7 @@
    2、用手机或平板电脑对你的队伍进行截图
    3、用下面的按钮把截图提交
 
-注意：图像识别由另一台服务器完成。数据不同步时，队伍强度查询等页面将无法读取最新的卡片。
+注意：不识别N卡。图像识别由另一台服务器完成。数据不同步时，队伍强度查询等页面将无法读取最新的卡片。
 
 该功能由 <b>liaocm</b> 提供</a>
 </pre>
@@ -140,15 +140,6 @@ function uploadDone(event) {
     }
 }
 
-function uploadFailed(event) {
-    console.log("failed!");
-    $("#restext").html("失败：图片有误");
-    document.getElementById("resline").style.display="block";
-    document.getElementById("result").style.display="block";
-    $(":button").attr("value", "上传");
-    $(":button").attr("disabled", false);
-}
-
 function imgUpload() {
    var fd = document.getElementById("file-upload").files[0];
    var url = "http://api.sif.lcm.im/teamview";
@@ -157,7 +148,13 @@ function imgUpload() {
    var xhr = new XMLHttpRequest();
    xhr.open("post", url, true);
    xhr.onload = uploadDone;
-   xhr.onerror = uploadFailed;
+   xhr.onerror = function (e){
+    $("#restext").html("失败: " + xhr.statusText);
+    document.getElementById("resline").style.display="block";
+    document.getElementById("result").style.display="block";
+    $(":button").attr("value", "上传");
+    $(":button").attr("disabled", false);
+  };
    xhr.send(form);
 }
 
