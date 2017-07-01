@@ -16,7 +16,7 @@
    table, td, th {border: 1px solid black;text-align:center;padding: 3px;margin: 15px auto;}
    </style>
   </head>
- <body>
+ <body onload="check_server_status()">
  <nav class="navbar navbar-default" role="navigation">
    <div class="navbar-header">
       <a class="navbar-brand" href="/">LLhelper</a>
@@ -52,6 +52,8 @@
       <input name="file" type="file" id="file-upload"/>
       <br/>
       <input type="button" value="上传"/>
+      <br/><br/><hr/>
+      <b>服务器状态:  </b><b id="server_status" color="#000000">正在连接...</b>
    </div>
    </div>
    <hr id="resline" style="display:none"/>
@@ -59,12 +61,12 @@
       <h3 align="center" id="restext">运行结果</h3>
       <div class="col-md-4 col-xs-12">
          <h4 id="result-text">输入</h4>
-         <img id="reflect" src="static/dev/main_file.jpg" style="max-width:100%;margin=10px auto"/>
+         <img id="reflect" src="" style="max-width:100%;margin=10px auto"/>
       </div>
       <div class="col-md-8 col-xs-12" id="restable" style="display:none">
          <center>
          <h4>识别区域</h4>
-         <img id="scaled" src="static/dev/scaled.jpg" style="max-width:80%;margin=10px auto"/>
+         <img id="scaled" src="" style="max-width:80%;margin=10px auto"/>
          <h4>识别内容</h4>
 <table>
   <tr>
@@ -116,6 +118,12 @@ function uploadDone(event) {
     $(":button").attr("value", "上传");
     $(":button").attr("disabled", false);
     var result = JSON.parse(event.target.responseText);
+
+    if (result.status != 200) {
+      process_error(result.message);
+      return;
+    }
+
     var handle = result.handle;
     var team = result.team;
     var names = result.names;
@@ -140,22 +148,26 @@ function uploadDone(event) {
     }
 }
 
-function imgUpload() {
-   var fd = document.getElementById("file-upload").files[0];
-   var url = "http://api.sif.lcm.im/teamview";
-   var form = new FormData();
-   form.append("file", fd);
-   var xhr = new XMLHttpRequest();
-   xhr.open("post", url, true);
-   xhr.onload = uploadDone;
-   xhr.onerror = function (e){
-    $("#restext").html("失败: " + xhr.statusText);
+function process_error(msg) {
+    $("#restext").html("失败: " + msg);
     document.getElementById("resline").style.display="block";
     document.getElementById("result").style.display="block";
     $(":button").attr("value", "上传");
     $(":button").attr("disabled", false);
-  };
-   xhr.send(form);
+}
+
+function imgUpload() {
+    var fd = document.getElementById("file-upload").files[0];
+    var url = "http://api.sif.lcm.im/teamview";
+    var form = new FormData();
+    form.append("file", fd);
+    var xhr = new XMLHttpRequest();
+    xhr.open("post", url, true);
+    xhr.onload = uploadDone;
+    xhr.onerror = function (e){
+        process_error("Network failure.");
+    };
+    xhr.send(form);
 }
 
 function changeImg() {
@@ -171,6 +183,20 @@ function changeImg() {
         img.src = e.target.result;
     }
     reader.readAsDataURL(imgFd);
+}
+//server_status
+function check_server_status() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("get", "http://api.sif.lcm.im/status", true);
+    xhr.onload = function (event) {
+        $("#server_status").html("OK");
+        $("#server_status").css("color", "#00cc00");
+    };
+    xhr.onerror = function (e){
+        $("#server_status").html("DOWN");
+        $("#server_status").css("color", "#ff0000");
+    };
+    xhr.send();
 }
 
 </script>
