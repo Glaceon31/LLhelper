@@ -667,11 +667,15 @@ function threetonumber(three){
    		changeavatar(i)
          calslot(i)
    	}
+      try {
    	document.getElementById("songsearch").value = ""
    	//changecolor("cardchoice")
    	//changesongcolor("songchoice")
    	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
    	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+      } catch (err) {}
+
+      {{additional_script|safe}}
    }
    
    function changediffinfo(){

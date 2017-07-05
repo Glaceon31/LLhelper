@@ -554,20 +554,17 @@
    	changecolor("cardchoice")
    	changeavatarselect()
    }
-   
-   
-
 
    function clearall(){
-   	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
-   	for (var i=0; i<inputs.length; i++){
-   		setCookie(inputs[i].name+"unit", inputs[i].value, -1);
-   	}
-   	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"unit", selects[i].value, -1);
-   	}
-   	setCookie("mezame"+"unit", mezame, -1)
+      var inputs = document.getElementsByTagName("input");
+      var selects = document.getElementsByTagName("select");
+      for (var i=0; i<inputs.length; i++){
+         setCookie(inputs[i].name+"unit", inputs[i].value, -1);
+      }
+      for (var i=0; i<selects.length; i++){
+         setCookie(selects[i].name+"unit", selects[i].value, -1);
+      }
+      setCookie("mezame"+"unit", mezame, -1)
    	window.location.href="/llnewunit"
    }
    
@@ -632,11 +629,15 @@
    		changeavatar(i)
          calslot(i)
    	}
+      try {
    	document.getElementById("songsearch").value = ""
    	//changecolor("cardchoice")
    	//changesongcolor("songchoice")
    	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
    	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+      } catch (err) {}
+
+      {{additional_script|safe}}
    }
    
    function changediffinfo(){
