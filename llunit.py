@@ -82,6 +82,15 @@ def llnewunitloadsis():
             #script = script+'parent.changeskilltext('+str(i)+');parent.changeavatar('+str(i)+');\n'
             #script = script+'parent.document.getElementById("skilllevel'+str(i)+'").value= parent.getskilllevel('+str(i)+');\n'
         script = script+'parent.changecenter();parent.precalcu();\n'
+        if len(memberinfo)>9:
+            for i in range(1,16):
+                if str(i) in memberinfo[9]:
+                    script = script+'parent.sisrecord['+str(i)+']='+str(memberinfo[9][str(i)])+';\n'
+                    print memberinfo[9][str(i)]
+                else:
+                    script = script+'parent.sisrecord['+str(i)+']='+str(0)+';\n'
+            script =script+'parent.autoarm();\n'
+	
         return '<script>'+script+'</script>'
 
 @app.route("/llunit", methods=['GET', 'POST'])

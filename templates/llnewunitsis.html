@@ -117,6 +117,7 @@
 	skillcount=new Array();
 	SNum = new Array();//↓每种宝石的数量*z0
    currslot=0;
+   sisrecord=new Array(9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0);
 function threetonumber(three){
       result = three
       if (result[0] == '0'){
@@ -607,13 +608,16 @@ function threetonumber(three){
    }
    
    function saveunit(){
-   	member = [{}, {}, {},{},{},{},{},{},{}]
+   	member = [{}, {}, {},{},{},{},{},{},{},{}]
    	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
    	for (i=0;i<9;i++){
    		for (j in saveatt){
    			member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
    		}
    	}
+	for(i=1;i<16;i++){
+		member[9][i]=document.getElementById('sis'+String(i)).value
+	}
    	unitjson = JSON.stringify(member)
    	window.location.href="/llsaveunit/"+unitjson
    }
@@ -728,7 +732,7 @@ function threetonumber(three){
    }
    
    ///////////
-sisrecord=new Array(9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0);
+
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
