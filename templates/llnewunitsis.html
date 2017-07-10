@@ -616,7 +616,7 @@ function threetonumber(three){
    		}
    	}
 	for(i=1;i<16;i++){
-		member[9][i]=document.getElementById('sis'+String(i)).value
+		member[9][i]=sisrecord[i]
 	}
    	unitjson = JSON.stringify(member)
    	window.location.href="/llsaveunit/"+unitjson
