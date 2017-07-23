@@ -117,7 +117,8 @@
 	skillcount=new Array();
 	SNum = new Array();//↓每种宝石的数量*z0
    currslot=0;
-   sisrecord=new Array(9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0);
+   songweight=new Array();
+   songweightsort=new Array()
 function threetonumber(three){
       result = three
       if (result[0] == '0'){
@@ -424,6 +425,7 @@ function threetonumber(three){
    		for (i = 0; i < 9; i++){
    			document.getElementById("weight"+String(i)).value = parseFloat(songs[index][diff]["positionweight"][i])
    		}
+		
    	}
    }
    
@@ -445,7 +447,19 @@ function threetonumber(three){
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
    }
-
+	function getdefaultslot(n){
+	 if(cards[n].type=='卡池卡' || cards[n].type=='活动卡'){
+			if(cards[n].rarity=='UR') return 4;
+			if(cards[n].rarity=='SSR') return 3;
+			if(cards[n].rarity=='SR') return 2;
+			if(cards[n].rarity=='R') return 1;
+		}
+		else{
+			if(cards[n].rarity=='UR') return 2;
+			if(cards[n].rarity=='SR') return 1;
+			if(cards[n].rarity=='R') return 1;
+		}
+	}
    function copyTo(n){
    	copyList = ["main", "smile", "pure", "cool"]
    	for (i in copyList){
@@ -458,17 +472,7 @@ function threetonumber(three){
    	document.getElementById("mezame"+String(n)).value = mezame
    	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id
 	index=document.getElementById("cardchoice").value;
-	if(cards[index].type=='卡池卡' || cards[index].type=='活动卡'){
-			if(cards[index].rarity=='UR') currslot=4;
-			if(cards[index].rarity=='SSR') currslot=3;
-			if(cards[index].rarity=='SR') currslot=2;
-			if(cards[index].rarity=='R') currslot=1;
-		}
-		else{
-			if(cards[index].rarity=='UR') currslot=2;
-			if(cards[index].rarity=='SR') currslot=1;
-			if(cards[index].rarity=='R') currslot=1;
-		}
+	currslot=getdefaultslot(index)
 	document.getElementById("maxcost"+String(n)).value=currslot;
    	//changeskilltext(n)
    	if (n == 4){
@@ -616,23 +620,37 @@ function threetonumber(three){
    		}
    	}
 	for(i=1;i<16;i++){
-		if(document.getElementById('autoarm0').checked)
-			member[9][i]=document.getElementById('sis'+String(i)).value
-		else
-			member[9][i]=String(sisrecord[i])
+		member[9][i]=document.getElementById('sis'+String(i)).value
 	}
    	unitjson = JSON.stringify(member)
    	window.location.href="/llsaveunit/"+unitjson
    }
-   
+   function savesubmembers(){
+	var submemberlist=[]
+	savesubmemberatt=['cardid','mezame','skilllevel','maxcost']
+	for(var i in submember){
+		submemberlist[i]={}
+		for(j in savesubmemberatt){
+			
+			submemberlist[i][savesubmemberatt[j]]=submember[i][savesubmemberatt[j]]
+			}
+	}
+	submembersjson=JSON.stringify(submemberlist)
+	window.location.href="/llsavesubmembers/"+submembersjson
+   }
    var tmponsubmit
+   function loadsubmembers(){
+   	document.getElementById("unitform").action = '/llloadnewsubmemberssis'
+//   	tmponsubmit = document.getElementById("unitform").onsubmit
+   	document.getElementById("unitform").onsubmit = ''
+   	document.getElementById("unitform").target = 'if'
+   }
    function loadunit(){
    	document.getElementById("unitform").action = '/llloadnewunitsis'
    	tmponsubmit = document.getElementById("unitform").onsubmit
    	document.getElementById("unitform").onsubmit = ''
    	document.getElementById("unitform").target = 'if'
    }
-   
    function precalcu(){
    	document.getElementById("unitform").action = ''
    	document.getElementById("unitform").onsubmit = tmponsubmit
@@ -679,6 +697,7 @@ function threetonumber(three){
    	//changesongcolor("songchoice")
    	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
    	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+	document.getElementById("submembersoperation").style.display="none"
    }
    
    function changediffinfo(){
@@ -733,9 +752,70 @@ function threetonumber(three){
    	setCookie("mezame"+"unit", mezame, 1)
    	setCookie("language"+"unit", language, 1)
    }
-   
+   //////////
+   submember=new Array();
+	function addselectsub(){
+		var index=document.getElementById("cardchoice").value;
+		var cardid=threetonumber(cards[String(document.getElementById("cardchoice").value)].id)
+		var subunit={}
+		if ((cardid != 0) && (cardid != "") && (cardid != "0")){
+			subunit["main"]=document.getElementById("main").value
+			subunit["smile"]=parseInt(document.getElementById("smile").value)
+			subunit["pure"]=parseInt(document.getElementById("pure").value)
+			subunit["cool"]=parseInt(document.getElementById("cool").value)
+			subunit[subunit["main"]]+=parseInt(document.getElementById("kizuna").value)
+		subunit["skilllevel"]=1
+		subunit["mezame"]=parseInt(mezame)
+		subunit["cardid"]= cards[String(document.getElementById("cardchoice").value)].id
+		subunit["maxcost"]=getdefaultslot(index)
+		submember.push(subunit)
+		refreshsubmemberlist()
+	}
+   }
+   function getsubmembersdata(){
+   var subcopyList=["main", "smile", "pure", "cool",]
+	for(var i in submember){
+		var index=submember[i]["cardid"]
+		submember[i]["main"]=cards[index]["attribute"]
+		submember[i]["smile"]=cards[index]["smile2"]
+		submember[i]["pure"]=cards[index]["pure2"]
+		submember[i]["cool"]=cards[index]["cool2"]
+		submember[i][submember[i]["main"]]+= kizuna[cards[index].rarity][submember[i]["mezame"]]
+	}
+	refreshsubmemberlist();
+   }
+   function refreshsubmemberlist(){
+	//	submemberhtml="<h3>备选队员</h3>"
+		if(submember.length>0) document.getElementById("submembersoperation").style.display="block"
+		else document.getElementById("submembersoperation").style.display="none"
+		submemberhtml="<table border='1' style='text-align:center'>"
+		for(var j=0;j<submember.length;j++){
+			submemberhtml+="<td>"+'<div id='+"sublist"+String(j)+'></div>'+"</td>"
+		}
+		document.getElementById("submembers").innerHTML=submemberhtml
+		for(var j=0;j<submember.length;j++){
+			var subunithtml;
+			subunithtml="<table border='1' style='text-align:center'><td><img src="+getimagepath(cards[submember[j]["cardid"]]['id'],'avatar',parseInt(submember[j]["mezame"]))+"></td></tr>"
+			subunithtml+="<td>"+'等级'+'<input type="text" id="submemlv'+String(j)+'" size="3" value="'+String(submember[j]["skilllevel"])+'" onkeyup="changesublv('+j+')">'+"</td></tr>"
+			subunithtml+="<td>"+'槽数'+'<input type="text" id="submemslot'+String(j)+'" size="3" value='+String(submember[j]["maxcost"])+' onkeyup="changesubslot('+j+')">'+"</td></tr>"
+			subunithtml+="<td>"+'<input type="button" onclick="Delsubmem('+j+')" value="删除" />'+"</td>"
+			document.getElementById("sublist"+String(j)).innerHTML=subunithtml
+		}
+   }
+function Delsubmem(j){
+	//删除submember中某元素
+	var sublisthtml;
+	submember.splice(j,1)
+	refreshsubmemberlist()
+}
+function changesublv(n){
+	submember[n]["skilllevel"]=parseInt(document.getElementById("submemlv"+String(n)).value)
+}
+function changesubslot(n){
+	submember[n]["maxcost"]=parseInt(document.getElementById("submemslot"+String(n)).value)
+}
    ///////////
-
+sisrecord=new Array(9,9,9,9,9,0,0,0,0,0,0,0,0,0,0,0);
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
@@ -1016,6 +1096,172 @@ function calc_bestarm(){
 		p_s = Team_Method[i][p_s].premethod;
 	}
 	}
+	///
+	function getallmembers(){
+		var subcopyListstr=["main","cardid"]
+		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
+		for(var i=0;i<9;i++){
+			if(i==4) continue;
+			var subunit={}
+			var cardid = threetonumber(document.getElementById('cardid'+String(i)).value)
+			if ((cardid == 0) || (cardid == "") || (cardid == "0"))
+				continue;
+			subunit["main"]=document.getElementById("main"+String(i)).value
+			subunit["cardid"]=document.getElementById("cardid"+String(i)).value
+			for(var j in subcopyList)
+				subunit[subcopyList[j]]=parseInt(document.getElementById(subcopyList[j]+String(i)).value)
+			submember.push(subunit)
+		}
+		{
+			var subunit={}
+			var cardid = threetonumber(document.getElementById('cardid4').value)
+			subunit["main"]=document.getElementById("main4").value
+			subunit["cardid"]=document.getElementById("cardid4").value
+			for(var j in subcopyList)
+				subunit[subcopyList[j]]=parseInt(document.getElementById(subcopyList[j]+String(4)).value)
+			submember.push(subunit)
+		}
+	}
+	//计算所有加成，和最高属性
+	function setsubmemAddition(){
+		mainp=document.getElementById("map").value
+		mapsong=songs[document.getElementById('songchoice').value]
+		for (var memi in submember) {
+         groupbonus = samegroup(mapsong,cards[submember[memi]["cardid"]])
+         colorbonus = (mainp == submember[memi]['main'])
+		 submember[memi]["addition"]=1.21
+         if (!groupbonus && !colorbonus)
+            submember[memi]["addition"]=1
+         else if (!groupbonus || !colorbonus)
+            submember[memi]["addition"]=1.1
+      }
+	}
+	function getMaxeight(){
+		unitmembers=new Array()
+		subunitmembers=new Array()
+		for(var k=0;k<submember.length-1;k++){
+			subunitmembers.push(k);
+		}
+		for(var i=0;i<8;i++){
+			var maxmainp=0;
+			var maxselect=0
+			for(var j=0;j<subunitmembers.length;j++){
+				if(maxmainp<submember[subunitmembers[j]][mainp]){
+					maxmainp=submember[subunitmembers[j]][mainp]
+					maxselect=j
+				}
+			}
+			unitmembers[i]=subunitmembers[maxselect];
+			subunitmembers.splice(maxselect,1);
+		}
+	}
+	
+	//先排序权重，随歌曲而动,从大到小
+	
+	function orderposbyweight(){
+		for(var i=0;i<9;i++){
+			songweight[i]=parseFloat(document.getElementById("weight"+String(i)).value)
+		}
+		
+		for(var i=0;i<8;i++){
+			mweight=0
+			for(var j=0;j<9;j++){
+				if(j==4) continue
+				if(mweight<songweight[j]){
+					mweight=songweight[j]
+					songweightsort[i]=j
+				}
+			}
+			songweight[songweightsort[i]]=0
+		}
+	}
+	
+	//再排序加成，随计算而动，从大到小
+	function ordermembyaddition(){
+		unitorder=new Array();
+		var n=0;
+		for(var i=0;i<8;i++){
+			if(submember[unitmembers[i]]["addition"]>1.15) {
+				unitorder[n]=unitmembers[i]
+				n++
+			}
+		}
+		for(var i=0;i<8;i++){
+			if(submember[unitmembers[i]]["addition"]>1.05 && submember[unitmembers[i]]["addition"]<1.15) {
+				unitorder[n]=unitmembers[i]
+				n++
+			}
+		}
+		for(var i=0;i<8;i++){
+			if(submember[unitmembers[i]]["addition"]<1.05) {
+				unitorder[n]=unitmembers[i]
+				n++
+			}
+		}
+	}
+	//安排位置，随计算而动
+	function arrangepos(){
+		var subcopyListstr=["main","cardid"]
+		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
+		for(var i=0;i<8;i++){
+			var posi=songweightsort[i]
+			var memi=unitorder[i]
+			for(var j in subcopyList){
+				document.getElementById(subcopyList[j]+String(posi)).value=String(submember[memi][subcopyList[j]])
+				var testq=document.getElementById(subcopyList[j]+String(posi)).value
+			}
+			document.getElementById("main"+String(posi)).value=submember[memi]["main"]
+			document.getElementById("cardid"+String(posi)).value=submember[memi]["cardid"]
+			changeavatar(posi)
+			//refreshsubmemberlist();/////=========delete
+		}
+	}
+	function swapmember(i,j){
+		k=subunitmembers[i]
+		subunitmembers[i]=unitmembers[j]
+		unitmembers[j]=k
+	}
+	var gettotalstrength;
+	function autounit(){
+		var curtotalstrength=0;
+		orderposbyweight()
+		getallmembers()
+		setsubmemAddition()
+		getMaxeight()
+		//
+		ordermembyaddition()
+		arrangepos()
+		refreshsubmemberlist();/////////////////////===del
+		autoarmforeveryunit()
+		calculate()
+		curtotalstrength=gettotalstrength;
+		///////=====
+		for(var i=0;i<subunitmembers.length;i++){
+			var maxaddition=0;
+			var replaceselect=-1;
+		//	setTimeout("document.getElementById('testtime').innerHTML='<p>+String(i)+</p>'",1000)
+			for(var j=0;j<8;j++){
+				swapmember(i,j)
+				ordermembyaddition()
+				arrangepos()
+				autoarmforeveryunit()
+				calculate()
+				if(maxaddition<(gettotalstrength-curtotalstrength)){
+					maxaddition=(gettotalstrength-curtotalstrength)
+					replaceselect=j
+				}
+				swapmember(i,j)
+			}
+			if(replaceselect!=(-1)){
+				swapmember(i,replaceselect)
+				curtotalstrength+=maxaddition
+			}
+		}
+		///==========
+		ordermembyaddition()
+		arrangepos()
+		autoarmforeveryunit()
+	}
    ////////*******************
    function check(){
    	var inputs = document.getElementsByTagName("input");
@@ -1023,37 +1269,52 @@ function calc_bestarm(){
    		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
    			continue
    		if (!isNumber(inputs[i].value)){
-   			alert("请输入数字");
+   			alert(inputs[i].value+"请输入数字");
    			return false;
    		}
    	}
    	saveToCookie();
 	/////////////
 	if(document.getElementById('autoarm0').checked){
-		Sum_Max_Mem=0;
-		Current_MP=0;
-		Team_Method=[];
-		for(var i=0;i<9;i++){
-			document.getElementById("gemskill"+String(i)).value="1";
-			Match_c[i]=0;
-		}
-		for(var i=0;i<3;i++) gradecount[i]=0;
-		for(var i=0;i<6;i++) skillcount[i]=0;
-		
 		Precal=true;
-		calculate();
+		autounit()
 		Precal=false;
-		Sis_get_Data();
-		P_Matrix();
-		calc_MPM();
-		calc_bestarm();
+		submember.splice(submember.length-1,1)
+		var premax=submember.length
+		for(var i=0;i<8;i++){
+			var maxmemnum=0
+			for(var j in unitmembers){
+				if(maxmemnum<unitmembers[j] && unitmembers[j]<premax)
+					maxmemnum=unitmembers[j]
+			}
+			submember.splice(maxmemnum,1)
+			premax=maxmemnum
+		}
+		for(var i=0;i<9;i++)
+			changeavatar(i)
+		refreshsubmemberlist()
 	}
 	/////////////////////
       calculate();
       document.getElementById("result").scrollIntoView()
    	return true;
    }
-   
+   function autoarmforeveryunit(){
+		Sum_Max_Mem=0;//-
+		Current_MP=0;//-
+		Team_Method=[];//-
+		for(var i=0;i<9;i++){
+			document.getElementById("gemskill"+String(i)).value="1";
+			Match_c[i]=0;
+		}
+		for(var i=0;i<3;i++) gradecount[i]=0;
+		for(var i=0;i<6;i++) skillcount[i]=0;
+		calculate();
+		Sis_get_Data();
+		P_Matrix();
+		calc_MPM();
+		calc_bestarm();
+	}
    function cbmulti(cb) {
       if (cb <= 50) {
          return 1;
@@ -1173,7 +1434,7 @@ function calc_bestarm(){
          for (var j = 0; j < int_element.length; j++) {
             member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
          }
-		  if(Precal)  member[i]['gemskill']=1; 
+		//  if(Precal)  member[i]['gemskill']=1; 
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
@@ -1616,6 +1877,7 @@ function calc_bestarm(){
          document.getElementById('heal'+String(i)).innerHTML = averageheal[i].toString()
          ttstrength += (attst[i]+skillst[i])
       }
+	  gettotalstrength=ttstrength
       document.getElementById('resultstrength').innerHTML = ttstrength.toFixed(0).toString()+' (属性 '+totalattst.toString()+' + 技能 '+(ttstrength-totalattst).toString()+')'
       minstrength = 100000000
       minwhich = -1
@@ -1834,6 +2096,7 @@ function calc_bestarm(){
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	（特典卡需选择觉醒）<br>
+	
 <div style="float:left">
 	裸smile :<input type="text" id="smile" name="smile" value="0" autocomplete="off" style="color:red"></input><br>
 	裸pure :<input type="text" id="pure" name="pure" value="0" autocomplete="off" style="color:green"><br>
@@ -1847,9 +2110,17 @@ function calc_bestarm(){
    </div>
 
 </div>
+
    <div style="float:left">
 <img id="imageselect">
 </div>
+<div style="float:left">
+<input type="button" id="addSubselect" value="添加后备" onclick="addselectsub()" ></input>
+<input type="file" name="filesub">
+<input type="submit" value="读取队伍" onclick="loadsubmembers()">
+</div>
+<br><br>
+
 <div style="clear:both">
    <!--
 	技能 :<select id="skill" name="skill">
@@ -1881,8 +2152,11 @@ function calc_bestarm(){
    <nobr id="unittext"></nobr>
    </nobr><br><br>
 	</p>
-<br><br>
-
+<div id="submembersoperation">
+<h4> 备选成员<input type="button" value="保存后备" onclick="savesubmembers()"></h4>
+</div>
+<div id="submembers">
+</div>
 <h3>队伍属性</h3>
 <div>
 <div style="float:left">
@@ -2074,7 +2348,10 @@ function calc_bestarm(){
 <br><br><br>
 <div id="sisreserves">
 </div>
+<div id="testtime">
 </div>
+</div>
+
 </div>
 <div style="clear:both">
 </div>
@@ -2180,6 +2457,7 @@ function calc_bestarm(){
    判定覆盖率仅供参考
    判定期间属性1.25倍的宝石计算有误，暂时按无效计算。
    在队伍中有爆分SR时，由于技能强度会随着队伍强度变化而变化，可能出现多次计算“自动配饰”得到的结果不唯一的情况，此时只需重复计算多次取强度最高者即可。
+   为保险起见，请在有后备队员时自动组队计算后再点一次calculate，若有变化请点击“问题反馈”留言
 说明：   
    1、在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率
    2、卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度

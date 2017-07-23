@@ -18,6 +18,13 @@ def llunitsave(content):
     response.headers['Content-Type']='application/octet-stream'
     response.headers['Content-Disposition']='attachment; filename=unit.sd'
     return response
+
+@app.route("/llsavesubmembers/<content>", methods=['GET', 'POST'])
+def llsubmemberssave(content):
+    response = make_response(content)
+    response.headers['Content-Type']='application/octet-stream'
+    response.headers['Content-Disposition']='attachment; filename=submembers.sd'
+    return response
     
 @app.route("/llloadunit", methods=['GET', 'POST'])
 def llunitload():
@@ -39,6 +46,23 @@ def llunitload():
         script = script+'parent.changecenter();parent.precalcu();\n'
         return '<script>'+script+'</script>'
 
+@app.route("/llloadnewsubmemberssis", methods=['GET', 'POST'])
+def llnewsubmembersload():
+    print request.files
+    for f in request.files['filesub']:
+        f = f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']')
+        #print f
+        memberinfo = json.loads(f)
+        print memberinfo[0]
+        script = 'parent.submember=[];\n'
+        attlist = ['cardid','mezame','skilllevel','maxcost']
+        for i in range(0, len(memberinfo)):
+            script = script+'parent.submember['+str(i)+']={}\n'
+            for j in attlist:
+                script = script+'parent.submember['+str(i)+']["'+j+'"]='+str(memberinfo[i][j])+';\n'
+        script = script+'parent.getsubmembersdata();\n'
+        return '<script>'+script+'</script>'		
+		
 @app.route("/llloadnewunit", methods=['GET', 'POST'])
 def llnewunitload():
     print request.files
