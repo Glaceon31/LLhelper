@@ -609,6 +609,7 @@ function threetonumber(three){
    	}
    	setCookie("mezame"+"unit", mezame, -1)
    	window.location.href="/llnewunitsis"
+	refreshsubmemberlist()
    }
    
    function saveunit(){
@@ -2152,7 +2153,7 @@ function calc_bestarm(){
    <nobr id="unittext"></nobr>
    </nobr><br><br>
 	</p>
-<div id="submembersoperation">
+<div id="submembersoperation" style="display: none">
 <h4> 备选成员<input type="button" value="保存后备" onclick="savesubmembers()"></h4>
 </div>
 <div id="submembers">
