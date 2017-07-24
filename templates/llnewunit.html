@@ -1256,37 +1256,50 @@
       document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
 
       var micBoundaries = [
-        { min: 0.00, max: 1.95, mics: 1 },
-        { min: 2.00, max: 4.65, mics: 2 },
-        { min: 4.70, max: 6.85, mics: 3 },
-        { min: 6.90, max: 11.45, mics: 4 },
-        { min: 11.50, max: 15.95, mics: 5 },
-        { min: 16.00, max: 23.35, mics: 6 },
-        { min: 23.40, max: 34.95, mics: 7 },
-        { min: 35.00, max: 50.00, mics: 8 },
+        { min: 0.00, max: 1.87, mics: 1 },
+        { min: 2.34, max: 4.55, mics: 2 },
+        { min: 4.63, max: 6.81, mics: 3 },
+        { min: 6.82, max: 11.22, mics: 4 },
+        { min: 11.29, max: 15.63, mics: 5 },
+        { min: 16.05, max: 23.13, mics: 6 },
+        { min: 23.24, max: 34.40, mics: 7 },
+        { min: 34.52, max: 50.00, mics: 8 },
         { min: 50.05, max: 71.00, mics: 9 },
         { min: 72.00, max: 72.00, mics: 10 },
       ]
+      var unknownMicBoundaries = []
+      for (var i = 0; i < micBoundaries.length - 1; i++) {
+            unknownMicBoundaries.push({
+                  min: micBoundaries[i].max,
+                  max: micBoundaries[i + 1].min,
+                  mics: micBoundaries[i].mics + 0.5
+            })
+      }
       function getRarityRatio (currMember) {
             var memberCard = cards[currMember.cardid]
-            var rarityValue = memberCard.type === '特典卡' ? 'R' : memberCard.rarity
+            var rarityValue = ['特典卡', '登录奖励', '特典卡 登录奖励'].indexOf(memberCard.type) !== -1 ? 'R' : memberCard.rarity
+            if (memberCard.type === '') memberCard.rarity = 'N'
             switch (rarityValue) {
-                  case 'UR': return 1.0
-                  case 'SSR': return 0.6
-                  case 'SR': return 0.6
-                  case 'R': return 0.15
-                  default: return 0.0
+                  case 'UR': return 1.00
+                  case 'SSR': return 0.59
+                  case 'SR': return 0.29
+                  case 'R': return 0.13
+                  default: return 0.00
             }
-}
+      }
+      var cardTypes = []
+      for (var currCardId in cards) {
+            var currCard = cards[currCardId]
+            if (cardTypes.indexOf(currCard.type) === -1) cardTypes.push(currCard.type)
+      }
       var micRawValue = member.reduce(function (sum, currMember) {
-            console.log(currMember.skilllevel)
-            console.log(getRarityRatio(currMember))
             return sum + currMember.skilllevel * getRarityRatio(currMember)
       }, 0.00)
-      var micDisplayValue = micBoundaries.filter(function (boundary) {
+      var micDisplayValue = Array.prototype.concat(micBoundaries, unknownMicBoundaries).filter(function (boundary) {
             return micRawValue >= boundary.min && micRawValue <= boundary.max
       })[0].mics
-      document.getElementById('resultmic').innerHTML = micDisplayValue.toLocaleString() + ' (' + micRawValue.toLocaleString() + ')'
+      var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
+      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + micRawValue.toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')'
    }
 
    function changemapcolor(){
