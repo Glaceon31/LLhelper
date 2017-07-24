@@ -1254,6 +1254,39 @@
       document.getElementById('result').style.display = ""
       document.getElementById('strength'+String(minwhich)).style.color = 'red'
       document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
+
+      var micBoundaries = [
+        { min: 0.00, max: 1.95, mics: 1 },
+        { min: 2.00, max: 4.65, mics: 2 },
+        { min: 4.70, max: 6.85, mics: 3 },
+        { min: 6.90, max: 11.45, mics: 4 },
+        { min: 11.50, max: 15.95, mics: 5 },
+        { min: 16.00, max: 23.35, mics: 6 },
+        { min: 23.40, max: 34.95, mics: 7 },
+        { min: 35.00, max: 50.00, mics: 8 },
+        { min: 50.05, max: 71.00, mics: 9 },
+        { min: 72.00, max: 72.00, mics: 10 },
+      ]
+      function getRarityRatio (currMember) {
+            var memberCard = cards[currMember.cardid]
+            var rarityValue = memberCard.type === '特典卡' ? 'R' : memberCard.rarity
+            switch (rarityValue) {
+                  case 'UR': return 1.0
+                  case 'SSR': return 0.6
+                  case 'SR': return 0.6
+                  case 'R': return 0.15
+                  default: return 0.0
+            }
+}
+      var micRawValue = member.reduce(function (sum, currMember) {
+            console.log(currMember.skilllevel)
+            console.log(getRarityRatio(currMember))
+            return sum + currMember.skilllevel * getRarityRatio(currMember)
+      }, 0.00)
+      var micDisplayValue = micBoundaries.filter(function (boundary) {
+            return micRawValue >= boundary.min && micRawValue <= boundary.max
+      })[0].mics
+      document.getElementById('resultmic').innerHTML = micDisplayValue.toLocaleString() + ' (' + micRawValue.toLocaleString() + ')'
    }
 
    function changemapcolor(){
@@ -1801,6 +1834,7 @@
 </tr>
 </table>
 卡组强度:<nospan id="resultstrength"></nospan><br>
+卡组援力:<nospan id="resultmic"></nospan><br>
 期望得分:<nospan id="averagescore"></nospan><br>
 
 期望回复:<nospan id="averageheal"></nospan><br>
