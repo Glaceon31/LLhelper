@@ -59,7 +59,7 @@
    }
    
    function setorder(){
-   	om = [1.0375, 1.08, 1.05, 1.02, 1.00]
+   	om = [1.04, 1.08, 1.05, 1.02, 1.00]
    	order = document.getElementById("orderselect").value
    	if (order != ""){
    		document.getElementById("order").value = om[parseInt(order)]
@@ -71,8 +71,7 @@
    }
 
    function setmission(){
-   	//om = [1.1125, 1.25, 1.15, 1.05, 1, 1.2]
-   	mm = [1.00, 1.05, 1.10, 1.15, 1.25, 1.35, 1.45]
+   	mm = [1.00, 1.05, 1.10, 1.15, 1.25, 1.35, 1.45, 1.42]
    	mission = document.getElementById("missionselect").value
    	if (mission != ""){
    		document.getElementById("mission").value = mm[parseInt(mission)]
@@ -268,7 +267,7 @@ rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()
 	<option value=4 SELECTED>S</option>
 	</select>
 	<br>
-rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
+rank加成：<input id="rank" type="text" name="rank" value="1.20" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
 combo（可选）：<select id="comboselect" name="comboselect" onchange="setcombo()">
 	<option value=""></option>
 	<option value=0>-</option>
@@ -288,19 +287,20 @@ combo加成：<input id="combo" type="text" name="combo" value="1.06" style="wid
 	<option value=4>四位</option>
 	</select>
 	<br>
-贡献度加成：<input id="order" type="text" name="order" value="1.1125" style="width:50px" autocomplete="off" onchange="clearorder()">x<br>
+贡献度加成：<input id="order" type="text" name="order" value="1.04" style="width:50px" autocomplete="off" onchange="clearorder()">x<br>
 任务完成度（可选）<select id="missionselect" name="missionselect" onchange="setmission()">
 	<option value=""></option>
-   	<option value=0>-</option>
+	<option value=0>-</option>
 	<option value=1>C</option>
 	<option value=2>B</option>
 	<option value=3>A</option>
 	<option value=4>S</option>
 	<option value=5>SS</option>
-	<option value=6 SELECTED>SSS</option>
+	<option value=6>SSS</option>
+	<option value=7 SELECTED>平均</option>
 	</select>
 	<br>
-任务完成度加成：<input id="mission" type="text" name="mission" value="1.45" style="width:50px" autocomplete="off" onchange="clearmission()">x<br>
+任务完成度加成：<input id="mission" type="text" name="mission" value="1.42" style="width:50px" autocomplete="off" onchange="clearmission()">x<br>
 <a href="/nmpt" target="_blank">加成系数表</a>
 <br>
 <br>
