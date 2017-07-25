@@ -19,8 +19,22 @@ def llunitsave(content):
     response.headers['Content-Disposition']='attachment; filename=unit.sd'
     return response
 
+@app.route("/llsavesis/<content>", methods=['GET', 'POST'])
+def llsavesis(content):
+    response = make_response(content)
+    response.headers['Content-Type']='application/octet-stream'
+    response.headers['Content-Disposition']='attachment; filename=idolskills.sd'
+    return response
+
 @app.route("/llsavesubmembers/<content>", methods=['GET', 'POST'])
 def llsubmemberssave(content):
+    response = make_response(content)
+    response.headers['Content-Type']='application/octet-stream'
+    response.headers['Content-Disposition']='attachment; filename=submembers.sd'
+    return response
+
+@app.route("/llsaveallmembers/<content>", methods=['GET', 'POST'])
+def llsaveallmembers(content):
     response = make_response(content)
     response.headers['Content-Type']='application/octet-stream'
     response.headers['Content-Disposition']='attachment; filename=submembers.sd'
@@ -59,7 +73,7 @@ def llnewsubmembersload():
         for i in range(0, len(memberinfo)):
             script = script+'parent.submember['+str(i)+']={}\n'
             for j in attlist:
-                script = script+'parent.submember['+str(i)+']["'+j+'"]='+str(memberinfo[i][j])+';\n'
+                script = script+'parent.submember['+str(i)+']["'+j+'"]='+memberinfo[i][j]+';\n'
         script = script+'parent.getsubmembersdata();\n'
         return '<script>'+script+'</script>'		
 		
@@ -116,6 +130,27 @@ def llnewunitloadsis():
             script =script+'parent.autoarm();\n'
 	
         return '<script>'+script+'</script>'
+
+@app.route("/llloadsis", methods=['GET', 'POST'])
+def llnewsis():
+    print("=====!==")
+    print request.files
+    
+    for f in request.files['filesis']:
+        f = f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']')
+        #print f
+        print("=====!==")
+        memberinfo = json.loads(f)
+        print memberinfo
+        script = ''
+        for i in range(1,16):
+            if str(i) in memberinfo:
+                script = script+'parent.sisrecord['+str(i)+']='+str(memberinfo[str(i)])+';\n'
+                print memberinfo[str(i)]
+            else:
+                script = script+'parent.sisrecord['+str(i)+']='+str(0)+';\n'
+        script =script+'parent.autoarm();\n'
+    return '<script>'+script+'</script>'
 
 @app.route("/llunit", methods=['GET', 'POST'])
 def llunit():
@@ -312,6 +347,12 @@ def llnewunitsis():
     songsjson = open('newsongsjson.txt', 'rb').read()
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson)
+
+@app.route("/llnewautounit", methods=['GET', 'POST'])
+def llnewautounit():
+    songsjson = open('newsongsjson.txt', 'rb').read()
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template("llnewautounit.html", cardsjson = cardsjson, songsjson = songsjson)
 
 @app.route("/llnewunit40", methods=['GET', 'POST'])
 def llnewunit40():
