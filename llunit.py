@@ -71,6 +71,8 @@ def llnewsubmembersload():
         script = 'parent.submember=[];\n'
         attlist = ['cardid','mezame','skilllevel','maxcost']
         for i in range(0, len(memberinfo)):
+            if len(memberinfo[i])==15:
+                continue
             script = script+'parent.submember['+str(i)+']={}\n'
             for j in attlist:
                 script = script+'parent.submember['+str(i)+']["'+j+'"]='+memberinfo[i][j]+';\n'
