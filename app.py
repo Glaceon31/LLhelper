@@ -39,6 +39,10 @@ def llmf():
 def llcf():
     return render_template('llchallengefestival.html')
 
+@app.route("/llnm", methods=['GET', 'POST'])
+def llnm():
+    return render_template('llnakayoshi.html')
+
 @app.route("/mfpt", methods=['GET', 'POST'])
 def mfpt():
     return render_template('mfpt.html')
@@ -46,6 +50,12 @@ def mfpt():
 @app.route("/cfpt", methods=['GET', 'POST'])
 def cfpt():
     return render_template('cfpt.html')
+
+@app.route("/nmpt", methods=['GET', 'POST'])
+def nmpt():
+    return render_template('nmpt.html')
+
+
 
 ### data ###
 @app.route("/llsongdata")
