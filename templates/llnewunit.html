@@ -2,9 +2,9 @@
 <html>
    <head>
       <title>LLhelper</title>
-      <link href="http://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="http://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -554,20 +554,17 @@
    	changecolor("cardchoice")
    	changeavatarselect()
    }
-   
-   
-
 
    function clearall(){
-   	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
-   	for (var i=0; i<inputs.length; i++){
-   		setCookie(inputs[i].name+"unit", inputs[i].value, -1);
-   	}
-   	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"unit", selects[i].value, -1);
-   	}
-   	setCookie("mezame"+"unit", mezame, -1)
+      var inputs = document.getElementsByTagName("input");
+      var selects = document.getElementsByTagName("select");
+      for (var i=0; i<inputs.length; i++){
+         setCookie(inputs[i].name+"unit", inputs[i].value, -1);
+      }
+      for (var i=0; i<selects.length; i++){
+         setCookie(selects[i].name+"unit", selects[i].value, -1);
+      }
+      setCookie("mezame"+"unit", mezame, -1)
    	window.location.href="/llnewunit"
    }
    
@@ -624,6 +621,7 @@
    		document.getElementById("mezame").checked = mezame
    	//selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
    	//selects["songchoice"].value = getCookie(selects["songchoice"].name);
+      try {
    	changeskilltext("")
       changeskilllevel()
    	changeavatarselect()
@@ -632,11 +630,15 @@
    		changeavatar(i)
          calslot(i)
    	}
+      
    	document.getElementById("songsearch").value = ""
    	//changecolor("cardchoice")
    	//changesongcolor("songchoice")
    	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
    	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+      } catch (err) {}
+
+      {{additional_script|safe}}
    }
    
    function changediffinfo(){
@@ -1252,6 +1254,52 @@
       document.getElementById('result').style.display = ""
       document.getElementById('strength'+String(minwhich)).style.color = 'red'
       document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
+
+      var micBoundaries = [
+        { min: 0.00, max: 1.87, mics: 1 },
+        { min: 2.34, max: 4.55, mics: 2 },
+        { min: 4.63, max: 6.81, mics: 3 },
+        { min: 6.82, max: 11.22, mics: 4 },
+        { min: 11.29, max: 15.63, mics: 5 },
+        { min: 16.05, max: 23.13, mics: 6 },
+        { min: 23.24, max: 34.40, mics: 7 },
+        { min: 34.52, max: 50.00, mics: 8 },
+        { min: 50.05, max: 71.00, mics: 9 },
+        { min: 72.00, max: 72.00, mics: 10 },
+      ]
+      var unknownMicBoundaries = []
+      for (var i = 0; i < micBoundaries.length - 1; i++) {
+            unknownMicBoundaries.push({
+                  min: micBoundaries[i].max,
+                  max: micBoundaries[i + 1].min,
+                  mics: micBoundaries[i].mics + 0.5
+            })
+      }
+      function getRarityRatio (currMember) {
+            var memberCard = cards[currMember.cardid]
+            var rarityValue = ['特典卡', '登录奖励', '特典卡 登录奖励'].indexOf(memberCard.type) !== -1 ? 'R' : memberCard.rarity
+            if (memberCard.type === '') memberCard.rarity = 'N'
+            switch (rarityValue) {
+                  case 'UR': return 1.00
+                  case 'SSR': return 0.59
+                  case 'SR': return 0.29
+                  case 'R': return 0.13
+                  default: return 0.00
+            }
+      }
+      var cardTypes = []
+      for (var currCardId in cards) {
+            var currCard = cards[currCardId]
+            if (cardTypes.indexOf(currCard.type) === -1) cardTypes.push(currCard.type)
+      }
+      var micRawValue = member.reduce(function (sum, currMember) {
+            return sum + currMember.skilllevel * getRarityRatio(currMember)
+      }, 0.00)
+      var micDisplayValue = Array.prototype.concat(micBoundaries, unknownMicBoundaries).filter(function (boundary) {
+            return micRawValue >= boundary.min && micRawValue <= boundary.max
+      })[0].mics
+      var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
+      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + micRawValue.toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')'
    }
 
    function changemapcolor(){
@@ -1799,6 +1847,7 @@
 </tr>
 </table>
 卡组强度:<nospan id="resultstrength"></nospan><br>
+卡组援力:<nospan id="resultmic"></nospan><br>
 期望得分:<nospan id="averagescore"></nospan><br>
 
 期望回复:<nospan id="averageheal"></nospan><br>

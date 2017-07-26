@@ -16,8 +16,7 @@
    <script language="javascript">
    lpcost = [5, 10, 15, 25]
    var basept = new Array()
-   basept[0] = [36, 89, 163, 272]
-   basept[1] = [42,100,177,357]
+   basept[0] = [39, 89, 153, 301]
    expbydiff = [12, 26, 46, 83]
    
    function init(){
@@ -36,7 +35,7 @@
    }
    
    function setrank(){
-   	rm = [1, 1.05, 1.1, 1.15, 1.2]
+   	rm = [1.00, 1.05, 1.10, 1.15, 1.20]
    	rank = document.getElementById("rankselect").value
    	if (rank != ""){
    		document.getElementById("rank").value = rm[parseInt(rank)]
@@ -46,9 +45,21 @@
    function clearrank(){
    	document.getElementById("rankselect").value=""
    }
+
+   function setcombo(){
+   	cm = [1.00, 1.02, 1.04, 1.06, 1.08]
+   	combo = document.getElementById("comboselect").value
+   	if (combo != ""){
+   		document.getElementById("combo").value = cm[parseInt(combo)]
+   	}
+   }
+   
+   function clearcombo(){
+   	document.getElementById("comobselect").value=""
+   }
    
    function setorder(){
-   	om = [1.1125, 1.25, 1.15, 1.05, 1, 1.2]
+   	om = [1.04, 1.08, 1.05, 1.02, 1.00]
    	order = document.getElementById("orderselect").value
    	if (order != ""){
    		document.getElementById("order").value = om[parseInt(order)]
@@ -57,6 +68,18 @@
    
    function clearorder(){
    	document.getElementById("orderselect").value = ""
+   }
+
+   function setmission(){
+   	mm = [1.00, 1.05, 1.10, 1.15, 1.25, 1.35, 1.45, 1.42]
+   	mission = document.getElementById("missionselect").value
+   	if (mission != ""){
+   		document.getElementById("mission").value = mm[parseInt(mission)]
+   	}
+   }
+   
+   function clearmission(){
+   	document.getElementById("missionselect").value = ""
    }
    
    function saveToCookie(){
@@ -96,12 +119,12 @@
    }
    
    function calcu(){
-   	infolist = ['timeleft', 'lpwaste','diff','rank','order','target','current','lp','lvl','exp','expf']
+   	infolist = ['timeleft', 'lpwaste','diff','rank','combo','order','mission','target','current','lp','lvl','exp','expf']
    	remlist = ['current','lp','lvl','exp','extraplaytime']
    	for (i in infolist)
    		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
-   	afteraquors = document.getElementById("afteraquors").value
-      playtime = 0
+   	afteraquors = 0//document.getElementById("afteraquors").value
+    playtime = 0
    	extraplaytime = 0
    	loveca = 0
    	lvlupwarning = 0
@@ -114,7 +137,7 @@
    				playtime += play
    				lp -=play*lpcost[diff]
    				exp += expbydiff[diff]*play
-   				current += parseInt(basept[afteraquors][diff]*rank*order*play)
+   				current += parseInt(basept[afteraquors][diff]*rank*combo*mission*order*play)
    			}
    			while (exp >= expbylvl(lvl, expf)){
    				exp -= expbylvl(lvl, expf)
@@ -132,7 +155,7 @@
                playtime += play
                lp -=play*lpcost[diff]
                exp += expbydiff[diff]*play
-               current += parseInt(basept[afteraquors][diff]*rank*order*play)
+               current += parseInt(basept[afteraquors][diff]*rank*combo*mission*order*play)
             }
             while (exp >= expbylvl(lvl, expf)){
                exp -= expbylvl(lvl, expf)
@@ -145,7 +168,7 @@
    				if (lp >= lpcost[i]){
    					lp -= lpcost[i]
    					exp += expbydiff[i]
-   					current += parseInt(basept[afteraquors][i]*rank*order)
+   					current += parseInt(basept[afteraquors][i]*rank*combo*mission*order)
    					extraplaytime += 1
    				}
    			}
@@ -187,7 +210,7 @@
    	for (var i=0; i<selects.length; i++){
    		setCookie(selects[i].name, selects[i].value, -1);
    	}
-   	window.location.href="/llsm"
+   	window.location.href="/llnm"
    }
    /*
    function showprediction(){
@@ -210,7 +233,7 @@
    <div>
       <ul class="nav navbar-nav">
          <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>Score Match助手</a></li>
+         <li class="active"><a href=#>协力助手</a></li>
          <li><a href="/about">关于</a></li>
       </ul>
    </div>
@@ -218,9 +241,8 @@
 <pre>
 使用方法：
 1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
-2、填写剩下所有文本框，其中rank加成和顺位加成可以参考系数表，也可以通过选择rank和顺位自动填入系数
+2、填写剩下所有文本框，其中rank加成、combo加成、贡献度加成和任务完成度加成可以参考系数表，也可以通过选择rank、combo、贡献度和任务等级自动填入系数
 3、点击Calculate
-4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
 </pre>
 <input type="submit" name="jptime" value="日服活动" onclick="jptime();document.getElementById('afteraquors').selectedIndex=1;">
 <input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
@@ -236,10 +258,6 @@
 	<option value=2>Hard</option>
 	<option value=3 SELECTED>Expert</option>
 	</select><br>
-活动：<select id="afteraquors" name="afteraquors">
-   <option value=0>旧pt（最高408）</option>
-   <option value=1 SELECTED>新pt（最高536）</option>
-   </select><br>
 rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
 	<option value=""></option>
 	<option value=0>-</option>
@@ -249,28 +267,50 @@ rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()
 	<option value=4 SELECTED>S</option>
 	</select>
 	<br>
-rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
-顺位（可选）：<select id="orderselect" name="orderselect" onchange="setorder()">
+rank加成：<input id="rank" type="text" name="rank" value="1.20" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
+combo（可选）：<select id="comboselect" name="comboselect" onchange="setcombo()">
+	<option value=""></option>
+	<option value=0>-</option>
+	<option value=1>C</option>
+	<option value=2>B</option>
+	<option value=3 SELECTED>A</option>
+	<option value=4>S</option>
+	</select>
+	<br>
+combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x<br>
+贡献度（可选）：<select id="orderselect" name="orderselect" onchange="setorder()">
 	<option value=""></option>
 	<option value=0 SELECTED>一位~四位平均</option>
-	<option value=5>一位~二位平均</option>
-   <option value=1>一位</option>
+   	<option value=1>一位</option>
 	<option value=2>二位</option>
 	<option value=3>三位</option>
 	<option value=4>四位</option>
 	</select>
 	<br>
-顺位加成：<input id="order" type="text" name="order" value="1.1125" style="width:50px" autocomplete="off" onchange="clearorder()">x
-<a href="/smmulti" target="_blank">加成系数表</a>
+贡献度加成：<input id="order" type="text" name="order" value="1.04" style="width:50px" autocomplete="off" onchange="clearorder()">x<br>
+任务完成度（可选）<select id="missionselect" name="missionselect" onchange="setmission()">
+	<option value=""></option>
+	<option value=0>-</option>
+	<option value=1>C</option>
+	<option value=2>B</option>
+	<option value=3>A</option>
+	<option value=4>S</option>
+	<option value=5>SS</option>
+	<option value=6>SSS</option>
+	<option value=7 SELECTED>平均</option>
+	</select>
+	<br>
+任务完成度加成：<input id="mission" type="text" name="mission" value="1.42" style="width:50px" autocomplete="off" onchange="clearmission()">x<br>
+<a href="/nmpt" target="_blank">加成系数表</a>
 <br>
 <br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" >  <br>
-已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
+目标点数：<input type="text" id="target" name="target" autocomplete="off" ><br>
+已有点数：<input type="text" id="current" name="current" autocomplete="off" ><br>
 <br>
-当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
-当前等级 :<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
-当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
-经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
+当前剩余LP：<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
+当前等级：<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
+当前exp：<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
+经验公式：<select id="expf" name="expf" onchange='checkinfo()'>
 			<option value=0>正常</option>
 			<option value=1 SELECTED>100级以下减半</option>
 	</select>(half指100级以下升级所需经验值减半)<br>
@@ -284,7 +324,7 @@ rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:5
 </pre>
 <div style="float:left">
 需要心数：<nospan id="rloveca"></nospan>心<br>
-SM次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
+协力次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
 总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（一首按三分计算）<br>
 最终等级：<nospan id="rlvl"></nospan><br>
 最终exp：<nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan><br>
