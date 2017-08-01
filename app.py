@@ -55,8 +55,6 @@ def cfpt():
 def nmpt():
     return render_template('nmpt.html')
 
-
-
 ### data ###
 @app.route("/llsongdata")
 def llsongdata():
@@ -110,6 +108,10 @@ def hello():
 @app.route("/about")
 def about():
     return render_template('about.html')
+
+from legacy_app import legacy_app
+
+app.register_blueprint(legacy_app, url_prefix="/legacy")
 
 from llunit import *
 from lldatamodify import *
