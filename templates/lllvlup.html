@@ -1,19 +1,15 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="其他应用" %}
+{% set category_link="/#other-tools" %}
+{% set title="升级时间计算" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
-   <style type="text/css">
-   	button {position:relative;height:160px;width:160px;margin-left:80px;margin-top:80px;background-color:#F0F8FF}
-   	.mainbody {width:1024px;margin:auto;margin-bottom:100px;}
-   	.myjumbotron {position:relative;width:800px;margin-left:auto;margin-right:auto;margin-top:100px;background-color:#F0F8FF;}
-   	.myjumbotron:last-child {margin-bottom:100px;}
-   	.mycontainer {width:auto}
-   </style>
+{% endblock %}
+
+{% block script %}
    <script language="javascript">
    lpmf = [4,8,12,20]
    lpsm = [5,10,15,25]
@@ -67,7 +63,8 @@
    		document.getElementById("acnormal").value = 0
    		document.getElementById("achard").value = 0
    		document.getElementById("acexpert").value = 0*/
-   	}	
+	}	
+	$('.row').masonry()
    }
    
    function clearall(){
@@ -138,7 +135,7 @@
    			returnlist = ['nowexp','nowtime']
    			nowtime = timeString(nowtime)
    			document.getElementById('result').style.display = ''
-   			document.getElementById('resultdata').style.display = 'none'
+			$('.result-data').each(function (idx, elem) { $(elem).css('display', 'none') })
    			document.getElementById('already').style.display = ''
    			for (i in returnlist)
    		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
@@ -220,7 +217,7 @@
    	
    	
    	nowtime = timeString(nowtime)
-   	document.getElementById('resultdata').style.display = ''
+	$('.result-data').each(function (idx, elem) { $(elem).css('display', '') })
    	
    	for (i in returnlist)
    		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
@@ -252,98 +249,138 @@
    }
    </script>
    </head>
-<body onload="init()">
+{% endblock %}
 
-<nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>升级时间计算</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
-<pre>
-使用方法：
-1、若想要计算如何通过磕心和打活动曲调整升级时间到有空的时候，通过修改吃心数和打活动曲数来计算该方案下的升级时间即可
-</pre>
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<p>若想要计算如何通过磕心和打活动曲调整升级时间到有空的时候，通过修改吃心数和打活动曲数来计算该方案下的升级时间即可</p>
+{% endblock %}
 
-<form action="" method="POST" onsubmit="return check()">
-当前等级：<input type="text" id="lvl" name="lvl" value="0" autocomplete="off"><br>
-当前经验：<input type="text" id="exp" name="exp" value="0" autocomplete="off"><br>
-当前LP：<input type="text" id="lp" name="lp" value="0" autocomplete="off"><br>
-吃心数：<input type="text" id="loveca"name="loveca" value="0" autocomplete="off"><br>
-活动类型：<select id="actype" name="actype" onchange="settype()">
+{% block main %}
+<div class="row">
+
+<div class="col-xs-12 col-md-6">
+	<div class="panel panel-default">
+        <div class="panel-heading">当前状态</div>
+		<div class="panel-body">
+<div class="form-group">
+<label class="control-label">当前等级</label>
+<input class="form-control" type="text" id="lvl" name="lvl" value="0" autocomplete="off">
+</div>
+<div class="form-group">
+<label class="control-label">当前经验</label>
+<input class="form-control" type="text" id="exp" name="exp" value="0" autocomplete="off">
+</div>
+<div class="form-group">
+<label class="control-label">当前LP</label>
+<input class="form-control" type="text" id="lp" name="lp" value="0" autocomplete="off">
+</div>
+</div>
+</div>
+	</div>
+
+<div class="col-xs-12 col-md-6">
+	<div class="panel panel-default">
+        <div class="panel-heading">打歌与活动</div>
+		<div class="panel-body">
+<div class="form-group">
+<label class="control-label">吃心数</label>
+<input class="form-control" type="text" id="loveca"name="loveca" value="0" autocomplete="off">
+</div>
+<div class="form-group">
+<label class="control-label">活动类型</label>
+<select class="form-control" id="actype" name="actype" onchange="settype()">
 	<option value=0>非活动</option>
 	<option value=1>传统活动</option>
 	<option value=2>SM</option>
 	<option value=3>MF</option>
-</select><br>
-通常曲/SM方针：
-<select id="lpcost" name="lpcost">
+</select>
+</div>
+<div class="form-group">
+<label class="control-label">通常曲 / SM 方针</label>
+<select class="form-control" id="lpcost" name="lpcost">
 	<option value=0>Easy</option>
 	<option value=1>Normal</option>
 	<option value=2>Hard</option>
 	<option value=3 SELECTED>Expert</option>
 </select>
-<br>
-经验公式：
-<select id="expf" name="expf">
+</div>
+<div class="form-group">
+<label class="control-label">经验公式（half指100级以下升级所需经验值减半）</label>
+<select class="form-control" id="expf" name="expf">
 	<option value=0>正常</option>
 	<option value=1>100级以下减半（日服）</option>
-</select>(half指100级以下升级所需经验值减半)
-<br>
-<input type="checkbox" id="rank" name="rank" >经验减半</input><br>
-<br>
-<div id='mfexp' style="display:none">
-<input type="checkbox" id="expbonus" name="expbonus" >经验+10%</input><br>
+</select>
 </div>
-<div id="actimes">
-活动曲次数：
-<table border="1">
+<div class="checkbox">
+	<label>
+		<input type="checkbox" id="rank" name="rank" >经验减半</input>
+	</label>
+</div>
+<div id='mfexp' style="display:none" class="checkbox">
+	<label>
+		<input type="checkbox" id="expbonus" name="expbonus">经验 + 10%</input>
+	</label>
+</div>
+</div>
+</div>
+</div>
+
+<div class="col-xs-12 col-md-6" id="actimes" style="display: none">
+	<div class="panel panel-default">
+		<div class="panel-heading">活动曲次数</div>
+		<table class="table">
+<table class="table">
 <tr>
-	<td>Easy</td>
-	<td>Normal</td>
-	<td>Hard</td>
-	<td>Expert</td>
+	<th>Easy</th>
+	<th>Normal</th>
+	<th>Hard</th>
+	<th>Expert</th>
 </tr>
 <tr>
-	<td><input type="text" id="aceasy" name="aceasy" value="0" size=1 autocomplete="off"></td>
-	<td><input type="text" id="acnormal" name="acnormal" value="0" size=1 autocomplete="off"></td>
-	<td><input type="text" id="achard" name="achard" value="0" size=1 autocomplete="off"></td>
-	<td><input type="text" id="acexpert" name="acexpert" value="0" size=1 autocomplete="off"></td>
+	<td><input class="form-control" type="text" id="aceasy" name="aceasy" value="0" size=1 autocomplete="off"></td>
+	<td><input class="form-control" type="text" id="acnormal" name="acnormal" value="0" size=1 autocomplete="off"></td>
+	<td><input class="form-control" type="text" id="achard" name="achard" value="0" size=1 autocomplete="off"></td>
+	<td><input class="form-control" type="text" id="acexpert" name="acexpert" value="0" size=1 autocomplete="off"></td>
 </tr>
 </table>
 </div>
-
-<input type="button" name="submit" value="Calculate" onclick="check();">
-</form>
-
-<div id="result" style="display:none">
-<pre>
-注意：
-1、最快升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰能升级的情况下的升级时间
-2、最佳升级时间指的是完全按照方针打的情况下的升级时间
-3、最慢升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰不能升级（并且若不少于15LP且不为17LP时必打一首hard），再打一首ex曲升级的情况下的升级时间
-4、关于MF的计算，勾选exp+10%时默认仅在所选难度使用，可能会有个位数的误差
-5、以上纯属抠细节不用看，直接按字面意思理解即可
-</pre>
-现在时间：<nospan id="rnowtime"></nospan><br>
-当前经验：<nospan id="rnowexp"></nospan><br>
-<br>
-<div id='resultdata'>
-最快升级时间：<nospan id="rminlvluptime"></nospan><br>
-最佳升级时间：<nospan id="rbestlvluptime"></nospan><br>
-最佳升级后剩余经验：<nospan id="rexpremain"></nospan><br>
-最慢升级时间：<nospan id="rmaxlvluptime"></nospan><br>
-</div>
-<div id='already'>已经能升级了</div>
 </div>
 
-</body>
-{% include 'footer.html' %}
-</html>
+<div class="col-xs-12 col-md-6" id="result" style="display: none">
+	<div class="panel panel-default">
+		<div class="panel-heading">计算结果</div>
+		<table class="table">
+			<tr><th>现在时间</th><td><nospan id="rnowtime"></nospan></td></tr>
+			<tr><th>当前经验</th><td><nospan id="rnowexp"></nospan></td></tr>
+			<tr class="result-data" style="display: none"><th>最快升级时间</th><td><nospan id="rminlvluptime"></nospan></td></tr>
+			<tr class="result-data" style="display: none"><th>最佳升级时间</th><td><nospan id="rbestlvluptime"></nospan></td></tr>
+			<tr class="result-data" style="display: none"><th>最佳升级后剩余经验</th><td><nospan id="rexpremain"></nospan></td></tr>
+			<tr class="result-data" style="display: none"><th>最慢升级时间</th><td><nospan id="rmaxlvluptime"></nospan></td></tr>
+		</table>
+		<div class="panel-body" id="already"><strong>已经能升级了</strong></div>
+	</div>
+</div>
+</div>
+{% include "components/event-calc-button.html" %}
+
+
+
+
+
+{% endblock %}
+
+{% block back_notice %}
+<h4 class="alert-heading">注意</h4>
+<ul>
+	<li>最快升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰能升级的情况下的升级时间</li>
+	<li>最佳升级时间指的是完全按照方针打的情况下的升级时间</li>
+	<li>最慢升级时间是在剩余升级经验大于方针曲的情况下只打方针曲，最后打最少数量的方针外曲子恰不能升级（并且若不少于 15 LP 且不为 17 LP 时必打一首 HARD），再打一首 EXPERT 曲升级的情况下的升级时间</li>
+	<li>关于MF的计算，勾选 EXP + 10% 时默认仅在所选难度使用，可能会有个位数的误差</li>
+	<li>以上纯属抠细节不用看，直接按字面意思理解即可</li>
+</ul>
+{% endblock %}

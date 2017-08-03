@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" class="han-init">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LLhelper</title>
+    <link href="//apps.bdimg.com/libs/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+    <!--link href="//apps.bdimg.com/libs/bootstrap/3.3.4/css/bootstrap-theme.min.css" rel="stylesheet"-->
+    <script src="//libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <script src="/static/masonry.pkgd.min.js"></script>
+    <script src="//apps.bdimg.com/libs/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" media="all" href="/static/han.min.css">
+    {% block additional_header %}
+    {% endblock %}
+    {% block script %}
+    {% endblock %}
+    <style>
+      body:lang(zh-Hans) {
+        font-family: "Biaodian Pro Sans GB","Helvetica Neue",Helvetica,Arial,"Han Heiti GB",sans-serif;
+      }
+      .breadcrumb > li > a:hover,
+      .breadcrumb > li > a:active {
+        text-decoration: none;
+      }
+    </style>
+  </head>
+
+  {% if self.body_onload() %}
+  {% block body_onload %}
+  {% endblock %}
+  {% else %}
+  <body>
+  {% endif %}
+    <nav class="navbar navbar-default navbar-static-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/" style="padding-top: 13px; padding-bottom: 17px">
+              <img alt="LLHelper" src="/static/shortcuticon.png" style="height: 1em; width: auto; display: inline-block; vertical-align: baseline; padding-right: 2px">
+              LLHelper
+            </a>
+        </div>
+        <div>
+          <ol class="breadcrumb navbar-nav" style="margin-bottom: 0px; padding-top: 15px; padding-bottom: 15px; background-color: inherit;">
+            <li><a href="/">首页</a></li>
+            {% if category %}
+            <li><a href="{{category_link}}">{{category}}</a></li>
+            {% endif %}
+            {% if title %}
+            <li class="active">{{title}}</li>
+            {% endif %}
+          </ol>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/legacy{{request.full_path if request.args else request.path}}">旧版入口</a></li>
+            <li><a href="/about">关于</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container">
+      <h1 class="page-header">{{title}}</h1>
+      {% if self.front_notice() | trim %}
+      <div class="alert alert-info">
+        {% block front_notice %}
+        {% endblock %}
+      </div>
+      {% endif %}
+
+      {% if self.back_notice() | trim %}
+      <div class="alert alert-info">
+        {% block back_notice %}
+        {% endblock %}
+      </div>
+      {% endif %}
+
+      {% if self.back_notice_2() | trim %}
+      <div class="alert alert-info">
+        {% block back_notice_2 %}
+        {% endblock %}
+      </div>
+      {% endif %}
+
+      {% block main %}
+      {% endblock %}
+    </div>
+  </body>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/Han/3.2.7/han.min.js"></script>
+  <script>
+    $('.row').masonry()
+  </script>
+  {% include "footer.html" %}
+</html>

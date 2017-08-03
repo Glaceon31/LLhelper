@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+﻿{% extends "layout.html" %}
+
+{% set category="数据查询" %}
+{% set category_link="/#game-data" %}
+{% set title="判定覆盖率分布计算" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
@@ -17,7 +17,9 @@
 	img {height:65px;width:65px}
    	td {size:2}
    </style>
-   <meta charset="utf-8">
+{% endblock %}
+
+{% block script %}
    <script>
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
@@ -641,35 +643,28 @@
    }
    
    </script>
-   
-  </head>
-   <body onload="init()">
-<nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>判定覆盖分布计算</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
-<pre>
-使用方法：
-	1.选择歌曲以及<b>难度</b>；
-	2.设置速度；
-	3.设置击打节奏；
-	4.配置判定队伍，可以从卡片库中选择卡片，也可以直接填写数据；
-	5.计算；
-	6.鼠标在图纸区域<b>上下框选可以进行放大</b>，移动端可<b>手势缩放</b>，或者<b>两指拖动平移</b>；
-	7.当选择了多张判卡时，可以点击右侧的按钮<b>单独显示</b>某一判卡的“<b>边际覆盖率</b>”分布，即撤掉这张卡片后，卡组的覆盖率损失；
-	8.详细使用<a href="http://tieba.baidu.com/p/4774274250" target="_blank">说明&反馈</a>点击此处；
+{% endblock %}
 
-该功能由 <b>各种化肥</b> 提供
-</pre>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ol>
+	<li>选择歌曲以及<b>难度</b>；</li>
+	<li>设置速度；</li>
+	<li>设置击打节奏；</li>
+	<li>配置判定队伍，可以从卡片库中选择卡片，也可以直接填写数据；</li>
+	<li>计算；</li>
+	<li>鼠标在图纸区域<b>上下框选可以进行放大</b>，移动端可<b>手势缩放</b>，或者<b>两指拖动平移</b>；</li>
+	<li>当选择了多张判卡时，可以点击右侧的按钮<b>单独显示</b>某一判卡的“<b>边际覆盖率</b>”分布，即撤掉这张卡片后，卡组的覆盖率损失；</li>
+	<li>详细使用<a href="http://tieba.baidu.com/p/4774274250" target="_blank">说明&反馈</a>点击此处；</li>
+</ol>
+<p>该功能由 <b>各种化肥</b> 提供</p>
+{% endblock %}
+
+{% block main %}
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <h3>Live信息</h3>
 搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
@@ -822,7 +817,6 @@
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 <br>
-</div>
    <div style="float:left">
 <img id="imageselect">
 </div>
@@ -1044,16 +1038,6 @@
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
-<pre>
-说明：
-1、该计算器<font style='color:red'><b>不适用于</b></font>MF活动的第二第三首歌；
-2、计算结果图纸右侧为卡组综合覆盖率随时间的分布，纵轴为时间轴，横轴为覆盖概率。计算结果图纸左侧为对应歌曲的谱面参考；
-3、由于“击打点≠判定点”，靠近覆盖区间边缘的note可能存在“半覆盖”现象，此时将鼠标移动至对应的note上将显示出“判定对该note的<b>Good区间</b>覆盖率”；
-4、图纸下方显示总覆盖率（P+G+G区间），括号内包含Combo和长条的权重，意义为“FC前提当前覆盖状态下判定宝石的加成效果相对于100%覆盖下加成效果的比例”；
-5、SIF 4.1版本修复了技能时间bug，因此现在计算对于N判（时间轴）误差小于1帧（16ms），对于T判误差小于7帧；
-6、由于C判的触发条件与玩家的操作有关，因此C判的覆盖理论分布计算过于复杂，此处对于C判只给出“FC前提下的覆盖分布数学期望”；
-7、若想了解具体<a href="https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB" target="_blank">计算原理</a>请看文档第四章。
-</pre>
 <br>
 <div id="container" style="display:none;width:550px;height:700px;float:left"></div>
 <div id="separater" style="display:none;width:50px;height:700px;float:left">
@@ -1071,6 +1055,17 @@
 <div style="clear:both">
 </div>
 <div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center"><b>运行中…</b></div>
-</body>
-{% include 'footer.html' %}
-</html>
+{% endblock %}
+
+{% block back_notice %}
+<h4 class="alert-heading">说明</h4>
+<ol>
+    <li>该计算器<font style='color:red'><b>不适用于</b></font>MF活动的第二第三首歌；</li>
+    <li>计算结果图纸右侧为卡组综合覆盖率随时间的分布，纵轴为时间轴，横轴为覆盖概率。计算结果图纸左侧为对应歌曲的谱面参考；</li>
+    <li>由于“击打点≠判定点”，靠近覆盖区间边缘的note可能存在“半覆盖”现象，此时将鼠标移动至对应的note上将显示出“判定对该note的<b>Good区间</b>覆盖率”；</li>
+    <li>图纸下方显示总覆盖率（P+G+G区间），括号内包含Combo和长条的权重，意义为“FC前提当前覆盖状态下判定宝石的加成效果相对于100%覆盖下加成效果的比例”；</li>
+    <li>SIF 4.1版本修复了技能时间bug，因此现在计算对于N判（时间轴）误差小于1帧（16ms），对于T判误差小于7帧；</li>
+    <li>由于C判的触发条件与玩家的操作有关，因此C判的覆盖理论分布计算过于复杂，此处对于C判只给出“FC前提下的覆盖分布数学期望”；</li>
+    <li>若想了解具体<a href="https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB" target="_blank">计算原理</a>请看文档第四章。</li>
+</ol>
+{% endblock %}

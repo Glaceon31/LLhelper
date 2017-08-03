@@ -1,0 +1,29 @@
+<div class="col-xs-12 col-md-6">
+    <div class="panel panel-default">
+        <div class="panel-heading">当前状态</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="contro-label">当前等级</label>
+                <input class="form-control" type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'>
+            </div>
+            <div class="form-group">
+                <label>当前EXP</label>
+                <input class="form-control" type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'>
+                <nospan id='expwarning' style='display:none;color:red'>EXP高于当前等级上限</nospan>
+            </div>
+            <div class="form-group">
+                <label class="contro-label">当前剩余LP</label>
+                <input class="form-control" type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'>
+                <nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan>
+            </div>
+
+            <div class="form-group">
+                <label class="contro-label">经验公式</label>
+                <select class="form-control" id="expf" name="expf" onchange='checkinfo()'>
+                <option value=0>正常</option>
+                <option value=1 SELECTED>100级以下减半</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>

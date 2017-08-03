@@ -1,0 +1,114 @@
+<div class="col-xs-12 col-md-6">
+    <div class="panel panel-default">
+        <div class="panel-heading">活动时间</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label">活动结束时间</label>
+                <div class="input-group">
+                    <input class="form-control" id="endday" type="text" name="endday" value="0" autocomplete="off" >
+                    <span class="input-group-addon">日</span>
+                    <input class="form-control" id="endhour" type="text" name="endhour" value="0" autocomplete="off">
+                    <span class="input-group-addon">时</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label">剩余时间</label>
+                <div class="input-group">
+                    <input class="form-control" id="timeleft" type="text" name="timeleft" autocomplete="off" onchange="document.getElementById('timeleft').style.backgroundColor = '#FFFFFF'">
+                    <span class="input-group-addon">小时</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label">每天浪费LP（因为睡觉等原因浪费的LP数）</label>
+                <div class="">
+                <input class="form-control" id="lpwaste" type="text" name="lpwaste" value="0" autocomplete="off" >
+                </div>
+            </div>
+            <div class="btn-group btn-group-justified" role="group">
+                <div class="btn-group"><button type="button" class="btn btn-default" id="jptime" name="jptime" value="日服活动" onclick="jptime();">日服活动</button></div>
+                <div class="btn-group"><button type="button" class="btn btn-default" id="cntime" name="cntime" value="国服活动" onclick="new_cntime();">国服活动</button></div>
+                <div class="btn-group"><button type="button" class="btn btn-default" id="entime" name="entime" value="国际服活动" onclick="new_entime();">国际服活动</button></div>
+                <div class="btn-group"><button type="button" class="btn btn-default" name="diytime" value="按输入时间计算" onclick="diytime()">按输入时间计算</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    function setOngoingEventEndTime(ongoingEventEndTimestamp) {
+        var timeleft = (ongoingEventEndTimestamp - (Date.now() / 1000 | 0)) / 3600
+        var endTime = new Date(ongoingEventEndTimestamp * 1000)
+        document.getElementById("timeleft").value=timeleft.toFixed(1)
+        document.getElementById("endday").value=endTime.getDate()
+        document.getElementById("endhour").value=endTime.getHours()
+    }
+
+    function new_cntime() {
+        $.getJSON('//sifcn.loveliv.es/api/event_list', function (events) {
+            filteredEvents = events
+                .filter(function (event) { return event.end.timestamp > (Date.now() / 1000 | 0) })
+                .sort(function (left, right) { return left.end.timestamp > right.end.timestamp })
+            var ongoingEvent = filteredEvents[0]
+            if (ongoingEvent) {
+                setOngoingEventEndTime(ongoingEvent.end.timestamp)
+           }
+        })
+    }
+
+    function getLLSupportEventsAPI(lang, cb) {
+        if (['EN', 'CN', 'JP'].indexOf(lang) === -1) throw Error('Wrong API parameter `lang`, should be one of `EN`, `CN` or `JP`')
+        $.getJSON('//app.lovelivesupport.com/lls-api/getAll.php?type=event&lang=' + lang + '&id=0', function (events) {
+            events = events.map(function (event) {
+                var timezone = ""
+                switch (lang) {
+                    case 'CN':
+                        timezone = 'GMT+0800'; break
+                    case 'EN':
+                        timezone = 'GMT+0000'; break
+                    case 'JP': default:
+                        timezone = 'GMT+0900'; break
+                }
+                event.start_timestamp = (Date.parse(event.start_date + ' ' + timezone) / 1000 | 0) + 1
+                event.end_timestamp = (Date.parse(event.end_date + ' ' + timezone) / 1000 | 0) + 1
+                return event
+            })
+            cb(events)
+        })
+    }
+
+    function new_llstime(lang) {
+        getLLSupportEventsAPI(lang, function (events) {
+            filteredEvents = events
+                .filter(function (event) { return event.end_timestamp > (Date.now() / 1000 | 0) })
+                .sort(function (left, right) { return left.end_timestamp > right.end_timestamp })
+            var ongoingEvent = filteredEvents[0]
+            if (ongoingEvent) {
+                setOngoingEventEndTime(ongoingEvent.end_timestamp)
+            }
+        })
+    }
+
+    function getSchoolIdolTomodachiEventAPI(isEnglish) {
+        if (isEnglish)
+            $.getJSON('//schoolido.lu/api/events/?is_english=True&ordering=-english_end', function (data) {
+                var events = data.results
+                var latestEvent = events[0]
+                if (latestEvent.world_current) {
+                    setOngoingEventEndTime(Date.parse(latestEvent.english_end)  / 1000 | 0)
+                }
+            })
+        else
+            $.getJSON('//schoolido.lu/api/events/?is_english=True&ordering=-end', function (events) {
+                var events = data.results
+                var latestEvent = events[0]
+                if (latestEvent.japan_current) {
+                    setOngoingEventEndTime(Date.parse(latestEvent.end) / 1000 | 0)
+                }
+            })
+    }
+
+    function new_entime() {
+        //new_llstime('EN')
+        getSchoolIdolTomodachiEventAPI(true)
+    }
+</script>

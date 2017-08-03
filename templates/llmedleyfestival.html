@@ -1,17 +1,18 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <meta http-equiv=Content-Type content="text/html;charset=utf-8">
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="活动算心" %}
+{% set category_link="/#event-expense" %}
+{% set title="Medley Festival 助手" %}
+{% set event_abbr="MF" %}
+
+{% block additional_header %}
+   <script src="http://lovelive.oss-cn-beijing.aliyuncs.com/Js/ReadPredCN.js"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.0"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.02"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
-   <style type="text/css">
-   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
-   </style>
+{% endblock %}
+
+{% block script %}
    <script language="javascript">
    basept = [[31,64,99],[72,150,234],[126,262,408],[241,500,777]]
    lpcost = [4, 8, 12, 20]
@@ -213,92 +214,100 @@
    	}
    }
    </script>
-   </head>
-   <body onload="init()">
+{% endblock %}
 
-<nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>medley festival助手</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
-<pre>
-使用方法：
-1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
-2、填写剩下所有文本框，其中rank和combo加成可以通过填写rank与combo评价自动填入，也可以参考乘数表手动填入
-3、点击Calculate
-</pre>
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ol>
+	<li>输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间</li>
+	<li>填写剩下所有文本框，其中rank和combo加成可以通过填写rank与combo评价自动填入，也可以参考乘数表手动填入</li>
+	<li>点击Calculate</li>
+</ol>
+{% endblock %}
 
-<input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime()">
-<input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
-<input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
-<br>
-活动结束时间：<input id="endday" type="text" name="endday" value="0" autocomplete="off" style="width:30px">日<input id="endhour" type="text" name="endhour" value="0" autocomplete="off" style="width:30px">时<br>
-剩余时间 :<input id="timeleft" type="text" name="timeleft" autocomplete="off" onchange="document.getElementById('timeleft').style.backgroundColor = '#FFFFFF'">小时<br>
-每天浪费LP :<input id="lpwaste" type="text" name="lpwaste" value="0" autocomplete="off" >（因为睡觉等原因浪费的LP数）<br>
-<br>
+{% block main %}
+<div class="row">
+{% include "components/event-time.html" %}
+<div class="col-xs-12 col-md-6">
+	<div class="panel panel-default">
+		<div class="panel-heading">活动数据（<a href='/mfpt' target="_blank">基础pt和乘数表</a>）</div>
+		<div class="panel-body">
+			<div class="form-group">
+				<label class="checkbox-inline">
+					<input type="checkbox" id="acptbonus" name="acptbonus" checked>活动点数+10%</input>
+				</label>
+				<label class="checkbox-inline">
+					<input type="checkbox" id="expbonus" name="expbonus">经验+10%</input><br>
+				</label>
+			</div>
+			<div class="form-group">
+				<label class="control-label">曲数</label>
+				<select class="form-control" id="songnum" name="songnum">
+					<option value=1>1</option>
+					<option value=2>2</option>
+					<option value=3 SELECTED>3</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">难度选择</label>
+				<select class="form-control" id="diff" name="diff">
+					<option value=0>Easy</option>
+					<option value=1>Normal</option>
+					<option value=2>Hard</option>
+					<option value=3 SELECTED>Expert</option>
+				</select>
+			</div>
+			<div class="form-group">
+			<label class="control-label">Rank（可选）</label>
+			<select class="form-control" id="rankselect" name="rankselect" onchange="setrank()">
+				<option value=""></option>
+				<option value=0>-</option>
+				<option value=1>C</option>
+				<option value=2>B</option>
+				<option value=3>A</option>
+				<option value=4 SELECTED>S</option>
+				</select>
+			</div>
+			<div class="form-group">
+			<label class="control-label">Rank加成</label>
+			<div class="input-group">
+				<input class="form-control" id="rank" type="text" name="rank" value="1.2" autocomplete="off" onchange="clearrank()">
+				<span class="input-group-addon">x</span>
+			</div>
+			</div>
+			<div class="form-group">
+			<label class="control-label">Combo（可选）</label>
+			<select class="form-control" id="comboselect" name="comboselect" onchange="setcombo()">
+				<option value=""></option>
+				<option value=0>-</option>
+				<option value=1>C</option>
+				<option value=2>B</option>
+				<option value=3 SELECTED>A</option>
+				<option value=4>S</option>
+				</select>
+			</div>
+			<div class="form-group">
+			<label class="control-label">Combo加成</label>
+			<div class="input-group">
+				<input class="form-control" id="combo" type="text" name="combo" value="1.06" autocomplete="off" onchange="clearcombo()">
+				<span class="input-group-addon">x</span>
+			</div>
+			</div>
 
-<input type="checkbox" id="acptbonus" name="acptbonus" checked>活动点数+10%</input>
-<input type="checkbox" id="expbonus" name="expbonus">经验+10%</input><br>
-曲数：<select id="songnum" name="songnum">
-	<option value=1>1</option>
-	<option value=2>2</option>
-	<option value=3 SELECTED>3</option>
-</select><br>
-难度选择 :<select id="diff" name="diff">
-	<option value=0>Easy</option>
-	<option value=1>Normal</option>
-	<option value=2>Hard</option>
-	<option value=3 SELECTED>Expert</option>
-	</select><br>
-rank（可选）：<select id="rankselect" name="rankselect" onchange="setrank()">
-	<option value=""></option>
-	<option value=0>-</option>
-	<option value=1>C</option>
-	<option value=2>B</option>
-	<option value=3>A</option>
-	<option value=4 SELECTED>S</option>
-	</select>
-	<br>
-rank加成：<input id="rank" type="text" name="rank" value="1.2" style="width:50px" autocomplete="off" onchange="clearrank()">x<br>
-combo（可选）：<select id="comboselect" name="comboselect" onchange="setcombo()">
-	<option value=""></option>
-	<option value=0>-</option>
-	<option value=1>C</option>
-	<option value=2>B</option>
-	<option value=3 SELECTED>A</option>
-	<option value=4>S</option>
-	</select>
-	<br>
-combo加成：<input id="combo" type="text" name="combo" value="1.06" style="width:50px" autocomplete="off" onchange="clearcombo()">x<br>
-<a href='/mfpt' target="_blank">基础pt和乘数表</a>
-<br>
-<br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" ><br>
-已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
-<br>
-当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
-当前等级 :<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
-当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
-经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
-	<option value=0>正常</option>
-	<option value=1 SELECTED>100级以下减半</option>
-	</select>(half指100级以下升级所需经验值减半)<br>
-<input type="submit" id="submit" name="submit" value="Calculate" onclick="check()"> <br>
+		</div>
+	</div>
+</div>
+{% include "components/event-points.html" %}
+{% include "components/event-current.html" %}
+{% include "components/event-calc-result.html" %}
+</div>
+{% include "components/event-calc-button.html" %}
 
 <div id="result" style="display:none">
-<pre>
-注意：
-1、加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考
-2、如果最终点数和目标点数过于接近，请考虑多磕一心。
-</pre>
 需要心数：<nospan id="rloveca"></nospan>心<br>
 MF次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
 总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（1/2/3首按3/5/7分计算）<br>
@@ -307,7 +316,12 @@ MF次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></n
 最终点数：<nospan id="rcurrent"></nospan><br>
 <nospan id="rwarning" style="color:red"></nospan>
 </div>
+{% endblock %}
 
-</body>
-{% include 'footer.html' %}
-</html>
+{% block back_notice %}
+<h4 class="alert-heading">注意</h4>
+<ol>
+	<li>加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考</li>
+	<li>如果最终点数和目标点数过于接近，请考虑多磕一心。</li>
+</ol>
+{% endblock %}

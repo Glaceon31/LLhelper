@@ -1,0 +1,17 @@
+<div class="columns">
+{% for i in range(0, 9) %}
+<div class="column">
+  <input class="form-control" type="text" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off">
+  <input class="form-control" type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})">
+  <img id='avatar{{i}}' src='/static/null.png' />
+  <input class="form-control" type="text" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off">
+  <input class="form-control" type="text" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off">
+  <select class="form-contorl" id="main{{i}}" name="main{{i}}">
+    <option value="smile" style="color:red">smile</option>
+    <option value="pure" style="color:green">pure</option>
+    <option value="cool" style="color:blue">cool</option>
+  </select>
+  <input class="form-control" type="text" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off">
+</div>
+{% endfor %}
+</div>

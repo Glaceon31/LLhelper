@@ -1,0 +1,21 @@
+<div class="col-xs-12 col-md-6">
+    <div class="panel panel-default">
+        <div class="panel-heading">活动点数与道具数</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label">目标点数</label>
+                <input class="form-control" type="text" id="target" name="target" autocomplete="off" >
+            </div>
+            <div class="form-group">
+                <label class="control-label">已有点数</label>
+                <input class="form-control" type="text" id="current" name="current" autocomplete="off" >
+            </div>
+            {% if need_item %}
+            <div class="form-group">
+                <label class="control-label">剩余道具数</label>
+                <input class="form-control" type="text" id="items" name="items" autocomplete="off" >
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>

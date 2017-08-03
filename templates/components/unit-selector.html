@@ -1,0 +1,173 @@
+<table class="table">
+   <tr>
+      <th>权重</th>
+      {% for i in range(0,9) %}
+      <td><input type="text" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th></th>
+      {% for i in range(0,9) %}
+      <td><input type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>卡片</th>
+   	<td ><img  id='avatar0' src='/static/null.png'/></td>
+   	<td><img  id='avatar1' src='/static/null.png'/></td>
+   	<td><img  id='avatar2' src='/static/null.png'/></td>
+   	<td><img  id='avatar3' src='/static/null.png'/></td>
+   	<td><img  id='avatar4' src='/static/null.png'/></td>
+   	<td><img  id='avatar5' src='/static/null.png'/></td>
+   	<td><img  id='avatar6' src='/static/null.png'/></td>
+   	<td><img  id='avatar7' src='/static/null.png'/></td>
+   	<td><img  id='avatar8' src='/static/null.png'/></td>
+   </tr>
+   <tr style="display:none">
+      <th>id</th>
+      {% for i in range(0,9) %}
+      <td><input type="text" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr style="display:none">
+      <th>mezame</th>
+      {% for i in range(0,9) %}
+      <td><input type="text" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>主属性</th>
+      {% for i in range(0,9) %}
+      <td><select id="main{{i}}" name="main{{i}}">
+         <option value="smile" style="color:red">smile</option>
+         <option value="pure" style="color:green">pure</option>
+         <option value="cool" style="color:blue">cool</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td scope="row" style="color:red">smile</td>
+      {% for i in range(0,9) %}
+      <td><input type="text" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td scope="row" style="color:green">pure</td>
+      {% for i in range(0,9) %}
+      <td><input type="text" style="color:green" id="pure{{i}}" name="pure{{i}}" size=3 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td style="color:blue">cool</td>
+      {% for i in range(0,9) %}
+      <td><input type="text" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>技能</th>
+      {% for i in range(0,9) %}
+      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitskilllevel({{i}})"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>单体数值</th>
+      {% for i in range(0,9) %}
+      <td><select id="gemnum{{i}}" name="gemnum{{i}}" onchange="calslot({{i}})">
+         <option value="0" >0</option>
+         <option value="200" >200</option>
+         <option value="450" >450</option>
+         <option value="650" >650</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>单体百分比</th>
+      {% for i in range(0,9) %}
+      <td><select id="gemsinglepercent{{i}}" name="gemsinglepercent{{i}}" onchange="calslot({{i}})">
+         <option value="0" >0</option>
+         <option value="0.1" >10%</option>
+         <option value="0.16" >16%</option>
+         <option value="0.26" >26%</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>全体百分比</th>
+      {% for i in range(0,9) %}
+      <td><select id="gemallpercent{{i}}" name="gemallpercent{{i}}" onchange="calslot({{i}})">
+         <option value="0" >0</option>
+         <option value="0.018" >1.8%</option>
+         <option value="0.024" >2.4%</option>
+         <option value="0.042" >4.2%</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>奶/分宝石</th>
+      {% for i in range(0,9) %}
+      <td><select id="gemskill{{i}}" name="gemskill{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr style="display:none">
+      <th>判定宝石</th>
+      {% for i in range(0,9) %}
+      <td><select id="gemacc{{i}}" name="gemacc{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>使用槽数</th>
+      {% for i in range(0,9) %}
+      <td id="slot{{i}}" name="slot{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td></td>
+      {% for i in range(0,9) %}
+      <td><input type="button" id="pos{{i}}" name="pos{{i}}" value="换位{{i+1}}" onclick="changepos({{i}})"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>属性强度</th>
+      {% for i in range(0,9) %}
+      <td id="attstrength{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>技能强度</th>
+      {% for i in range(0,9) %}
+      <td id="skillstrength{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>卡强度</th>
+      {% for i in range(0,9) %}
+      <td id="cardstrength{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <th>实际强度</th>
+      {% for i in range(0,9) %}
+      <td id="strength{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <!--
+   <tr>
+      <th>判定</th>
+      {% for i in range(0,9) %}
+      <td id="accuracy{{i}}"></td>
+      {% endfor %}
+   </tr>
+-->
+   <tr>
+      <th>回复</th>
+      {% for i in range(0,9) %}
+      <td id="heal{{i}}"></td>
+      {% endfor %}
+   </tr>
+</table>

@@ -1,18 +1,19 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <meta http-equiv=Content-Type content="text/html;charset=utf-8">
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="活动算心" %}
+{% set category_link="/#event-expense" %}
+{% set title="活动助手" %}
+
+{% set need_item = True %}
+
+{% block additional_header %}
    <script src="http://lovelive.oss-cn-beijing.aliyuncs.com/Js/ReadPredCN.js"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.02"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
-   <style type="text/css">
-   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
-   </style>
+{% endblock %}
+
+{% block script %}
    <script language="javascript">
    var pttable = new Array()
    var oldpttable = new Array()
@@ -86,7 +87,7 @@
    	}
    	saveToCookie();
    	calcu();
-   	document.getElementById("result").scrollIntoView()
+	document.getElementById("result").scrollIntoView() 
    	return true;
    }
    
@@ -255,109 +256,101 @@
    	document.getElementById('prediction').innerHTML = 'LLhelper十一月猫娘凛活动预测线'
    }
    </script>
-  </head>
-   <body onload="init()">
+{% endblock %}
 
-<nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>活动助手</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
-<pre>
-使用方法：
-1、输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间
-2、填写剩下所有文本框和选择框，其中活动图平均pt可以通过填写rank与combo评价自动填入，也可以参考pt表手动填入
-3、点击Calculate
-4、将鼠标移到国服预测线字样上以看线（移动设备点击字样），仅供参考。
-</pre>
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ol>
+	<li>输入剩余时间 或 点击按钮选择服务器来自动计算剩余时间</li>
+	<li>填写剩下所有文本框和选择框，其中活动图平均pt可以通过填写rank与combo评价自动填入，也可以参考pt表手动填入</li>
+	<li>点击Calculate</li>
+</ol>
+{% endblock %}
 
-<input type="submit" id="jptime" name="jptime" value="日服活动" onclick="jptime();document.getElementById('afteraquors').selectedIndex=1;getpt()">
-<input type="submit" name="diytime" value="按输入时间计算" onclick="diytime()">
-<input type="submit" id="clear" name="clear" value="清空输入" onclick="clearall()">
-<br>
-活动结束时间：<input id="endday" type="text" name="endday" value="0" autocomplete="off" style="width:30px">日<input id="endhour" type="text" name="endhour" value="0" autocomplete="off" style="width:30px">时<br>
-剩余时间 :<input id="timeleft" type="text" name="timeleft" autocomplete="off" onchange="document.getElementById('timeleft').style.backgroundColor = '#FFFFFF'">小时<br>
-每天浪费LP :<input id="lpwaste" type="text" name="lpwaste" value="0" autocomplete="off" >（因为睡觉等原因浪费的LP数）<br>
-<br>
-普通图选择 :<select id="lpnormal" name="lpnormal">
-	<option value=5>5LP</option>
-	<option value=10>10LP</option>
-	<option value=15>15LP</option>
-	<option value=25 SELECTED>25LP</option>
-	</select><br>
-活动图难度 :<select id="diff" name="diff" onchange="getpt()">
-	<option value=0>Easy</option>
-	<option value=1>Normal</option>
-	<option value=2>Hard</option>
-	<option value=3 SELECTED>Expert</option>
-	<option value=4>4倍Easy</option>
-	<option value=5>4倍Normal</option>
-	<option value=6>4倍Hard</option>
-	<option value=7>4倍Expert</option>
-	</select><br>
-活动：<select id="afteraquors" name="afteraquors" onchange="getpt()">
-   <option value=0>旧pt（SS 404）</option>
-   <option value=1 SELECTED>新pt（SS 565）</option>
-   </select><br>
-活动曲rank（可选）：<select id="rank" name="rank" onchange="getpt()">
-	<option value=-1></option>
-	<option value=0>-</option>
-	<option value=1>C</option>
-	<option value=2>B</option>
-	<option value=3>A</option>
-	<option value=4 SELECTED>S</option>
-	</select><br>
-活动曲combo（可选）:<select id="combo" name="rank" onchange="getpt()">
-	<option value=-1></option>
-	<option value=0>-</option>
-	<option value=1>C</option>
-	<option value=2>B</option>
-	<option value=3 SELECTED>A</option>
-	<option value=4>S</option>
-	</select><br>
-活动图平均pt :<input type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
+{% block main %}
+<div class="row">
+{% include "components/event-time.html" %}
+
+<div class="col-xs-12 col-md-6">
+	<div class="panel panel-default">
+        <div class="panel-heading">活动数据</div>
+		<div class="panel-body">
+			<div class="form-group">
+				<label class="control-label">普通图选择</label>
+				<select class="form-control" id="lpnormal" name="lpnormal">
+						<option value=5>5 LP</option>
+						<option value=10>10 LP</option>
+						<option value=15>15 LP</option>
+						<option value=25 SELECTED>25 LP</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">活动图难度</label>
+				<select class="form-control" id="diff" name="diff" onchange="getpt()">
+					<option value=0>Easy</option>
+					<option value=1>Normal</option>
+					<option value=2>Hard</option>
+					<option value=3 SELECTED>Expert</option>
+					<option value=4>4 倍 Easy</option>
+					<option value=5>4 倍 Normal</option>
+					<option value=6>4 倍 Hard</option>
+					<option value=7>4 倍 Expert</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">活动</label>
+				<select class="form-control" id="afteraquors" name="afteraquors" onchange="getpt()">
+					<option value=0>旧 pt（SS 404）</option>
+					<option value=1 SELECTED>新 pt（SS 565）</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">活动曲rank（可选）</label>
+				<select class="form-control" id="rank" name="rank" onchange="getpt()">
+					<option value=-1></option>
+					<option value=0>-</option>
+					<option value=1>C</option>
+					<option value=2>B</option>
+					<option value=3>A</option>
+					<option value=4 SELECTED>S</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">活动曲combo（可选）</label>
+				<select class="form-control" id="combo" name="rank" onchange="getpt()">
+					<option value=-1></option>
+					<option value=0>-</option>
+					<option value=1>C</option>
+					<option value=2>B</option>
+					<option value=3 SELECTED>A</option>
+					<option value=4>S</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="control-label">活动图平均pt</label>
+				<input class="form-control" type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
+			</div>
+		</div>
+	</div>
+</div>
+
+{% include "components/event-current.html" %}
+{% include "components/event-points.html" %}
+{% include "components/event-calc-result.html" %}
+</div>
 <!--<a href="/activitypt" target="_blank">获得pt表</a>-->
-<br>
-<br>
-目标点数 :<input type="text" id="target" name="target" autocomplete="off" > <br>
-已有点数 :<input type="text" id="current" name="current" autocomplete="off" ><br>
-剩余道具数 :<input type="text" id="items" name="items" autocomplete="off" ><br>
-<br>
-当前剩余LP :<input type="text" id="lp" name="lp" autocomplete="off" onchange='checkinfo()'><nospan id='lpwarning' style='display:none;color:red'>LP高于当前等级上限</nospan><br>
-当前等级 :<input type="text" id="lvl" name="lvl" autocomplete="off" onchange='checkinfo()'><br>
-当前exp:<input type="text" id="exp" name="exp" autocomplete="off" onchange='checkinfo()'><nospan id='expwarning' style='display:none;color:red'>exp高于当前等级上限</nospan><br>
-经验公式 :<select id="expf" name="expf" onchange='checkinfo()'>
-	<option value=0>正常</option>
-	<option value=1 SELECTED>100级以下减半</option>
-	</select><br>
-<input type="submit" id="submit" name="submit" value="Calculate" onclick="check()"> <br>
+{% include "components/event-calc-button.html" %}
 
-<div id="result" style="display:none">
-<pre>
-注意：
-1、加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考
-2、如果最终点数和目标点数过于接近，请考虑多磕一心。
-</pre>
-<div style="float:left">
-需要心数：<nospan id="rloveca"></nospan>心<br>
-普通图次数：<nospan id="rplaytime"></nospan>次 + <nospan id="rextraplaytime"></nospan>次<br>
-活动图次数：<nospan id="racplaytime"></nospan>次 + <nospan id="rextraacplaytime"></nospan>次<br>
-总游戏时间：<nospan id="rtotalhour"></nospan>小时<nospan id="rtotalminute"></nospan>分 + <nospan id="rextrahour"></nospan>小时<nospan id="rextraminute"></nospan>分（一首按两分半计算）<br>
-最终等级：<nospan id="rlvl"></nospan><br>
-最终exp：<nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan><br>
-最终点数：<nospan id="rcurrent"></nospan><br>
-<nospan id="rwarning" style="color:red"></nospan>
-</div>
+{% endblock %}
 
-</div>
-</body>
-{% include 'footer.html' %}
-</html>
+{% block back_notice %}
+<h4 class="alert-heading">注意</h4>
+<ol>
+	<li>加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考</li>
+	<li>如果最终点数和目标点数过于接近，请考虑多磕一心。</li>
+</ol>
+{% endblock %}

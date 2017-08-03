@@ -1,10 +1,10 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="数据查询" %}
+{% set category_link="/#game-data" %}
+{% set title="卡片数据和立绘查询" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.12"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -12,6 +12,9 @@
    	table {position:relative;margin-left:30px;}
    	td {size:2}
    </style>
+{% endblock %}
+
+{% block script %}
    <script>
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
@@ -497,32 +500,24 @@
    }
    
    </script>
-   
-  </head>
-   <body onload="init()">
-   <nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>卡片数据</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
+{% endblock %}
 
-<pre>
-说明：
-1. 通用强度指的是一张卡片在，combo为700，长按比例为8%，滑键比例为4%，P率为95%，时间为120秒，星星为65个，队伍强度为80000，C位加成为15%，单槽加成为5.2%时（或者当4槽的加分、回血宝石更优时使用对应宝石）对得分的贡献程度。由于实际情况下卡片的强度会因为不同图(尤其是<b>滑键比例</b>)、不同P率以及不同Center效果产生一定的不同，想要详细计算请使用<a href="/llunit">队伍强度计算</a>进行计算
-2. 卡片强度的定义为卡片属性（包括绊、宝石加成）+加分技能（或回血宝石对应加分）对应的属性
-3. 关于修正：所谓技能的修正，是因为技能在打歌的最后一次不能完全发动，在设定的情况和均匀分布的随机余数条件下计算的技能的真实效果
-4. 如果当前状态下4槽加分、回血宝石对强度加成更高，则使用4槽加分、回血宝石计算强度，此时在强度数值下会显示标记
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
-当前版本：4.1及以上。
-</pre>
+{% block front_notice %}
+<h4 class="alert-heading">说明</h4>
+<ul>
+<li>通用强度指的是一张卡片在，combo为700，长按比例为8%，滑键比例为4%，P率为95%，时间为120秒，星星为65个，队伍强度为80000，C位加成为15%，单槽加成为5.2%时（或者当4槽的加分、回血宝石更优时使用对应宝石）对得分的贡献程度。由于实际情况下卡片的强度会因为不同图(尤其是<b>滑键比例</b>)、不同P率以及不同Center效果产生一定的不同，想要详细计算请使用<a href="/llunit">队伍强度计算</a>进行计算</li>
+<li>卡片强度的定义为卡片属性（包括绊、宝石加成）+加分技能（或回血宝石对应加分）对应的属性</li>
+<li>关于修正：所谓技能的修正，是因为技能在打歌的最后一次不能完全发动，在设定的情况和均匀分布的随机余数条件下计算的技能的真实效果</li>
+<li>如果当前状态下4槽加分、回血宝石对强度加成更高，则使用4槽加分、回血宝石计算强度，此时在强度数值下会显示标记</li>
+</ul>
+<p>当前版本：4.1及以上。</p>
+{% endblock %}
 
+{% block main %}
 <h3>卡片库</h3>
 筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
 		<option value="">稀有度</option>
@@ -731,7 +726,4 @@
 </table>
 </div>
 <br>
-
-</body>
-{% include 'footer.html' %}
-</html>
+{% endblock %}

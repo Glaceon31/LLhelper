@@ -1,17 +1,18 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="数据查询" %}
+{% set category_link="/#game-data" %}
+{% set title="UR 强度排行" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.03"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
-   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
-   	table {position:relative;margin-left:30px;}
    	td {size:2}
    </style>
+{% endblock %}
+
+{% block script %}
    <script>
    var attcolor = new Array()
    attcolor["smile"] = "red"
@@ -97,7 +98,7 @@
          }
       }
 
-      resulthtml = "<table border='1' style='text-align:center'><tr><td>排行</td><td>编号</td><td>头像</td><td>smile强度</td><td>pure强度</td><td>cool强度</td><td>技能条件</td></tr>"
+      resulthtml = "<table class='table table-condensed table-striped'><tr><th>排行</th><th>编号</th><th>头像</th><th>Smile 强度</th><th>Pure 强度</th><th>Cool 强度</th><th>技能条件</th></tr>"
       ttype = new Array()
       ttype['3'] = '图标'
       ttype['4'] = 'combo'
@@ -126,41 +127,38 @@
       }
    }
    </script>
-   </head>
-   <body onload="">
-   <nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>UR卡片排行</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
+{% endblock %}
 
-<pre>
+{% block front_notice %}
 强度均按8槽8级技能觉醒计算，只包括加分UR
-</pre>
+{% endblock %}
 
-筛选：<select id="att" name="att">
-      <option value="">所有属性</option>
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
+{% block main %}
+<div class="row">
+<div class="form-inline col-md-6 col-md-offset-3 col-sm-12" style="text-align: center">
+      <div class="form-group">
+      <label class="form-label">筛选</label>
+      <select class="form-control" id="att" name="att">
+            <option value="">所有属性</option>
+            <option value="smile" style="color:red">smile</option>
+            <option value="pure" style="color:green">pure</option>
+            <option value="cool" style="color:blue">cool</option>
       </select>
-      ，按照<select id="sort" name="sort">
-      <option value="">最强属性</option>
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
-   </select>
-   <input type="button" value="排序" onclick="showresult(0)"/>
-   <div id="resultarea">
-
+      </div>
+      <div class="form-group">
+            <label class="form-label">按照</label>
+            <select class="form-control" id="sort" name="sort">
+                  <option value="">最强属性</option>
+                  <option value="smile" style="color:red">smile</option>
+                  <option value="pure" style="color:green">pure</option>
+                  <option value="cool" style="color:blue">cool</option>
+            </select>
+      </div>
+   <button class="btn btn-primary" type="button" value="排序" onclick="showresult(0)"/>排序</button>
+</div>
+</div>
+<div class="row" style="margin-top: 10px">
+   <div id="resultarea" class="col-md-6 col-md-offset-3 col-sm-12">
    </div>
-</body>
-{% include 'footer.html' %}
-</html>
+</div>
+{% endblock %}

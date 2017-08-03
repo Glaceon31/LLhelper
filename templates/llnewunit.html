@@ -1,16 +1,19 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="队伍编成和强度" %}
+{% set category_link="/#unit-formation" %}
+{% set title="队伍强度、得分计算" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
    	img {height:65px;width:65px}
    </style>
+{% endblock %}
+
+{% block script %}
    <script>
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
@@ -1313,32 +1316,27 @@
    	alert('4')
    }
    </script>
-  </head>
- <body onload="init()">
- <nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>队伍强度、得分计算</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
-<pre>
-使用方法：
-	1、选择歌曲 或 填写歌曲详细信息 <font style='color:red'><b>务必记得修改perfect数量</b></font>
-	2、从卡牌库中选择一张卡，点击转移来放置到对应位置，没有录入的卡片数据可以手动输入 <font style='color:red'><b>一张卡默认为满级、一级技能的数据，若不是则需要修改</b></font>
-	3、使用以上方法选择所有的9张卡
-	4、可以点击”保存队伍“将队伍配置文件保存到本地
-	5、第2、3步可以从保存的文件中读取队伍信息来代替：点击”选择文件“选择本地配置文件，再点击”读取队伍“
-	6、选择主唱技能和好友主唱技能 <font style='color:red'><b>计算SM得分时将好友主唱加成设为0%</b></font>
-	7、点击Calculate
+{% endblock %}
 
-当前版本：4.1及以上。</a>
-</pre>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
+
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ol>
+      <li>选择歌曲 或 填写歌曲详细信息 <font style='color:red'><b>务必记得修改perfect数量</b></font></li>
+      <li>从卡牌库中选择一张卡，点击转移来放置到对应位置，没有录入的卡片数据可以手动输入 <font style='color:red'><b>一张卡默认为满级、一级技能的数据，若不是则需要修改</b></font></li>
+      <li>使用以上方法选择所有的9张卡</li>
+      <li>可以点击”保存队伍“将队伍配置文件保存到本地</li>
+      <li>第2、3步可以从保存的文件中读取队伍信息来代替：点击”选择文件“选择本地配置文件，再点击”读取队伍“</li>
+      <li>选择主唱技能和好友主唱技能 <font style='color:red'><b>计算SM得分时将好友主唱加成设为0%</b></font></li>
+      <li>点击Calculate</li>
+</ol>
+<p>当前版本：4.1及以上。</p>
+{% endblock %}
+
+{% block main %}
 <input type="submit" name="clear" value="清空输入" onclick="clearall()"><br>
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <!--<form action="/llloadunit"  onsubmit=""  target="if">-->
@@ -1505,7 +1503,6 @@
 	绊:<input type="text" id="kizuna" name="kizuna" value="0" autocomplete="off" ><br>
    </div>
 
-</div>
    <div style="float:left">
 <img id="imageselect">
 </div>
@@ -1545,179 +1542,7 @@
 <h3>队伍属性</h3>
 <div>
 <div style="float:left">
-<table border='1'>
-   <tr>
-      <td>权重</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td></td>
-      {% for i in range(0,9) %}
-      <td><input type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>卡片</td>
-   	<td ><img  id='avatar0' src='/static/null.png'/></td>
-   	<td><img  id='avatar1' src='/static/null.png'/></td>
-   	<td><img  id='avatar2' src='/static/null.png'/></td>
-   	<td><img  id='avatar3' src='/static/null.png'/></td>
-   	<td><img  id='avatar4' src='/static/null.png'/></td>
-   	<td><img  id='avatar5' src='/static/null.png'/></td>
-   	<td><img  id='avatar6' src='/static/null.png'/></td>
-   	<td><img  id='avatar7' src='/static/null.png'/></td>
-   	<td><img  id='avatar8' src='/static/null.png'/></td>
-   </tr>
-   <tr style="display:none">
-      <td>id</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr style="display:none">
-      <td>mezame</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>主属性</td>
-      {% for i in range(0,9) %}
-      <td><select id="main{{i}}" name="main{{i}}">
-         <option value="smile" style="color:red">smile</option>
-         <option value="pure" style="color:green">pure</option>
-         <option value="cool" style="color:blue">cool</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:red">smile</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:green">pure</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:green" id="pure{{i}}" name="pure{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:blue">cool</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>技能</td>
-      {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitskilllevel({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>单体数值</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemnum{{i}}" name="gemnum{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="200" >200</option>
-         <option value="450" >450</option>
-         <option value="650" >650</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>单体百分比</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemsinglepercent{{i}}" name="gemsinglepercent{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="0.1" >10%</option>
-         <option value="0.16" >16%</option>
-         <option value="0.26" >26%</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>全体百分比</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemallpercent{{i}}" name="gemallpercent{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="0.018" >1.8%</option>
-         <option value="0.024" >2.4%</option>
-         <option value="0.042" >4.2%</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>奶/分宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemskill{{i}}" name="gemskill{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr style="display:none">
-      <td>判定宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemacc{{i}}" name="gemacc{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>使用槽数</td>
-      {% for i in range(0,9) %}
-      <td id="slot{{i}}" name="slot{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td></td>
-      {% for i in range(0,9) %}
-      <td><input type="button" id="pos{{i}}" name="pos{{i}}" value="换位{{i+1}}" onclick="changepos({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>属性强度</td>
-      {% for i in range(0,9) %}
-      <td id="attstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>技能强度</td>
-      {% for i in range(0,9) %}
-      <td id="skillstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>卡强度</td>
-      {% for i in range(0,9) %}
-      <td id="cardstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>实际强度</td>
-      {% for i in range(0,9) %}
-      <td id="strength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <!--
-   <tr>
-      <td>判定</td>
-      {% for i in range(0,9) %}
-      <td id="accuracy{{i}}"></td>
-      {% endfor %}
-   </tr>
--->
-   <tr>
-      <td>回复</td>
-      {% for i in range(0,9) %}
-      <td id="heal{{i}}"></td>
-      {% endfor %}
-   </tr>
-</table>
+{% include "components/unit-selector.html" %}
 </div>
 <div style="float:left">
 
@@ -1822,16 +1647,7 @@
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
-<pre>
-注意：
-   勾选“计算分布”来计算得分分布。得分分布使用真实分布计算，计算速度比较慢。
-   由于使用歌曲信息计算，最终结果可能会有千分之一的误差
-   判定覆盖率仅供参考
-   判定期间属性1.25倍的宝石计算有误，暂时按无效计算。
-说明：   
-   1、在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率
-   2、卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度
-</pre>
+
 
 <div id="result" style="display:none">
 <table border="1">
@@ -1890,8 +1706,24 @@
    <td id='simresult98'></td>
    <td id='simresult99'></td>
 </tr>
+</table>
 </div>
+{% endblock %}
 
-</body>
-{% include 'footer.html' %}
-</html>
+{% block back_notice %}
+<h4 class="alert-heading">注意</h4>
+<ul>
+   <li>勾选“计算分布”来计算得分分布。得分分布使用真实分布计算，计算速度比较慢。</li>
+   <li>由于使用歌曲信息计算，最终结果可能会有千分之一的误差</li>
+   <li>判定覆盖率仅供参考</li>
+   <li>判定期间属性1.25倍的宝石计算有误，暂时按无效计算。</li>
+</ul>
+{% endblock %}
+
+{% block back_notice_2 %}
+<h4 class="alert-heading">说明</h4>
+<ul>
+   <li>在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率</li>
+   <li>卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度</li>
+</ul>
+{% endblock %}

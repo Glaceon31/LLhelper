@@ -1,10 +1,10 @@
-<!DOCTYPE html>
-<html>
-   <head>
-      <title>LLhelper</title>
-      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+{% extends "layout.html" %}
+
+{% set category="数据查询" %}
+{% set category_link="/#game-data" %}
+{% set title="歌曲数据查询" %}
+
+{% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -12,6 +12,9 @@
    	table {position:relative;margin-left:30px;}
    	td {size:2}
    </style>
+{% endblock %}
+
+{% block script %}
    <script>
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
@@ -304,29 +307,22 @@
    }
    
    </script>
-   
-  </head>
-   <body onload="init()">
-<nav class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-      <a class="navbar-brand" href="/">LLhelper</a>
-   </div>
-   <div>
-      <ul class="nav navbar-nav">
-         <li><a href="/">应用</a></li>
-         <li class="active"><a href=#>歌曲数据</a></li>
-         <li><a href="/about">关于</a></li>
-      </ul>
-   </div>
-</nav>
-<pre>
-使用方法：
-       选择歌曲以浏览数据，可以使用搜索和筛选来查找想要看的歌曲
+{% endblock %}
 
-注意：当不需要歌曲名搜索时，删除搜索框内所有字符（包括空格等）
-normal easy和新曲的数据仍不全
-</pre>
+{% block body_onload %}
+   <body onload="init()" lang="zh-Hans">
+{% endblock %}
 
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ul>
+<li>选择歌曲以浏览数据，可以使用搜索和筛选来查找想要看的歌曲</li>
+<li>注意：当不需要歌曲名搜索时，删除搜索框内所有字符（包括空格等）</li>
+<li>Normal、Easy 和新曲的数据仍不全</li>
+</ul>
+{% endblock %}
+
+{% block main %}
 搜索：<input type="text" id="search" value="" onchange="changesongselect()"></input><br>
 筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo()" style="display:none">
 		<option value="">难度</option>
@@ -516,17 +512,17 @@ normal easy和新曲的数据仍不全
 </tr>
 </table>
 <br>
-<pre>
-说明：
-1、时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量
-2、歌曲长度大约为封面到full combo/live成功字样出现的总时间
-3、同色同团加成指的是在某个位置放置与歌曲颜色相同或相同组合（μ's，Aquors）的卡对总分的增加量，两者叠乘
-4、combo乘数指的是FC比起max combo不到50时的得分的倍数
-5、最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
-6、安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）
-     若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
-7、单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差
-</pre>
-</body>
-{% include 'footer.html' %}
-</html>
+{% endblock %}
+
+{% block back_notice %}
+<h4 class="alert-heading">说明</h4>
+<ol>
+	<li>时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量</li>
+	<li>歌曲长度大约为封面到full combo/live成功字样出现的总时间</li>
+	<li>同色同团加成指的是在某个位置放置与歌曲颜色相同或相同组合（μ's，Aquors）的卡对总分的增加量，两者叠乘</li>
+	<li>combo乘数指的是FC比起max combo不到50时的得分的倍数</li>
+	<li>最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）</li>
+	<li>安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
+	<li>单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差</li>
+</ol>
+{% endblock %}

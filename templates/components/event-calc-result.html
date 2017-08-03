@@ -1,0 +1,19 @@
+<div class="col-xs-12 col-md-6" id="result" style="display: none">
+	<div class="panel panel-default">
+		<div class="panel-heading">计算结果</div>
+		<table class="table">
+            <tr><th>需要心数</th><td><nospan id="rloveca"></nospan> 心</td></tr>
+            {% if need_item %}
+			<tr><th>普通图次数</th><td><nospan id="rplaytime"></nospan> 次 + <nospan id="rextraplaytime"></nospan> 次</td></tr>
+            <tr><th>活动图次数</th><td><nospan id="racplaytime"></nospan> 次 + <nospan id="rextraacplaytime"></nospan> 次</td></tr>
+            {% else %}
+			<tr><th>{{event_abbr}}次数</th><td><nospan id="rplaytime"></nospan> 次 + <nospan id="rextraplaytime"></nospan> 次</td></tr>
+            {% endif %}
+			<tr><th>总游戏时间</th><td><nospan id="rtotalhour"></nospan> 小时 <nospan id="rtotalminute"></nospan> 分 + <nospan id="rextrahour"></nospan> 小时 <nospan id="rextraminute"></nospan> 分（一首按两分半计算）</td></tr>
+			<tr><th>最终等级</th><td><nospan id="rlvl"></nospan></td></tr>
+			<tr><th>最终EXP</th><td><nospan id="rexp"></nospan>/<nospan id="rexpneed"></nospan></td></tr>
+			<tr><th>最终点数</th><td><nospan id="rcurrent"></nospan></td></tr>
+			<nospan id="rwarning" style="color:red"></nospan>
+		</table>
+	</div>
+</div>
