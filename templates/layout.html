@@ -83,6 +83,10 @@
       {% endblock %}
     </div>
   </body>
+  {% if self.back_script() | trim %}
+  {% block back_script %}
+  {% endblock %}
+  {% endif %}
   <script src="//cdnjs.cloudflare.com/ajax/libs/Han/3.2.7/han.min.js"></script>
   <script>
     $('.row').masonry()
