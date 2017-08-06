@@ -8,8 +8,6 @@
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
-   	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
-   	table {position:relative;margin-left:30px;}
    	td {size:2}
    </style>
 {% endblock %}
@@ -259,8 +257,8 @@
    		for (i in rankList){
    			if (songs[index][diff][rankList+"score"] == "")
    				continue
-   			document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
-   			document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
+   			//document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
+   			//document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
    		}
    		
    		//高亮低权重位置
@@ -284,15 +282,16 @@
    				}
    			}
    		}
-   		for (i = 0; i < 9; i++){
+		for (i = 0; i < 9; i++){
    			document.getElementById("positionweight"+String(i)).style.background = ""
    		}
-    		document.getElementById("positionweight"+String(po[0])).style.background = "#FF0000"
-    		document.getElementById("positionweight"+String(po[1])).style.background = "#FF7F00"
-    		document.getElementById("positionweight"+String(po[2])).style.background = "#FFFF00"
-   		
+    		document.getElementById("positionweight"+String(po[0])).style.background = "#f2dede"
+    		document.getElementById("positionweight"+String(po[0])).style.color = "#a94442"
+    		document.getElementById("positionweight"+String(po[1])).style.background = "#fcf8e3"
+    		document.getElementById("positionweight"+String(po[1])).style.color = "#8a6d3b"
+    		document.getElementById("positionweight"+String(po[2])).style.background = "#ffffcc"
+    		document.getElementById("positionweight"+String(po[2])).style.color = "#a0a003"
    	}
-   	
    }
    
    function changeLanguage(){
@@ -306,6 +305,9 @@
    	getsongselect("", "", "", "");
    }
    
+   document.addEventListener("change", function () {
+	   Han(document.body).render()
+   })
    </script>
 {% endblock %}
 
@@ -323,20 +325,24 @@
 {% endblock %}
 
 {% block main %}
-搜索：<input type="text" id="search" value="" onchange="changesongselect()"></input><br>
-筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo()" style="display:none">
+<div class="form-group">
+<label class="control-label">搜索</label><input class="form-control" type="text" id="search" value="" onchange="changesongselect()"></input>
+</div>
+<div class="form-group">
+<label class="control-label">筛选</label><select class="form-control" id="diff" name="diff" onchange="changesongselect();changediffinfo()" style="display:none">
 		<option value="">难度</option>
 		<option value="easy">easy</option>
 		<option value="normal">normal</option>
 		<option value="hard">hard</option>
 		<option value="expert">expert</option>
 	</select>
-	<select id="songatt" name="songatt" onchange="changesongselect()">
+	<select class="form-control" id="songatt" name="songatt" onchange="changesongselect()">
 		<option value="">属性</option>
-		<option value="smile">smile</option>
-		<option value="pure">pure</option>
-		<option value="cool">cool</option>
+		<option value="smile">Smile</option>
+		<option value="pure">Pure</option>
+		<option value="cool">Cool</option>
 	</select>
+</div>
    <!--
 	<select id="songcnhave" name="songcnhave" onchange="changesongselect();changediffinfo()">
 		<option value="">国服是否有</option>
@@ -381,37 +387,68 @@
       <option value="5">第五次MF</option>
       <option value="6">第六次MF</option>
       <option value="7">第七次MF</option>
-   </select>--><br>
-歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');">
+   </select>-->
+<div class="form-group">
+<label class="control-label">歌曲</label><select class="form-control" id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');">
 		<option value=""> </option>
-	</select>
-	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-	<br>
-难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice')">
+</select>
+</div>
+<div class="form-group">
+<label class="control-label">难度</label><select class="form-control" id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice')">
       <option value="easy">easy</option>
       <option value="normal">normal</option>
       <option value="hard">hard</option>
       <option value="expert" SELECTED>expert</option>
       <option value="master">master</option>
    </select>
-	
+</div>
 <h3>基本信息</h3>
+<dl class="dl-horizontal">
+	<dt>歌曲名</dt>
+	<dd id='jpname'></dd>
+	<dt id='cnametag'>中文名</dt>
+	<dd id='name'></dd>
+	<dt>属性</dt>
+	<dd id='attribute'> </dd>
+	<dt>难度</dt>
+	<dd id='stardifficulty'> </dd>
+	<dt id="randomdifficultytag">Random谱难度</dt>
+	<dd id='randomdifficulty'> </dd>
+	<dt id="lptag" style="display:none">消耗LP</dt>
+	<dd id='lp' style="display:none"> </dd>
+	<dt style="display:none">经验</dt>
+	<dd id='exp' style="display:none"> </dd>
+	<dt>Combo数</dt>
+	<dd id='combo'> </dd>
+	<dt>按键权重</dt>
+	<dd id='noteweight'> </dd>
+	<dt>时间</dt>
+	<dd><span id='time'></span><sup><a href="#intro-1">(1)</a></sup></dd>
+	<dt>歌曲长度</dt>
+	<dd><span id='totaltime'></span><sup><a href="#intro-2">(2)</a></sup></dd>
+	<dt>BPM</dt>
+	<dd id='bpm'> </dd>
+	<dt>星星数</dt>
+	<dd id='star'> </dd>
+</dl>
 
-<table border='1'>
+
+
+<!--table class="table">
 <tr>
-	<td>歌曲名</td>
-	<td id='cnametag'>中文名</td>
-	<td>属性</td>
-	<td>难度</td>
-	<td id="randomdifficultytag">random谱难度</td>
-	<td id="lptag" style="display:none">消耗LP</td>
-	<td style="display:none">经验</td>
-	<td>combo数</td>
-	<td>按键权重</td>
-	<td>时间*(1)</td>
-	<td>歌曲长度*(2)</td>
-	<td>BPM</td>
-	<td>星星数</td>
+	<th>歌曲名</th>
+	<th id='cnametag'>中文名</th>
+	<th>属性</th>
+	<th>难度</th>
+	<th id="randomdifficultytag">random谱难度</th>
+	<th id="lptag" style="display:none">消耗LP</th>
+	<th style="display:none">经验</th>
+	<th>combo数</th>
+	<th>按键权重</th>
+	<th>时间<sup><a href="#intro-1">(1)</a></sup></th>
+	<th>歌曲长度<sup><a href="#intro-2">(2)</a></sup></th>
+	<th>BPM</th>
+	<th>星星数</th>
 </tr>
 <tr>
 	<td id='jpname'></td>
@@ -428,7 +465,7 @@
 	<td id='bpm'> </td>
 	<td id='star'> </td>
 </tr>
-</table>
+</table-->
 <!--
 <table border='1'>
    <tr>
@@ -442,7 +479,13 @@
 </table>-->
 
 <h3>分数要求</h3>
-<table border='1'>
+<dl class="dl-horizontal">
+	<dt>Score S</dt><dd id="sscore"></dd>
+	<dt>Score A</dt><dd id="ascore"></dd>
+	<dt>Score B</dt><dd id="bscore"></dd>
+	<dt>Score C</dt><dd id="cscore"></dd>
+</dl>
+<!--table class="table">
 <tr>
 	<td></td>
 	<td>C</td>
@@ -457,17 +500,17 @@
 	<td id="bscore"></td>
 	<td id="ascore"></td>
 	<td id="sscore"></td>
-</tr>
+</tr-->
 <!--
 <tr>
-	<td>最低属性*(5)</td>
+	<td>最低属性<sup><a href="#intro-5">(5)</a></sup></td>
 	<td id="clowatt"></td>
 	<td id="blowatt"></td>
 	<td id="alowatt"></td>
 	<td id="slowatt"></td>
 </tr>
 <tr>
-	<td>安全属性*(6)</td>
+	<td>安全属性<sup><a href="#intro-6">(6)</a></sup></td>
 	<td id="cstableatt"></td>
 	<td id="bstableatt"></td>
 	<td id="astableatt"></td>
@@ -476,53 +519,53 @@
 </table>
 
 <h3>谱面分布</h3>
-<table border='1'>
+<table class="table table-bordered">
+<thead>
 <tr>
-	<td></td>
+	<th></th>
 	{% for i in range(0, 9)%}
-		<td>{{i+1}}</td>
+		<th>{{i+1}}</th>
 	{% endfor %}
 </tr>
+</thead>
+<tbody>
 <tr>
-	<td>权重</td>
+	<th>权重</th>
 	{% for i in range(0, 9)%}
 		<td id="positionweight{{i}}"></td>
 	{% endfor %}
 </tr>
 <tr>
-	<td>同色同团加成*(3)</td>
+	<th>同色同团加成<sup><a href="#intro-3">(3)</a></sup></th>
 	{% for i in range(0, 9)%}
 		<td id="positionmulti{{i}}"></td>
 	{% endfor %}
 </tr>
+</tbody>
 </table>
 <p style="margin-left:30px">*异色卡和异团卡放在红色位置最好，其次橙色、黄色位置</p>
 
 <h3>其他</h3>
-<table border='1'>
-<tr>
-	<td>combo乘数*(4)</td>
-	<td>获得绊</td>
-	<td>单位强度得分*(7)</td>
-</tr>
-<tr>
-	<td id="combomulti"></td>
-	<td id="kizunaget"></td>
-	<td id="scoreperstrength"></td>
-</tr>
-</table>
+<dl class="dl-horizontal">
+	<dt>Combo乘数</dt>
+	<dd><span id="combomulti"></span><sup><a href="#intro-4">(4)</a></sup></dd>
+	<dt>获得绊</dt>
+	<dd id="kizunaget"></dd>
+	<dt>单位强度得分</dt>
+	<dd><span id="scoreperstrength"></span><sup><a href="#intro-7">(7)</a></sup></dd>
+</dl>
 <br>
 {% endblock %}
 
 {% block back_notice %}
 <h4 class="alert-heading">说明</h4>
 <ol>
-	<li>时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量</li>
-	<li>歌曲长度大约为封面到full combo/live成功字样出现的总时间</li>
-	<li>同色同团加成指的是在某个位置放置与歌曲颜色相同或相同组合（μ's，Aquors）的卡对总分的增加量，两者叠乘</li>
-	<li>combo乘数指的是FC比起max combo不到50时的得分的倍数</li>
-	<li>最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）</li>
-	<li>安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
-	<li>单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88+0.12*P率)，存在极小的误差</li>
+	<li id="intro-1">时间指的是从人物出现到最后一个note被击打所经过的时间，是时间系技能可以触发的时间量</li>
+	<li id="intro-2">歌曲长度大约为封面到「FULL COMBO」/ 「LIVE 成功」字样出现的总时间</li>
+	<li id="intro-3">同色同团加成指的是在某个位置放置与歌曲颜色相同或相同组合（μ's，Aquors）的卡对总分的增加量，两者叠乘</li>
+	<li id="intro-4">Combo乘数指的是FC比起max combo不到50时的得分的倍数</li>
+	<li id="intro-5">最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）</li>
+	<li id="intro-6">安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
+	<li id="intro-7">单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88 + 0.12 * P率)，存在极小的误差</li>
 </ol>
 {% endblock %}
