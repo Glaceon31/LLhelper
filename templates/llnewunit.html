@@ -1719,11 +1719,24 @@
    </tr>
 </table>
 </div>
-<div style="float:left">
+<div class="col-sm-3">
 
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
+
+<div id="unit-storage" style="margin-top: 30px">
+  <h4>队伍列表</h4>
+  <div id="unit-storage-list" class="list-group">
+
+  </div>
+  <div class="input-group">
+    <input type="text" id="unit-storage-name" class="form-control" placeholder="给队伍取个名字" />
+    <span class="input-group-btn">
+      <a class="btn btn-default" id="unit-storage-save">保存到浏览器</a>
+    </span>
+  </div>
+</div>
 
 </div>
 </div>
@@ -1893,5 +1906,6 @@
 </div>
 
 </body>
+<script src="{{ url_for('static', filename='llnewunit/storage.js') }}"></script>
 {% include 'footer.html' %}
 </html>
