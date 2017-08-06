@@ -48,6 +48,27 @@ def cfpt():
 def nmpt():
     return render_template('legacy/templates/nmpt.html')
 
+### data ###
+@legacy_app.route("/llsongdata")
+def llsongdata():
+    songsjson = open('newsongsjson.txt', 'rb').read()
+    return render_template('legacy/templates/llsongdata.html', songsjson = songsjson)
+
+@legacy_app.route("/llcoverage")
+def llcoverage():
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template('legacy/templates/llcoverage.html', cardsjson = cardsjson)
+
+@legacy_app.route("/llnewcarddata")
+def llnewcarddata():
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template('llnlegacy/templates/ewcarddata.html', cardsjson = cardsjson)
+
+@legacy_app.route("/llurcardrank")
+def llurcardrank():
+    cardsjson = open('newcardsjson.txt', 'rb').read()
+    return render_template('lllegacy/templates/urcardrank.html', cardsjson = cardsjson)
+
 ### species ###
 @legacy_app.route("/llspecies", methods=['GET', 'POST'])
 @legacy_app.route("/llurrank", methods=['GET', 'POST'])
