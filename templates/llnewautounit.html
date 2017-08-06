@@ -1063,7 +1063,7 @@ function P_Matrix(){
 		P_up[i][3] = 0.16*(1.0  + Match_c[i])*attr[i];
 		P_up[i][4] = P_sumtri;
 		P_up[i][5] = P_sumfor;
-		P_up[i][6] = skillP[i];
+		P_up[i][6] = skillP[i]/additionrate;
 	}//书写宝石强度加成矩阵
 }
 function calc_MPM() {
@@ -1244,20 +1244,24 @@ function calc_bestarm(){
 	//先排序权重，随歌曲而动,从大到小
 	
 	function orderposbyweight(){
+		weightsum=0;
+		var songweight0=new Array()
 		for(var i=0;i<9;i++){
 			songweight[i]=parseFloat(document.getElementById("weight"+String(i)).value)
+			songweight0[i]=songweight[i]
+			weightsum+=songweight[i]
 		}
 		
 		for(var i=0;i<8;i++){
 			mweight=0
 			for(var j=0;j<9;j++){
 				if(j==4) continue
-				if(mweight<songweight[j]){
-					mweight=songweight[j]
+				if(mweight<songweight0[j]){
+					mweight=songweight0[j]
 					songweightsort[i]=j
 				}
 			}
-			songweight[songweightsort[i]]=0
+			songweight0[songweightsort[i]]=0
 		}
 	}
 	
@@ -1306,7 +1310,9 @@ function calc_bestarm(){
 		document.getElementById("cardid"+String(unitNO)).value=submember[subNO]["cardid"]
 		changeavatar(unitNO)
 	}
+	
 	function arrangepos(){
+		additionrate=0
 		var subcopyListstr=["main","cardid"]
 		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
 		for(var i=0;i<8;i++){
@@ -1319,8 +1325,11 @@ function calc_bestarm(){
 			document.getElementById("main"+String(posi)).value=submember[memi]["main"]
 			document.getElementById("cardid"+String(posi)).value=submember[memi]["cardid"]
 			changeavatar(posi)
+			additionrate+=(submember[memi]["addition"]*songweight[posi]/1.21)
 			//refreshsubmemberlist();/////=========delete
 		}
+		additionrate+=submember[submember.length-1]["addition"]*songweight[4]/1.21
+		additionrate/=weightsum
 	}
 	function swapmember(i,j){
 		k=subunitmembers[i]
