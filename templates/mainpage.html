@@ -193,9 +193,15 @@
             <a class="navbar-brand" href="/" style="padding-top: 13px; padding-bottom: 17px">
                 <img alt="LLHelper" src="/static/shortcuticon.png" style="height: 1em; width: auto; display: inline-block; vertical-align: baseline; padding-right: 2px">
                 LLHelper
-              </a>
+            </a>
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-main-content" aria-expanded="false">
+              <span class="sr-only">折叠导航栏</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
           </div>
-          <div>
+          <div id="navbar-main-content" class="collapse navbar-collapse">
             <ol class="breadcrumb navbar-nav" style="margin-bottom: 0px; padding-top: 15px; padding-bottom: 15px; background-color: inherit;">
               <li><a href="/">首页</a></li>
               {% if category %}
