@@ -21,6 +21,7 @@
       div.jumbotron.llhelper-jumbotron {
         margin-bottom: 0px;
         /*height: 100vh;*/
+        height: 50vh;
       }
       .tool-index-row > div > h3 {
         font-size: 24px;
@@ -49,6 +50,7 @@
       }
       .tool-index {
         color: #fff;
+        transition: all .5s ease;
       }
       a.nav-button > h5 {
         font-size: 18px;
@@ -59,25 +61,37 @@
       .tool-index-1 {
         background-color: #ff9d14;
       }
-      .tool-index-row-1 > div > .row > a:hover {
+      .tool-index-row-1 > div > .row > a:active,
+      .tool-index-row-1 > div > .row > a:hover,
+      .tool-index-row-1 > div > .row > a:focus,
+      .tool-index-row-1 > div > .row > a:visited {
         color: #ff9d14;
       }
       .tool-index-2 {
         background-color: #ef3e36;
       }
-      .tool-index-row-2 > div > .row > a:hover {
+      .tool-index-row-2 > div > .row > a:active,
+      .tool-index-row-2 > div > .row > a:hover,
+      .tool-index-row-2 > div > .row > a:focus,
+      .tool-index-row-2 > div > .row > a:visited {
         color: #ef3e36;
       }
       .tool-index-3 {
         background-color: #2e282a;
       }
-      .tool-index-row-3 > div > .row > a:hover {
+      .tool-index-row-3 > div > .row > a:active,
+      .tool-index-row-3 > div > .row > a:hover,
+      .tool-index-row-3 > div > .row > a:focus,
+      .tool-index-row-3 > div > .row > a:visited {
         color: #2e282a;
       }
       .tool-index-4 {
         background-color: #2ec4b6;
       }
-      .tool-index-row-4 > div > .row > a:hover {
+      .tool-index-row-4 > div > .row > a:active,
+      .tool-index-row-4 > div > .row > a:hover,
+      .tool-index-row-4 > div > .row > a:focus,
+      .tool-index-row-4 > div > .row > a:visited {
         color: #2ec4b6;
       }
       #tips {
@@ -182,10 +196,27 @@
       .breadcrumb > li > a:active {
         text-decoration: none;
       }
+      .jumbotron-enter,
+      .jumbotron-leave-to {
+        transform: translateY(-50vh);
+        opacity: 0;
+      }
+      .jumbotron-enter-active,
+      .jumbotron-leave-active {
+        transition: all .5s ease;
+      }
+      .jumbotron-enter + .tool-index-part,
+      .jumbotron-leave-to + .tool-index-part {
+        transform: translateY(-50vh);
+      }
+      .jumbotron-enter-active + .tool-index-part,
+      .jumbotron-leave-active + .tool-index-part {
+        transition: all .5s ease;
+      }
     </style>
   </head>
 
-  <body id="main">
+  <body>
     <div id="app">
       <nav class="navbar navbar-default navbar-static-top" role="navigation">
         <div class="container">
@@ -219,153 +250,73 @@
           </div>
         </div>
       </nav>
-      <div class="jumbotron llhelper-jumbotron" v-if="!collapsing">
-        <div class="container">
-          <h1>LLHelper</h1>
-          <class id="tips" v-html="tip"></class>
+      <transition name="jumbotron" mode="out-in">
+        <div class="jumbotron llhelper-jumbotron" v-if="!collapsing">
+          <div class="container">
+            <h1>LLHelper</h1>
+            <class id="tips" v-html="tip"></class>
+          </div>
         </div>
-      </div>
-      <div class="tool-index tool-index-1" id="event-expense" v-if="!isSectionHidden(1)">
-        <div class="container tool-index-container-1">
-          <h1 class="tool-index-brand" v-if="collapsing">LLHelper</h1>
-          <div class="tool-index-tips" v-if="collapsing" v-html="tip"></div>
-          <div class="tool-index-nav tool-index-nav-1" v-if="collapsing">
+      </transition>
+      {% raw %}
+      <div class="tool-index-part">
+      <div
+        class="tool-index"
+        :class="['tool-index-' + activeSectionId]"
+        v-id="activeSection.key"
+        v-if="collapsing">
+        <div class="container" :class="['tool-index-container' + activeSectionId]">
+          <h1 class="tool-index-brand">LLHelper</h1>
+          <div class="tool-index-tips" v-html="tip"></div>
+          <div class="tool-index-nav" :class="['tool-nav-' + activeSectionId]">
             <div class="tool-index-nav-box">
-              <a class="item active" href="#event-expense">算心应用</a>
-              <a class="item" href="#game-data">数据查询</a>
-              <a class="item" href="#unit-formation">队伍编成和强度</a>
-              <a class="item" href="#other-tools">其他应用</a>
+              <a
+                class="item"
+                v-for="section in sections"
+                :class="{ active: activeSectionId === section.id }"
+                :href="'#' + section.key">{{section.name}}</a>
             </div>
           </div>
-          <div class="row tool-index-row tool-index-row-1">
+          <div class="row tool-index-row" :class="'tool-index-row-' + activeSection.id">
             <div class="col-sm-12 col-md-4">
-              <h3>算心应用</h3>
-              <p>活动用心、耗时计算</p>
+              <h3>{{activeSection.name}}</h3>
+              <p>{{activeSection.description}}</p>
             </div>
             <div class="col-sm-12 col-md-8">
               <div class="row">
-                <a class="col-xs-6 nav-button" href="/llactivity">
-                  <h5>传统活动</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llsm">
-                  <h5>Score Match</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llmf">
-                  <h5>Medley Festival</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llcf">
-                  <h5>Challenge Festival</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llrally">
-                  <h5>散步拉力赛</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llnm">
-                  <h5>协力</h5>
+                <a class="col-xs-6 nav-button" :href="link.href" v-for="link in activeSection.links">
+                  <h5>{{link.name}}</h5>
                 </a>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="tool-index tool-index-2" id="game-data" v-if="!isSectionHidden(2)">
-        <div class="container tool-index-container-2">
-          <h1 class="tool-index-brand" v-if="collapsing">LLHelper</h1>
-          <div class="tool-index-tips" v-if="collapsing" v-html="tip"></div>
-          <div class="tool-index-nav tool-index-nav-1" v-if="collapsing">
-            <div class="tool-index-nav-box">
-              <a class="item" href="#event-expense">算心应用</a>
-              <a class="item active" href="#game-data">数据查询</a>
-              <a class="item" href="#unit-formation">队伍编成和强度</a>
-              <a class="item" href="#other-tools">其他应用</a>
-            </div>
-          </div>
-          <div class="row tool-index-row tool-index-row-2">
-            <div class="col-sm-12 col-md-4">
-              <h3>数据查询</h3>
-            </div>
-            <div class="col-sm-12 col-md-8">
-              <div class="row">
-                <a class="col-xs-6 nav-button" href="/llsongdata">
-                  <h5>歌曲</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llnewcarddata">
-                  <h5>卡片、立绘</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llcoverage">
-                  <h5>谱面和判定覆盖率</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llurcardrank">
-                  <h5>UR 强度排行</h5>
-                </a>
+      <div v-if="!collapsing">
+        <div
+          class="tool-index"
+          :class="['tool-index-' + section.id]"
+          v-id="activeSection.key"
+          v-for="section in sections">
+          <div class="container" :class="['tool-index-container' + section.id]">
+            <div class="row tool-index-row" :class="'tool-index-row-' + section.id">
+              <div class="col-sm-12 col-md-4">
+                <h3>{{activeSection.name}}</h3>
+                <p>{{activeSection.description}}</p>
+              </div>
+              <div class="col-sm-12 col-md-8">
+                <div class="row">
+                  <a class="col-xs-6 nav-button" :href="link.href" v-for="link in section.links">
+                    <h5>{{link.name}}</h5>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="tool-index tool-index-3" id="unit-formation" v-if="!isSectionHidden(3)">
-        <div class="container tool-index-container-3">
-          <h1 class="tool-index-brand" v-if="collapsing">LLHelper</h1>
-          <div class="tool-index-tips" v-if="collapsing" v-html="tip"></div>
-          <div class="tool-index-nav tool-index-nav-1" v-if="collapsing">
-            <div class="tool-index-nav-box">
-              <a class="item" href="#event-expense">算心应用</a>
-              <a class="item" href="#game-data">数据查询</a>
-              <a class="item active" href="#unit-formation">队伍编成和强度</a>
-              <a class="item" href="#other-tools">其他应用</a>
-            </div>
-          </div>
-          <div class="row tool-index-row tool-index-row-3">
-            <div class="col-sm-12 col-md-4">
-              <h3>队伍编成和强度</h3>
-            </div>
-            <div class="col-sm-12 col-md-8">
-              <div class="row">
-                <a class="col-xs-6 nav-button" href="/llnewunit">
-                  <h5>得分和卡组强度计算</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llnewunitsis">
-                  <h5>最优宝石配置计算</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llunitimport">
-                  <h5>截图导入队伍</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llnewautounit">
-                  <h5>自动组队强度计算</h5>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-      <div class="tool-index tool-index-4" id="other-tools" v-if="!isSectionHidden(4)">
-        <div class="container tool-index-container-4">
-          <h1 class="tool-index-brand" v-if="collapsing">LLHelper</h1>
-          <div class="tool-index-tips" v-if="collapsing" v-html="tip"></div>
-          <div class="tool-index-nav tool-index-nav-1" v-if="collapsing">
-            <div class="tool-index-nav-box">
-              <a class="item" href="#event-expense">算心应用</a>
-              <a class="item" href="#game-data">数据查询</a>
-              <a class="item" href="#unit-formation">队伍编成和强度</a>
-              <a class="item active" href="#other-tools">其他应用</a>
-            </div>
-          </div>
-          <div class="row tool-index-row tool-index-row-4">
-            <div class="col-sm-12 col-md-4">
-              <h3>其他工具</h3>
-            </div>
-            <div class="col-sm-12 col-md-8">
-              <div class="row">
-                <a class="col-xs-6 nav-button" href="/lllvlup">
-                  <h5>升级时间计算</h5>
-                </a>
-                <a class="col-xs-6 nav-button" href="/llurrank">
-                  <h5>人种鉴定</h5>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {% endraw %}
       <div class="tool-index-5">
         <div class="container">
           <div class="row tool-index-row">
@@ -524,10 +475,63 @@
     el: '#app',
     data: {
       collapsing: true,
-      activeSection: 1,
-      tip: getTip()
+      activeSectionId: 1,
+      tip: getTip(),
+      sections: [
+        {
+          id: 1,
+          name: '算心应用',
+          description: '活动用心、耗时计算',
+          key: 'event-expense',
+          links: [
+            { name: '传统活动', href: '/llactivity' },
+            { name: 'Score Match', href: '/llsm' },
+            { name: 'Medley Festival', href: '/llmf' },
+            { name: 'Challenge Festival', href: '/llcf' },
+            { name: '散步拉力赛', href: '/llcf' },
+            { name: '协力活动', href: '/llnm' }
+          ]
+        },
+        {
+          id: 2,
+          name: '数据查询',
+          description: '',
+          key: 'game-data',
+          links: [
+            { name: '得分和卡组强度计算', href: '/llnewunit' },
+            { name: '最优宝石配置计算', href: '/llnewunitsis' },
+            { name: '自动组队强度计算', href: '/llnewautounit' },
+            { name: '截图导入队伍', href: '/llunitimport' },
+         ]
+        },
+        {
+          id: 3,
+          name: '队伍编成和强度',
+          description: '',
+          key: 'unit-formation',
+          links: [
+            { name: '歌曲', href: '/llsongdata' },
+            { name: '卡片、立绘', href: '/llnewcarddata' },
+            { name: '谱面和判定覆盖率', href: '/llcoverage' },
+            { name: 'UR 强度排行', href: '/urcardrank' },
+         ]
+        },
+        {
+          id: 4,
+          name: '其他工具',
+          description: '',
+          key: 'other-tools',
+          links: [
+            { name: '升级时间计算', href: '/lllvlup' },
+            { name: '人种鉴定', href: '/llurrank' },
+         ]
+        },
+      ]
     },
     computed: {
+      activeSection: function () {
+        return this.sections[this.activeSectionId - 1]
+      }
     },
     methods: {
       isSectionHidden: function (sectionId) {
@@ -538,10 +542,10 @@
       },
       routeToHash: function (hash) {
         switch (hash) {
-          case '#event-expense': this.activeSection = 1; break
-          case '#game-data': this.activeSection = 2; break
-          case '#unit-formation': this.activeSection = 3; break
-          case '#other-tools': this.activeSection = 4; break
+          case '#event-expense': this.activeSectionId = 1; break
+          case '#game-data': this.activeSectionId = 2; break
+          case '#unit-formation': this.activeSectionId = 3; break
+          case '#other-tools': this.activeSectionId = 4; break
         }
       }
     },
