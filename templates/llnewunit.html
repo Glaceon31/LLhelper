@@ -11,6 +11,18 @@
    	button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
    	img {height:65px;width:65px}
    </style>
+   <style>
+     input[type="number"][size="3"] {
+       width: 50px;
+     }
+     input[type="number"][size="2"] {
+       width: 33px;
+     }
+     input::-webkit-inner-spin-button {
+       -webkit-appearance: none;
+       margin: 0;
+     }
+   </style>
    <script>
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
@@ -95,7 +107,7 @@
 
 
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
-   
+
    var skilllevel = 0
 
    function threetonumber(three){
@@ -156,7 +168,7 @@
    pos = -1
    function changepos(i){
       if (pos==-1){
-         document.getElementById('pos'+String(i)).value = '选择' 
+         document.getElementById('pos'+String(i)).value = '选择'
          pos = i
       }
       else{
@@ -167,10 +179,10 @@
             tmp = document.getElementById(at+String(pos)).value
             document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
             document.getElementById(at+String(i)).value = tmp
-         } 
+         }
          changeavatar(pos)
          changeavatar(i)
-         pos = -1 
+         pos = -1
       }
    }
 
@@ -270,7 +282,7 @@
       }
       //changecolor("cardchoice")
    }
-   
+
    function getsongselect(att){
       sel = document.getElementById("songchoice");
       var keyword = document.getElementById("songsearch").value
@@ -300,7 +312,7 @@
       }
       //changesongcolor("songchoice")
    }
-   
+
    function havevalue(selectId, value){
    	objSelect = document.getElementById(selectId)
    	for (var i = 0; i < objSelect.options.length; i++){
@@ -309,7 +321,7 @@
    	}
    	return false;
    }
-   
+
    function changesongselect(){
    	att = document.getElementById("songatt").value
    	var songchoice = document.getElementById("songchoice").value
@@ -319,7 +331,7 @@
    	}
    	changesongcolor("songchoice")
    }
-   
+
    function changecardselect(){
       rarity = document.getElementById("rarity").value
       chr = document.getElementById("chr").value
@@ -333,7 +345,7 @@
       }
       changecolor("cardchoice")
    }
-   
+
    function changecolor(which){
 
    	index = document.getElementById(which).value
@@ -341,7 +353,7 @@
    		c = attcolor[cards[index].attribute]
    		document.getElementById(which).style.color = c
    		document.getElementById("main").value = cards[index].attribute
-   		
+
          //document.getElementById('skill').value = cardtoskilltype(cards[index])
          if (cards[index].skill){
             //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
@@ -367,7 +379,7 @@
    	}
    	changeavatarselect()
    }
-   
+
    function changesongcolor(which){
    	index = document.getElementById(which).value
       diff = document.getElementById('diffchoice').value
@@ -404,7 +416,7 @@
    		}
    	}
    }
-   
+
    function cardidtoindex(n){
    	cardid = parseInt(n)
    	for (i in cards){
@@ -413,7 +425,7 @@
    		}
    	}
    }
-   
+
    function calslot(n){
       result = 0
       result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
@@ -441,7 +453,7 @@
    	}
    	changeavatar(n)
    }
-   
+
    function changecenter(){
    	cardid = parseInt(document.getElementById("cardid4").value)
    	index = 0
@@ -461,7 +473,7 @@
          document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
       }
    }
-   
+
    function tothree(string){
    	str = String(string)
    	while (str.length < 3){
@@ -469,7 +481,7 @@
    	}
    	return str
    }
-   
+
    function carddata(cardid){
       for (index = 0; index < cards.length; index++){
          if (cards[index]['id'] == cardid)
@@ -487,7 +499,7 @@
    	else
    		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
    }
-   
+
    function changeavatarselect(){
    	document.getElementById('imageselect').src = '/static/null.png'
    	cardid = 0
@@ -500,7 +512,7 @@
    	else
    		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',1)
    }
-   
+
    function changeLanguage(){
    	var cardchoice = document.getElementById("cardchoice").value
    	var songchoice = document.getElementById("songchoice").value
@@ -510,16 +522,16 @@
    	document.getElementById("cardchoice").value = cardchoice
    	document.getElementById("songchoice").value = songchoice
    }
-   
+
    function changeskilltext(n){
    	var postfix = ""
-   	if ((n != "") || (String(n) == "0")) 
+   	if ((n != "") || (String(n) == "0"))
    		postfix = String(n)
       var skilltype = cardtoskilltype(cards[document.getElementById("cardchoice").value])
    	//var skilltype = document.getElementById("skill"+postfix).value
    	//if (skilltype == 0)
    	//	document.getElementById("skilltext"+postfix).style.display = "none"
-   	//else 
+   	//else
    	//	document.getElementById("skilltext"+postfix).style.display = ""
    	//require
    	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
@@ -548,7 +560,7 @@
    		document.getElementById("unittext"+postfix).innerHTML = "点体力"
    	}
    }
-   
+
    function toMezame(){
    	mezame = 1-mezame
    	changecolor("cardchoice")
@@ -567,7 +579,7 @@
       setCookie("mezame"+"unit", mezame, -1)
    	window.location.href="/llnewunit"
    }
-   
+
    function saveunit(){
    	member = [{}, {}, {},{},{},{},{},{},{}]
    	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
@@ -579,7 +591,7 @@
    	unitjson = JSON.stringify(member)
    	window.location.href="/llsaveunit/"+unitjson
    }
-   
+
    var tmponsubmit
    function loadunit(){
    	document.getElementById("unitform").action = '/llloadnewunit'
@@ -587,13 +599,13 @@
    	document.getElementById("unitform").onsubmit = ''
    	document.getElementById("unitform").target = 'if'
    }
-   
+
    function precalcu(){
    	document.getElementById("unitform").action = ''
    	document.getElementById("unitform").onsubmit = tmponsubmit
    	document.getElementById("unitform").target = ''
    }
-   
+
    function init(){
    	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
       skilllevel = 0
@@ -603,7 +615,7 @@
    		mezame = 0
    	if (language == "")
    		language = 0
-   	
+
    	getcardselect("", "", "", "", "", "");
    	getsongselect("", "", "", "");
    	var inputs = document.getElementsByTagName("input");
@@ -630,7 +642,7 @@
    		changeavatar(i)
          calslot(i)
    	}
-      
+
    	document.getElementById("songsearch").value = ""
    	//changecolor("cardchoice")
    	//changesongcolor("songchoice")
@@ -640,7 +652,7 @@
 
       {{additional_script|safe}}
    }
-   
+
    function changediffinfo(){
       savediff = document.getElementById('diffchoice').value
       index = document.getElementById('songchoice').value
@@ -663,7 +675,7 @@
       }
       if (!finddiff)
          document.getElementById('diffchoice').value = 'expert'
-      return 
+      return
    }
 
    function sortstrength(){
@@ -678,8 +690,8 @@
    	}
    	document.getElementById("strength"+String(minnum)).style.color = "red"
    }
-   
-   
+
+
    function saveToCookie(){
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
@@ -693,23 +705,14 @@
    	setCookie("mezame"+"unit", mezame, 1)
    	setCookie("language"+"unit", language, 1)
    }
-   
+
    function check(){
-   	var inputs = document.getElementsByTagName("input");
-   	for (i in inputs){
-   		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
-   			continue
-   		if (!isNumber(inputs[i].value)){
-   			alert("请输入数字");
-   			return false;
-   		}
-   	}
    	saveToCookie();
       calculate()
       document.getElementById("result").scrollIntoView()
    	return true;
    }
-   
+
    function cbmulti(cb) {
       if (cb <= 50) {
          return 1;
@@ -874,7 +877,7 @@
             member[i][mainatt] += Math.ceil(member[i]["gemsinglepercent"]*origin)
             attst[i] += Math.ceil(member[i]["gemsinglepercent"]*origin)
          }
-         
+
       }
       //i带全体宝石，给j加
       teamgem = new Array()
@@ -898,7 +901,7 @@
 
       rawattst = attst.concat()
       rawteamgem= new Array()
-      
+
       result['baseatt'][mainatt] = 0
       for (var i = 0; i < 9; i++) {
          rawteamgem[i] = teamgem[i].concat()
@@ -978,7 +981,7 @@
          document.getElementById('attstrength'+String(i)).innerHTML = attst[i].toString()
          totalattst += attst[i]
       }
-      
+
       result['accuracy'] = 0;
       var averageaccuracy = [0,0,0,0,0,0,0,0,0]
       for (var i = 0; i < 9; i++) {
@@ -1001,7 +1004,7 @@
       }
       totalaccuracy = 0
       for (var i = 0; i < 9; i++) {
-         totalaccuracy += (1-totalaccuracy)*(averageaccuracy[i]/100)  
+         totalaccuracy += (1-totalaccuracy)*(averageaccuracy[i]/100)
       }
       /*
       for (var i = 0; i < 9; i++) {
@@ -1017,16 +1020,16 @@
          //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]]) ? 1.1 : 1));
       }
       result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
-      
+
       result['maxscore'] = result['minscore'];
       result['averagescore'] = result['minscore'];
       result['averageheal'] = 0;
       result['maxheal'] = 0;
-      
+
       var skillchance = [0, 0, 0, 0, 0, 0, 0, 0, 0];
       var averageskillscore = [0, 0, 0, 0, 0, 0, 0, 0, 0];
       var averageheal = [0,0,0,0,0,0,0,0,0]
-      
+
 
       for (var i = 0; i < 9; i++) {
          var skill = member[i]['skill'];
@@ -1089,7 +1092,7 @@
             result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
          }
       }
-      
+
       var finish = false;
       var infinite = false;
       var averagescoringtimes = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -1132,10 +1135,10 @@
             }
          }
       }
-      
+
       if (document.getElementById('distribution').checked){
          var t0 = window.performance.now();
-         
+
          var percentiles = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.98, 0.99];
          var dist = [[result['minscore'], 1]];
          for (var i = 0; i < 9; i++) {
@@ -1146,7 +1149,7 @@
                }
             }
          }
-         
+
          var nextscore = [Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity];
          for (var i = 0; i < 9; i++) {
             if (member[i]['skill'] == 3) {
@@ -1166,7 +1169,7 @@
             dist = addskill(dist, member[next]['score'], member[next]['possibility'] / 100, nextscore[next]);
             nextscore[next] += member[next]['require'];
          }
-         
+
          var scores = [];
          var k = 0;
          var p = 0;
@@ -1176,7 +1179,7 @@
                scores[k] = dist[i][0];
             }
          }
-         
+
          var t1 = window.performance.now();
          console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
          console.debug('Possibilities: ' + dist.length.toString());
@@ -1201,7 +1204,7 @@
          }
          document.getElementById('averagescore').innerHTML = meanscore.toFixed(0).toString()
          console.debug('Mean score: ' + meanscore.toString());
-         
+
          console.debug(result);
          for (i in scores){
             document.getElementById('simresult'+(100-percentiles[i]*100).toString()).innerHTML = scores[i].toFixed(0).toString()
@@ -1213,7 +1216,7 @@
       document.getElementById('resultstrength').innerHTML = (result.averagescore/result.minscore*totalattst).toFixed(0).toString()
       document.getElementById('averageheal').innerHTML = result.averageheal
       console.debug(scores);
-      
+
       ttweight = 0
       ttstrength = 0
       for (i=0;i<9;i++)
@@ -1368,10 +1371,10 @@
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
 	</select><br>
-	总combo数 :<input type="text" id="combo" name="combo" value="300" autocomplete="off" style="width:50px"><br>
-	perfect数:<input type="text" id="perfect" name="perfect" value="285" autocomplete="off" style="width:50px"><br>
-	时间:<input type="text" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>
-	星星perfect数:<input type="text" id="starperfect" name="starperfect" value="47" autocomplete="off" style="width:50px">（只有星星系加分需要填写）<br>
+	总combo数 :<input type="number" id="combo" name="combo" value="300" autocomplete="off" style="width:50px"><br>
+	perfect数:<input type="number" id="perfect" name="perfect" value="285" autocomplete="off" style="width:50px"><br>
+	时间:<input type="number" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>
+	星星perfect数:<input type="number" id="starperfect" name="starperfect" value="47" autocomplete="off" style="width:50px">（只有星星系加分需要填写）<br>
 <br>
 <h3>卡片库</h3>
 筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
@@ -1494,15 +1497,15 @@
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	（特典卡需选择觉醒）<br>
 <div style="float:left">
-	裸smile :<input type="text" id="smile" name="smile" value="0" autocomplete="off" style="color:red"></input><br>
-	裸pure :<input type="text" id="pure" name="pure" value="0" autocomplete="off" style="color:green"><br>
-	裸cool :<input type="text" id="cool" name="cool" value="0" autocomplete="off" style="color:blue"><br>
+	裸smile :<input type="number" id="smile" name="smile" value="0" autocomplete="off" style="color:red"></input><br>
+	裸pure :<input type="number" id="pure" name="pure" value="0" autocomplete="off" style="color:green"><br>
+	裸cool :<input type="number" id="cool" name="cool" value="0" autocomplete="off" style="color:blue"><br>
 	主属性 :<select id="main" name="main">
 		<option value="smile" style="color:red">smile</option>
 		<option value="pure" style="color:green">pure</option>
 		<option value="cool" style="color:blue">cool</option>
 	</select><br>
-	绊:<input type="text" id="kizuna" name="kizuna" value="0" autocomplete="off" ><br>
+	绊:<input type="number" id="kizuna" name="kizuna" value="0" autocomplete="off" ><br>
    </div>
 
 </div>
@@ -1527,9 +1530,9 @@
 		<option value=12>combo系判定</option>
 		<option value=13>combo系回血</option>
 	</select><br><nobr>-->
-	
+
 	<p id="skilltext" style="display:none">
-   
+
    技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
    </input></nobr><br>
    技能效果 :每<nobr id="require" name="require"></nobr>
@@ -1545,11 +1548,11 @@
 <h3>队伍属性</h3>
 <div>
 <div style="float:left">
-<table border='1'>
+<table class="calculate-table" border='1'>
    <tr>
       <td>权重</td>
       {% for i in range(0,9) %}
-      <td><input type="text" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
+      <td><input type="number" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1573,13 +1576,13 @@
    <tr style="display:none">
       <td>id</td>
       {% for i in range(0,9) %}
-      <td><input type="text" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off"></td>
+      <td><input type="number" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr style="display:none">
       <td>mezame</td>
       {% for i in range(0,9) %}
-      <td><input type="text" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off"></td>
+      <td><input type="number" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1595,19 +1598,19 @@
    <tr>
       <td style="color:red">smile</td>
       {% for i in range(0,9) %}
-      <td><input type="text" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off"></td>
+      <td><input type="number" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
       <td style="color:green">pure</td>
       {% for i in range(0,9) %}
-      <td><input type="text" style="color:green" id="pure{{i}}" name="pure{{i}}" size=3 autocomplete="off"></td>
+      <td><input type="number" style="color:green" id="pure{{i}}" name="pure{{i}}" size=3 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
       <td style="color:blue">cool</td>
       {% for i in range(0,9) %}
-      <td><input type="text" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
+      <td><input type="number" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1827,8 +1830,8 @@
       <option value=3>3</option>
       <option value=6>6</option>
    </select>%<br>
-点击得分增加：<input id="tapup" name="tapup" value="0" size=2></input>%<br>
-技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
+点击得分增加：<input type="number" id="tapup" name="tapup" value="0" size=2 />%<br>
+技能发动率增加：<input type="number" id="skillup" name="skillup" value="0" size=2 />%<br>
 <input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input><!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
    <br><br><br>
 </form>
@@ -1841,7 +1844,7 @@
    由于使用歌曲信息计算，最终结果可能会有千分之一的误差
    判定覆盖率仅供参考
    判定期间属性1.25倍的宝石计算有误，暂时按无效计算。
-说明：   
+说明：
    1、在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率
    2、卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度
 </pre>
