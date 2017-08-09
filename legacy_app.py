@@ -62,12 +62,12 @@ def llcoverage():
 @legacy_app.route("/llnewcarddata")
 def llnewcarddata():
     cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template('llnlegacy/templates/ewcarddata.html', cardsjson = cardsjson)
+    return render_template('legacy/templates/llnewcarddata.html', cardsjson = cardsjson)
 
 @legacy_app.route("/llurcardrank")
 def llurcardrank():
     cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template('lllegacy/templates/urcardrank.html', cardsjson = cardsjson)
+    return render_template('legacy/templates/llurcardrank.html', cardsjson = cardsjson)
 
 ### species ###
 @legacy_app.route("/llspecies", methods=['GET', 'POST'])
