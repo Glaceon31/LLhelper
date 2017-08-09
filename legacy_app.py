@@ -88,3 +88,5 @@ def hello():
 @legacy_app.route("/about")
 def about():
     return render_template('legacy/templates/about.html')
+
+from legacy_llunit import *
