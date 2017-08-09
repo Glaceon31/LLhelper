@@ -733,40 +733,40 @@ function threetonumber(three){
    }
    
    ///////////
-sisrecord=new Array(9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+sisrecord=new Array(9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9);
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
 //   if(IsPrecalced==false){
-			sishtml = "<table border='1' style='text-align:center'><tr><td>偶像技能</td><td>香水</td><td>光环</td><td>面纱</td></tr>"
+			sishtml = "<table border='1' style='text-align:center'><tr><td>通用技能</td><td>香水（ 450 ）</td><td>光环（ 1.8% ）</td><td>面纱（ 2.4% ）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
 			sishtml+="<td id=si1"+">"+'<input type="text" id="sis1" name="kissnum" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si8"+">"+'<input type="text" id="sis8" name="purfumenum" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si9"+">"+'<input type="text" id="sis9" name="ringnum" size="5" value="0" />'+"</td>"
 			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>偶像技能</td><td>指环（一年级）</td><td>指环（二年级）</td><td>指环（三年级）</td></tr>"
+			sishtml+="<table border='1' style='text-align:center'><tr><td>10%技能</td><td>指环（一年级）</td><td>指环（二年级）</td><td>指环（三年级）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
 			sishtml+="<td id=si2"+">"+'<input type="text" id="sis2" name="Scharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si3"+">"+'<input type="text" id="sis3" name="Pcharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si4"+">"+'<input type="text" id="sis4" name="Ccharm" size="5" value="0" />'+"</td>"
 			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>偶像技能</td><td>十字（一年级）</td><td>十字（二年级）</td><td>十字（三年级）</td></tr>"
+			sishtml+="<table border='1' style='text-align:center'><tr><td>16%技能</td><td>十字（一年级）</td><td>十字（二年级）</td><td>十字（三年级）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
 			sishtml+="<td id=si5"+">"+'<input type="text" id="sis5" name="Scharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si6"+">"+'<input type="text" id="sis6" name="Pcharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si7"+">"+'<input type="text" id="sis7" name="Ccharm" size="5" value="0" />'+"</td>"
 			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>加分技能</td><td>公主魅力</td><td>天使魅力</td><td>皇后魅力</td></tr>"
+			sishtml+="<table border='1' style='text-align:center'><tr><td>加分 2.5</td><td>公主魅力（红）</td><td>天使魅力（绿）</td><td>皇后魅力（蓝）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
 			sishtml+="<td id=si10"+">"+'<input type="text" id="sis10" name="Scharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si11"+">"+'<input type="text" id="sis11" name="Pcharm" size="5" value="0" />'+"</td>"
 			sishtml+="<td id=si12"+">"+'<input type="text" id="sis12" name="Ccharm" size="5" value="0" />'+"</td>"
 			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>体力技能</td><td>公主治愈</td><td>天使治愈</td><td>皇后治愈</td></tr>"
+			sishtml+="<table border='1' style='text-align:center'><tr><td>体力 480</td><td>公主治愈（红）</td><td>天使治愈（绿）</td><td>皇后治愈（蓝）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
 			sishtml+="<td id=si13"+">"+'<input type="text" id="sis13" name="Scharm" size="5" value="0" />'+"</td>"
@@ -1673,8 +1673,9 @@ function calc_bestarm(){
 	4、可以点击”保存队伍“将队伍配置文件保存到本地
 	5、第2、3步可以从保存的文件中读取队伍信息来代替：点击”选择文件“选择本地配置文件，再点击”读取队伍“
 	6、选择主唱技能和好友主唱技能 <font style='color:red'><b>计算SM得分时将好友主唱加成设为0%</b></font>
-	7、勾选或取消“自动配饰”选择是否在点击Calculate计算时自动计算最优策略 勾选后请填写每种偶像技能的拥有数量 <a href=https://tieba.baidu.com/p/5190964992><font color="#FF0000"><b>问题反馈</b></font></a>
+	7、勾选或取消“自动配饰”选择是否在点击Calculate计算时自动计算最优策略 勾选后请填写每种偶像技能的拥有数量 
 	8、点击Calculate
+	9、更多信息，请访问<a href=https://tieba.baidu.com/p/5190964992><font color="#FF0000"><b>问题反馈</b></font></a>
 
 当前版本：4.1及以上。</a>
 </pre>

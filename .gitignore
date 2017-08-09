@@ -1,8 +1,8 @@
 .DS_Store
 *.pyc
 tips.txt
-cardsjson - ¸±±¾.txt
-songsjson - ¸±±¾.txt
+cardsjson - ï¿½ï¿½ï¿½ï¿½.txt
+songsjson - ï¿½ï¿½ï¿½ï¿½.txt
 score.txt
 unit*.txt
 
@@ -23,4 +23,5 @@ static/newcard
 static/newcard300
 static/newhead
 
-
+.idea
+.DS_Store
