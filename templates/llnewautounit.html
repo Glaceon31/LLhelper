@@ -755,6 +755,8 @@ function threetonumber(three){
    	changeskilltext("")
       changeskilllevel()
    	changeavatarselect()
+	document.getElementById("secondbase").innerHTML=document.getElementById("main4").value
+	document.getElementById("secondbase2").innerHTML=document.getElementById("map").value
    	for (i = 0; i < 9; i++){
    		//changeskilltext(i)
    		changeavatar(i)
@@ -766,6 +768,7 @@ function threetonumber(three){
    	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
    	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
 	document.getElementById("submembersoperation").style.display="none"
+	
    }
    
    function changediffinfo(){
@@ -845,10 +848,18 @@ function threetonumber(three){
 	for(var i in submember){
 		var index=submember[i]["cardid"]
 		submember[i]["main"]=cards[index]["attribute"]
+		if(submember[i]["mezame"]==1){
 		submember[i]["smile"]=cards[index]["smile2"]
 		submember[i]["pure"]=cards[index]["pure2"]
 		submember[i]["cool"]=cards[index]["cool2"]
 		submember[i][submember[i]["main"]]+= kizuna[cards[index].rarity][submember[i]["mezame"]]
+		}
+		else{
+		submember[i]["smile"]=cards[index]["smile"]
+		submember[i]["pure"]=cards[index]["pure"]
+		submember[i]["cool"]=cards[index]["cool"]
+		submember[i][submember[i]["main"]]+= kizuna[cards[index].rarity][submember[i]["mezame"]]
+		}
 	}
 	refreshsubmemberlist();
    }
@@ -1648,6 +1659,7 @@ function calc_bestarm(){
 		}
 	  }
          result['bonusatt'][mapcenter['bonus']] += Math.ceil(mapcenter['percentage']*member[i][mapcenter['base']]/100);
+		 if (mapcenter['bonus'] == mainatt) {
          if (mapcenter['base'] == mainatt){
             attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage']/100)
 		//////////
@@ -1659,6 +1671,7 @@ function calc_bestarm(){
          }
          else
             attst[i] += Math.ceil(member[i][mapcenter['base']]*mapcenter['percentage']/100)
+		}
       }
       //副c技能
       for (var i = 0; i < 9; i++) {
@@ -1667,15 +1680,18 @@ function calc_bestarm(){
 		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
+			if (mapcenter['secondbase'] == mainatt) {
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
             for (var j = 0; j < 9; j++)
                teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage']/100)
+			   }
          }
 
       }
       //好友主c技能
       for (var i = 0; i < 9; i++) {
          result['bonusatt'][mapcenter['bonus2']] += Math.ceil(mapcenter['percentage2']*member[i][mapcenter['base2']]/100);
+		 if (mapcenter['bonus2'] == mainatt) {
          if (mapcenter['base2'] == mainatt){
 		 //////////
 		if(Precal &&(mapcenter['bonus2']==mainatt)){
@@ -1689,6 +1705,7 @@ function calc_bestarm(){
          }
          else
             attst[i] += Math.ceil(member[i][mapcenter['base2']]*mapcenter['percentage2']/100)
+			}
       }
       //好友副c技能
       for (var i = 0; i < 9; i++) {
@@ -1698,9 +1715,11 @@ function calc_bestarm(){
 		 Match_c[i]+=(mapcenter['secondpercentage2']/100);
 		//////////////////////
             result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
+			if (mapcenter['secondbase2'] == mainatt) {
             attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
             for (var j = 0; j < 9; j++)
                teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage2']/100)
+			   }
          }
       }
 

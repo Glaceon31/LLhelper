@@ -1381,7 +1381,7 @@
 	</select><br>
 	总combo数 :<input type="number" id="combo" name="combo" value="300" autocomplete="off" style="width:50px"><br>
 	perfect数:<input type="number" id="perfect" name="perfect" value="285" autocomplete="off" style="width:50px"><br>
-	时间:<input type="number" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>
+	时间:<input type="number" step="any" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>
 	星星perfect数:<input type="number" id="starperfect" name="starperfect" value="47" autocomplete="off" style="width:50px">（只有星星系加分需要填写）<br>
 <br>
 <h3>卡片库</h3>
@@ -1560,7 +1560,7 @@
    <tr>
       <td>权重</td>
       {% for i in range(0,9) %}
-      <td><input type="number" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
+      <td><input type="number" step="any" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1838,8 +1838,8 @@
       <option value=3>3</option>
       <option value=6>6</option>
    </select>%<br>
-点击得分增加：<input type="number" id="tapup" name="tapup" value="0" size=2 />%<br>
-技能发动率增加：<input type="number" id="skillup" name="skillup" value="0" size=2 />%<br>
+点击得分增加：<input type="number" step="any" id="tapup" name="tapup" value="0" size=2 />%<br>
+技能发动率增加：<input type="number" step="any" id="skillup" name="skillup" value="0" size=2 />%<br>
 <input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input><!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
    <br><br><br>
 </form>
