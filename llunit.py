@@ -147,30 +147,22 @@ def llnewunitloadsis():
 def llnewsis():
     print("=====!==")
     print request.files
+    
     for f in request.files['filesis']:
         f = f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']')
-        
+        #print f
         print("=====!==")
-
         memberinfo = json.loads(f)
         print memberinfo
         script = ''
-        attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', \
-                   'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost']
-        for i in range(0, 9):
-            for j in attlist:
-                if j in memberinfo[i]:
-                    script = script + 'parent.document.getElementById("' + j + str(i) + '").value="' + str(
-                        memberinfo[i][j]) + '";\n'
-                else:
-                    script = script + 'parent.document.getElementById("' + j + str(i) + '").value="' + str(0) + '";\n'
-            script = script + 'parent.document.getElementById("main' + str(
-                i) + '").value= parent.cards[parent.cardidtoindex("' + str(memberinfo[i]['cardid']) + '")].attribute;\n'
-            script = script + 'parent.changeavatar(' + str(i) + ');parent.calslot(' + str(i) + ');\n'
-            # script = script+'parent.changeskilltext('+str(i)+');parent.changeavatar('+str(i)+');\n'
-            # script = script+'parent.document.getElementById("skilllevel'+str(i)+'").value= parent.getskilllevel('+str(i)+');\n'
-        script = script + 'parent.changecenter();parent.precalcu();\n'
-        return '<script>' + script + '</script>'
+        for i in range(1,16):
+            if str(i) in memberinfo:
+                script = script+'parent.sisrecord['+str(i)+']='+str(memberinfo[str(i)])+';\n'
+                print memberinfo[str(i)]
+            else:
+                script = script+'parent.sisrecord['+str(i)+']='+str(0)+';\n'
+        script =script+'parent.autoarm();\n'
+    return '<script>'+script+'</script>'
 
 @app.route("/llunit", methods=['GET', 'POST'])
 def llunit():
