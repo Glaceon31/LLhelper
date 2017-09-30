@@ -113,8 +113,10 @@ def main():
         liveId, error, status, message, result = mpQueue.get()
         print message
         if error:
-            print error
-            exit()
+            if error is KeyboardInterrupt:
+                exit()
+            else:
+                print error
         if status == STATUS_SUCCESSFUL:
             successLives.append(liveId)
             lives[str(liveId)]['positionweight'] = result
