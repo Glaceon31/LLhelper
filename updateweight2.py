@@ -47,8 +47,12 @@ class Note:
         self.effectValue = noteDict['effect_value']
     def isHold(self):
         return self.type in [NOTE_TYPE_HOLD, NOTE_TYPE_SWING_HOLD]
+    def isSwing(self):
+        return self.type in [NOTE_TYPE_SWING, NOTE_TYPE_SWING_EVENT, NOTE_TYPE_SWING_HOLD]
     def getNoteWeightedValue(self):
         weightValue = NOTE_WEIGHT_BASE
+        if self.isSwing():
+            weightValue *= NOTE_WEIGHT_SWING_FACTOR
         if self.isHold():
             weightValue *= NOTE_WEIGHT_HOLD_FACTOR
         return weightValue
