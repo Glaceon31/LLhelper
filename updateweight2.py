@@ -3,6 +3,7 @@ import os
 import urlparse
 import json
 import multiprocessing
+import sys
 
 DIFFICULTY_KEYS_EASY = 'easy'
 DIFFICULTY_KEYS_NORMAL = 'normal'
@@ -32,10 +33,24 @@ NOTE_WEIGHT_SWING_FACTOR = 0.5
 STATUS_SKIPPED = 0
 STATUS_SUCCESSFUL = 1
 STATUS_ERROR = 2
+STATUS_KEYBOARD_INTERRUPT = 3
+STATUS_EXIT = 4
 
-NUMBER_OF_PROCESSES = 5
+NUMBER_OF_PROCESSES = 20
+
+FILENAME_SUCCESSFUL_LOG = 'success.json'
+FILENAME_SONG_LIST_JSON = 'newsongsjson.txt'
 
 difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master']
+
+TITLE_WELCOME = '''# Welcome to LLHelper LLSIF Song Updater!
+
+* Song data based on `%s`.
+* Program originally authored by **Chazeon** and the end of Sept 2017 in NY.
+
+* We are now updating song list file: `%s`.
+* Song log will be loaded from and written to: `%s`.
+''' % (LLSIF_WIN_API_DOMAIN, FILENAME_SONG_LIST_JSON, FILENAME_SUCCESSFUL_LOG)
 
 class Note:
     def __init__(self, noteDict):
@@ -75,67 +90,85 @@ def getPositionWeight(liveId):
         positionWeight[position] += note.getNoteWeightedValue()
     return map(str, positionWeight)
 
-def updatePositionWeight(live, success, conn):
+def updatePositionWeight(live):
     liveId = int(live['liveid'])
-    if liveId in success:
-        conn.put((liveId, None, STATUS_SKIPPED, 'Skipped %d' % (liveId), None))
-        return
     try:
         result = getPositionWeight(liveId)
-        conn.put((liveId, None, STATUS_SUCCESSFUL, 'Successfully processed %d' % (liveId), result))
-    except KeyboardInterrupt:
-        exit()
+        return (liveId, None, STATUS_SUCCESSFUL, '* Successfully processed %d' % (liveId), result)
+    except KeyboardInterrupt as e:
+        return (liveId, e, STATUS_KEYBOARD_INTERRUPT, '* User trying to exit program', None)
     except Exception as e:
-        conn.put((liveId, e, STATUS_ERROR, 'Failed to process %d' % (liveId), None))
+        return (liveId, e, STATUS_ERROR, '* Failed to process %d' % (liveId), None)
+
+def positionWeightUpdateWorker(liveQueue, messageQueue, pipeOut):
+    while True:
+        if pipeOut.poll():
+            signal = pipeOut.recv()
+            if signal == STATUS_EXIT: break
+        if liveQueue.empty(): break
+        live = liveQueue.get()
+        messageQueue.put(updatePositionWeight(live))
 
 def main():
     songs = {}
-    successLives = []
+    prevLoadedLives = []
+    updatedLives = []
 
-    mpQueue = multiprocessing.Queue()
+    messageQueue = multiprocessing.Queue()
+    liveQueue = multiprocessing.Queue()
+    liveQueueCount = 0
     mpProcs = []
 
     lives = {}
 
-    with open('newsongsjson.txt', 'r') as f:
+    with open(FILENAME_SONG_LIST_JSON, 'r') as f:
         songs = json.load(f)
-    if os.path.exists('success.json'):
-        with open('success.json', 'r') as f:
-            successLives = json.load(f)
+    if os.path.exists(FILENAME_SUCCESSFUL_LOG):
+        print '* Succesful log found at `%s`.' % FILENAME_SUCCESSFUL_LOG
+        with open(FILENAME_SUCCESSFUL_LOG, 'r') as f:
+            prevLoadedLives = json.load(f)
+            print '* %d live maps have previously loaded, skipping...' % len(prevLoadedLives)
+    print '* Skipping lives: %s' % (str(prevLoadedLives))
     for song in songs.values():
         for difficulty_name in [difficulty for difficulty in song.keys() if (difficulty in difficultyKeys)]:
             parentConn, childConn = multiprocessing.Pipe()
             live = song[difficulty_name]
-            lives[live['liveid']] = live
-            proc = multiprocessing.Process(target=updatePositionWeight, args=(live, successLives, mpQueue,))
-            mpProcs.append(proc)
-    
-    mpProcsQueue = list(mpProcs)
-    for i in range(0, NUMBER_OF_PROCESSES):
-        mpProcsQueue.pop().start()
-    for i in range(len(mpProcs)):
-        liveId, error, status, message, result = mpQueue.get()
-        print message
-        if error:
-            if error is KeyboardInterrupt:
-                exit()
-            else:
+            liveId = int(live['liveid'])
+            if liveId not in prevLoadedLives:
+                liveQueue.put(live)
+                lives[live['liveid']] = live
+                liveQueueCount += 1
+    try:
+        for i in range(0, NUMBER_OF_PROCESSES):
+            pipeOut, pipeIn = multiprocessing.Pipe()
+            proc = multiprocessing.Process(target=positionWeightUpdateWorker, args=(liveQueue, messageQueue, pipeOut,))
+            proc.start()
+            mpProcs.append((proc, pipeIn))
+        for i in range(liveQueueCount):
+            liveId, error, status, message, result = messageQueue.get()
+            print message
+            if status == STATUS_ERROR:
                 print error
-        if status == STATUS_SUCCESSFUL:
-            successLives.append(liveId)
-            lives[str(liveId)]['positionweight'] = result
-        if len(mpProcsQueue) > 0:
-            mpProcsQueue.pop().start()
+            if status == STATUS_SUCCESSFUL:
+                updatedLives.append(liveId)
+                lives[str(liveId)]['positionweight'] = result
 
-    for proc in mpProcs:
-        proc.join()
+        for proc, _ in mpProcs:
+            proc.join()
+    except KeyboardInterrupt:
+        for proc, pipe in mpProcs:
+            while not liveQueue.empty():
+                liveQueue.get()
+            pipe.send(STATUS_EXIT)
 
-    with open('newsongsjson.txt', 'w') as f:
-        #json.dump(songs, f, indent=2)
+    with open(FILENAME_SONG_LIST_JSON, 'w') as f:
         json.dump(songs, f)
-    with open('success.json', 'w') as f:
-        json.dump(successLives, f, indent=2)
-    print 'Successfully processed: %s' % (str(successLives))
+    print '* Successfully processed lives: `%s`.' % (str(updatedLives))
+    with open(FILENAME_SUCCESSFUL_LOG, 'w') as f:
+        prevLoadedLives.extend(updatedLives)
+        json.dump(prevLoadedLives, f)
+    print '* Successful log written to `%s`, %d records written (%d new).' % (FILENAME_SUCCESSFUL_LOG, len(prevLoadedLives), len(updatedLives))
 
 if __name__ == '__main__':
+    print TITLE_WELCOME
     main()
