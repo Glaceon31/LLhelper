@@ -97,6 +97,10 @@ def document():
 def urrank():
     return render_template("llurrank.html")
 
+@app.route("/llsupportrank", methods=['GET', 'POST'])
+def urrank():
+    return render_template("llsupportrank.html")
+
 ### level up ###
 @app.route("/lllvlup", methods=['GET', 'POST'])
 def lllvlup():

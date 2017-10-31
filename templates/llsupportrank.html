@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>LLhelper</title>
+      <link href="https://libs.baidu.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
+   <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+   <script src="https://libs.baidu.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="/static/twintailosu.js"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+      button {position:relative;height:200px;width:200px;margin-left:100px;margin-top:100px;background-color:#F0F8FF}
+   </style>
+
+   <script language="javascript">
+   function check(){
+      var inputs = document.getElementsByTagName("input");
+      var chou = false;
+      for (var i=0;i<4;i++){
+         if (!isNotNegative(inputs[i].value)){
+            alert("请输入非负整数");
+            return false;
+         }
+      }
+      return true
+   }
+
+   Math.log1p = Math.log1p || function(x) {
+      var u = 1 + x;
+      if (!(Math.abs(x) < 0.5)) {
+         return Math.log(u);
+      } else if (u == 1) {
+         return x;
+      } else {
+         return Math.log(u) + (x - (u - 1)) / u;
+      }
+   };
+
+   function cpowei1p(real, imag, theta, n) {
+      var r2m1 = real * real + imag * imag + real * 2;
+      var len = Math.exp(Math.log1p(r2m1) * 0.5 * n);
+      var angle = (Math.atan2(imag, 1 + real) + theta) * n;
+      return [len * Math.cos(angle), len * Math.sin(angle)];
+   }
+
+   function dftpow(prob, expect, n, w0) {
+      if (n == 0) {
+         return [1, 0];
+      }
+      var real = 0, imag = 0;
+      for (var i = 0; i < prob.length; i++) {
+         var w = w0 * (i - expect);
+         var t = Math.sin(w * 0.5);
+         real -= prob[i] * t * t * 2;
+         imag += prob[i] * Math.sin(w);
+      }
+      return cpowei1p(real, imag, w0 * expect, n);
+   }
+
+   function cplxmul(x, y) {
+      return [x[0] * y[0] - x[1] * y[1], x[0] * y[1] + x[1] * y[0]];
+   }
+
+   var Support1Prob = [0.6, 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1];
+   var Support1Expect = 1.4;
+   var SupportSProb = [0, 0.95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.05];
+   var SupportSExpect = 1.5;
+
+   function calculate() {
+      if (!check()){
+         return;
+      }
+      var ur = parseInt(document.getElementById("ur").value);
+      var sr = parseInt(document.getElementById("sr").value);
+      var support1num = parseInt(document.getElementById("support1").value);
+      var supportsnum = parseInt(document.getElementById("supports").value);
+      var totalnum = support1num + supportsnum;
+      var minnum = supportsnum;
+      if (ur + sr > totalnum || ur + sr < minnum){
+         alert("impossible");
+         return;
+      }
+      var val = ur * 11 + sr;
+      var maxval = totalnum * 11;
+
+      var len = maxval + 1, len2 = len * 0.5;
+      var w0 = Math.PI * 2 / len;
+      var plt = val;
+      var peq = 1;
+      for (var i = 1; i < len; i++) {
+         var k = i < len2 ? i : i - len;
+         var w = w0 * k;
+
+         var ret = dftpow(Support1Prob, Support1Expect, support1num, w);
+         ret = cplxmul(ret, dftpow(SupportSProb, SupportSExpect, supportsnum, w));
+
+         var real = ret[0];
+         var imag = ret[1];
+         var wu = w * val;
+         var wl = w * (val - 1) * 0.5;
+         plt += (real * Math.cos(wl) + imag * Math.sin(wl)) * (Math.sin(wu * 0.5) / Math.sin(w * 0.5));
+         peq += real * Math.cos(wu) + imag * Math.sin(wu);
+      }
+      plt /= len;
+      peq /= len;
+      var yourrank = plt + peq * 0.5;
+
+      var ltpercent = Math.max(0, Math.min(1, plt)) * 100;
+      var eqpercent = Math.max(0, Math.min(1, peq)) * 100;
+      if (val == 0)
+         document.getElementById("result").innerHTML = "有"+eqpercent.toFixed(4)+"%的玩家和你人品一样";
+      else
+         document.getElementById("result").innerHTML = "你的人品已经击败了"+ltpercent.toFixed(4)+"%的玩家，有"+eqpercent.toFixed(4)+"%的玩家和你人品一样";
+      var species = '';
+      if (yourrank < 0.01)
+         species = '部落酋长';
+      else if (yourrank < 0.15)
+         species = '非洲人';
+      else if (yourrank < 0.35)
+         species = '偏黑亚洲人';
+      else if (yourrank < 0.65)
+         species = '亚洲人';
+      else if (yourrank < 0.85)
+         species = '偏白亚洲人';
+      else if (yourrank < 0.99)
+         species = '欧洲人';
+      else
+         species = '官托';
+      document.getElementById("species").innerHTML = '鉴定结果： '+species;
+   }
+   </script>
+
+   </head>
+   <body>
+
+<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li><a href="/">应用</a></li>
+         <li class="active"><a href=#>技能卡池人种鉴定</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+<pre>
+注意事项：
+1、填入相应的抽卡次数与抽到UR技能卡、SR技能卡个数
+2、红绿蓝色技能卡与紫色技能卡视作同等价值进行计算
+
+该功能由 <b>statementreply</b> 提供
+</pre>
+
+<table>
+<tr><td>技能提升支援成员招募次数: </td><td><input type="text" id="support1" name="support1" value="0" autocomplete="off"></td><td>（即使用1张补助券抽卡的次数）</td></tr>
+<tr><td>SR以上支援成员招募次数: </td><td><input type="text" id="supports" name="supports" value="0" autocomplete="off"></td></tr>
+<tr><td>抽到UR技能卡个数: </td><td><input type="text" id="ur" name="ur" value="0" autocomplete="off"></td><td>（仅输入抽到的）</td></tr>
+<tr><td>抽到SR技能卡个数: </td><td><input type="text" id="sr" name="sr" value="0" autocomplete="off"></td><td>（仅输入抽到的）</td></tr>
+</table>
+<input type="button" name="submit" value="Calculate" onclick="calculate()"> <br>
+<p id="species"></p>
+<p id="result"></p>
+</body>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-89698905-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+
+</html>
