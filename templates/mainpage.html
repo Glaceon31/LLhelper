@@ -356,10 +356,10 @@
    weight.push(50); tips.push("不要将账号密码以及继承码告诉任何不可信的人")
    weight.push(50); tips.push("宁愿多用1心，也不要掉档")
    weight.push(20); tips.push("解决谜之miss的有效方法之一是揭掉屏幕贴膜")
-   
+
    //谣言粉碎
    weight.push(50); tips.push("玄学对抽卡没有任何影响，只能带来心理上的作用")
-   
+
    //冷门知识
    weight.push(50); tips.push("招募券、11连券不能用于限定招募")
    weight.push(50); tips.push("长按的按键得分为1.25倍，但是得分受到头尾两次判定的叠乘影响")
@@ -371,7 +371,7 @@
    weight.push(20); tips.push("唯一的一张combo系判定是初期SR希")
    weight.push(20); tips.push("活动中相同排名的玩家在总榜的显示顺序为uid字符串倒序，在好友榜的显示为uid数字顺序")
    weight.push(20); tips.push("抱大腿时排序条件相同的玩家按照uid倒序排序，既新玩家会排在前面")
-   
+
    //进阶知识
    weight.push(50); tips.push("日服输入的中文经常会显示为一个点，这是字体问题。使用繁体中文可以缓解这一现象，但是并不能完全解决问题。可以通过更换字体的方式解决")
    weight.push(50); tips.push("活动ex随机谱和原谱的clear成就独立")
@@ -389,7 +389,7 @@
    weight.push(50); tips.push("抽卡时右下角标注new的卡片为新卡，但是进入礼物盒的卡片不会被标记为new")
    weight.push(30); tips.push("穗乃果、凛、妮可、千歌、花丸、鞠莉的本属性为smile，小鸟、花阳、希、曜、露比、果南的本属性为pure，海未、真姬、绘里、梨子、善子、黛雅的本属性为cool")
    weight.push(50); tips.push("1~8速速度越低，判定越松，判定范围和note飞行速度成反比。8~10速的判定范围相同")
-   
+
    //基础知识
    weight.push(50); tips.push("加入挚爱和在主力队伍中的卡片均不能被劝退或用于练习、特训材料")
    weight.push(50); tips.push("Live分数不到C时，获得的经验值和绊均减半，向上取整")
@@ -402,7 +402,7 @@
    weight.push(50); tips.push("300级以前，LP上限每2级增加1点，之后则每3级增加1点")
    weight.push(50); tips.push("50级以前，好友位每5级增加1个，之后则每10级增加1个")
    weight.push(50); tips.push("可以使用1张补助券抽取一张升级技能的辅助卡，R、SR、UR的概率分别为60%、30%、10%，喂卡获得的技能经验为10、100、1000。红绿蓝辅助卡只可用于升级相同颜色的卡片，而紫色辅助卡可用于任何颜色。")
-   
+
    //生日
    weight.push(15); tips.push("小泉花阳的生日为1月17日")
    weight.push(15); tips.push("园田海未的生日为3月15日")
@@ -423,7 +423,7 @@
    weight.push(15); tips.push("高海千歌的生日为8月1日")
    weight.push(15); tips.push("樱内梨子的生日为9月19日")
    weight.push(15); tips.push("黑泽露比的生日为9月21日")
-   
+
    //网站有关
    weight.push(200); tips.push("想要联系作者，请点击查看关于页面")
    weight.push(100); tips.push("使用卡组强度计算后，记得保存队伍以避免下次繁琐的输入过程")
@@ -442,7 +442,7 @@
    weight.push(5); tips.push("イミワカンナイ")
    weight.push(5); tips.push("ハラショー")
    weight.push(1); tips.push("哇！！居然被你发现了，出现这条的概率是几千分之一呢")
-   
+
    function gettips(){
    	var ttweight = 0
    	for (i = 0; i < weight.length; i++)
@@ -455,8 +455,122 @@
          document.getElementById("tips").innerHTML = tips[i]
    			break;
    		}
+<<<<<<< HEAD
    	}
    }
+=======
+
+   	}
+   }
+
+   function init(){
+   	gettips()
+   }
+
+function clickAd(name)
+{
+	$.ajax({
+		url: "/adclick",
+		async: false,
+		type: 'GET'
+	});
+}
+
+   </script>
+   </head>
+   <body onload="init()" style="background:#a9a9ff url('https://s.ppy.sh/images/bg-top.png') repeat-x;">
+   <div class="mainbody">
+   		<nav class="navbar navbar-default" role="navigation">
+   <div class="navbar-header">
+      <a class="navbar-brand" href="/">LLhelper</a>
+   </div>
+   <div>
+      <ul class="nav navbar-nav">
+         <li class="active"><a href="/">应用</a></li>
+         <li><a href="/about">关于</a></li>
+      </ul>
+   </div>
+</nav>
+
+      	<div class="tabbable" id="tabs-564217">
+				<ul class="nav nav-tabs">
+					<li class="active">
+						<a href="#panel-ll" data-toggle="tab" id="ll" style="background-color:#FF9933" onclick="setCookie('app','lovelive',365)">LoveLive!算心应用</a>
+					</li>
+					<li>
+						<a href="#panel-llapp" data-toggle="tab" id="llapp" style="background-color:#ffcab7" onclick="setCookie('app','lovelive',365)">LoveLive!其他应用</a>
+					</li>
+					<li>
+						<a href="#panel-link" data-toggle="tab" id="link" style="background-color:#66CCFF" onclick="">常用站链接</a>
+					</li>
+               <li>
+                  <a href="#panel-strategy" data-toggle="tab" id="strategy" style="background-color:#C0C0C0" onclick="">实用攻略</a>
+               </li>
+
+				</ul>
+				<div class="tab-content">
+					<div class="tab-pane active" id="panel-ll" style="background-color:#FF9933">
+					<div class="container mycontainer">
+						<div class="jumbotron myjumbotron" style="margin-top:30px;padding: 10px 2px 2px 2px;">
+							<p id="tips" style="text-align:center;font-size:15px;font-family:Microsoft YaHei"></p>
+						</div>
+					<!--
+					<llad type="text" class="btn btn-default" style="margin-left:75px" onclick="window.open('http://jq.qq.com/?_wv=1027&k=ayHXSz')">
+						LoveLiveWiki官方QQ群： 194840360 (点击加群)<br>
+						注意：所有国服游戏中卡片技能描述与wiki或本工具站不一样的情况，均为游戏中技能描述错误
+					</llad>-->
+							<div class="btn-group" >
+  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llactivity'"><h3>常规活动<br>用心计算</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llsm'"><h3>score match<br>用心计算</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llmf'"><h3>medley<br>festival<br>用心计算</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llcf'"><h3>challenge<br>festival<br>用心计算</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llrally'"><h3>散步拉力赛<br>用心计算</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='./llnm'"><h3>协力<br>用心计算</h3></button>
+	</div></div>
+					</div>
+					<div class="tab-pane" id="panel-llapp" style="background-color:#ffcab7">
+					<div class="container mycontainer">
+					<div class="jumbotron myjumbotron" style="margin-top:30px;padding: 10px 2px 2px 2px;">
+							<p style="text-align:center;font-size:15px;font-family:Microsoft YaHei">如果发现bug，或者有什么意见，请到<a href=https://tieba.baidu.com/p/5242588398>【官方】LLhelper意见反馈讨论楼</a></p>
+						</div>
+					<!--
+					<llad type="text" class="btn btn-default" style="margin-left:75px" onclick="window.open('http://jq.qq.com/?_wv=1027&k=ayHXSz')">
+						LoveLiveWiki官方QQ群： 194840360 (点击加群)<br>
+						注意：所有国服游戏中卡片技能描述与wiki或本工具站不一样的情况，均为游戏中技能描述错误
+					</llad>-->
+							<div class="btn-group" >
+  	<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llsongdata'"><h3>歌曲数据查询</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llnewcarddata'"><h3>卡片数据<br>和立绘查询</h3><h4>v4.1</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llnewunit'"><h3>得分计算<br>卡组强度计算</h3><h4>v4.1</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;" onclick="window.location='./llcoverage'"><h3>谱面查看<br>卡组判定覆<br>盖分布计算</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llurcardrank'"><h3>UR强度排行</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llurrank'"><h3>人种鉴定器</h3><h4>v5.0</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llnewunitsis'"><h3>最优宝石配置<br>强度计算</h3><h4>beta</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llnewautounit'"><h3>自动组队<br>强度计算</h3><h4>beta</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='./llunitimport'"><h3>截图导入队伍</h3><h4>v1.7</h4></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='./lllvlup'"><h3>升级时间计算</h3></button>
+
+
+	</div></div>
+					</div>
+					<div class="tab-pane" id="panel-link" style="background-color:#66CCFF">
+							<div class="btn-group" >
+  	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://www.lovelivewiki.com'"><h3>LoveLive!<br>国服wiki</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://www59.atwiki.jp/lovelive-sif/'"><h3>LoveLive!<br>日文wiki</h3></button>
+  	<button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://decaf.kouhi.me/lovelive/index.php?title=Main_Page'"><h3>LoveLive!<br>英文wiki</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px" onclick="window.location='http://lovelive.inven.co.kr/dataninfo/card/'"><h3>LoveLive!<br>韩文wiki</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://sifcn.loveliv.es/'"><h3>国服活动玩家<br>数据记录</h3></button>
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-bottom:100px" onclick="window.location='http://db.loveliv.es/'"><h3>SukuDBView</h3><h4>SIF数据库</h4></button>
+
+	</div>
+					</div>
+               <div class="tab-pane" id="panel-strategy" style="background-color:#C0C0C0">
+                  <div class="container mycontainer">
+               <div class="jumbotron myjumbotron" style="margin-top:30px;padding: 10px 2px 2px 2px;">
+                     <p  style="text-align:center;font-size:15px;font-family:Microsoft YaHei">欢迎到<a href="http://tieba.baidu.com/f?kw=lovelive%E7%A0%94%E7%A9%B6%E9%83%A8&ie=utf-8">研究部吧</a>投稿新攻略！</p>
+                  </div>
+                     <div class="btn-group" >
+>>>>>>> master
 
   function getTip(){
     var ttweight = 0
@@ -473,6 +587,7 @@
     }
   }
 
+<<<<<<< HEAD
   new Vue({
     el: '#app',
     data: {
@@ -566,4 +681,18 @@
   })
   </script>
   {% include "footer.html" %}
+=======
+   <button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px" onclick="window.location='https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB'"><h3>判定技能与<br>覆盖率分析</h3></button>
+<button type="button" class="btn btn-default" style="margin-left:75px;margin-top:30px;margin-bottom:100px" onclick="window.location='https://www.lovelivewiki.com/w/4.1版本强度本位资源计量'"><h3>资源计量与<br>活动分析</h3><h4>v4.1</h4></button>
+</div>
+
+
+   </div>
+               </div>
+				</div>
+			</div>
+   </div>
+   </body>
+   {% include 'footer.html' %}
+>>>>>>> master
 </html>
