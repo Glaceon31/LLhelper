@@ -8,17 +8,17 @@
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
-   	img {height:65px;width:65px}
+      img {height:65px;width:65px}
       input[type="number"][size="3"] {
-       width: 50px;
-     }
-     input[type="number"][size="2"] {
-       width: 33px;
-     }
-     input::-webkit-inner-spin-button {
-       -webkit-appearance: none;
-       margin: 0;
-     }
+         width: 60px;
+      }
+      input[type="number"][size="2"] {
+         width: 50px;
+      }
+      input::-webkit-inner-spin-button {
+         -webkit-appearance: none;
+         margin: 0;
+      }
    </style>
 {% endblock %}
 
@@ -32,13 +32,13 @@
    defaultsong["jpname"] = "默认曲目（缪）"
    defaultsong["muse"] = 1
    defaultsong["aqours"] = 0
-   defaultsong['attribute'] = 'smile'
+   defaultsong['attribute'] = ''
    var defaultsong2 = new Array()
    defaultsong2["name"] = "默认曲目（水）"
    defaultsong2["jpname"] = "默认曲目（水）"
    defaultsong2["muse"] = 0
    defaultsong2["aqours"] = 1
-   defaultsong2['attribute'] = 'smile'
+   defaultsong2['attribute'] = ''
    expert_default = new Array()
    expert_default["positionweight"] = [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75]
    expert_default["combo"] = 500
@@ -67,6 +67,7 @@
    attcolor["smile"] = "red"
    attcolor["pure"] = "green"
    attcolor["cool"] = "blue"
+   attcolor[""] = "purple"
    var kizuna = new Array();
    kizuna["N"] = [25, 50]
    kizuna["R"] = [100, 200]
@@ -111,11 +112,14 @@
    var skilllevel = 0
 
    function threetonumber(three){
-      result = three
-      if (result[0] == '0'){
+      var result = three
+      if (result == '0') {
+         return 0;
+      }
+      if (result[0] == '0') {
          result = result[1]+result[2]
       }
-      if (result[0] == '0'){
+      if (result[0] == '0') {
          result = result[1]
       }
       return result
@@ -182,6 +186,8 @@
          }
          changeavatar(pos)
          changeavatar(i)
+         calslot(pos);
+         calslot(i);
          pos = -1
       }
    }
@@ -283,34 +289,31 @@
       //changecolor("cardchoice")
    }
 
-   function getsongselect(att){
-      sel = document.getElementById("songchoice");
-      var keyword = document.getElementById("songsearch").value
+   function getsongselect(songatt, songunit, keyword){
+      var sel = document.getElementById("songchoice");
       sel.options.length = 1;
-      newOption = new Option(songs["00"].name, "00")
-      newOption.style.color = attcolor[songs["00"].attribute]
-      sel.options.add(newOption)
-      newOption = new Option(songs["01"].name, "01")
-      newOption.style.color = attcolor[songs["01"].attribute]
-      sel.options.add(newOption)
-      for (index in songs){
-         if (((att == "") || (att == songs[index].attribute))){
-         if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].type != "0")){
-            mfhave = false
-            //alert(smhave)
-               var newOption
-               if (language == 0)
-                  newOption = new Option(songs[index].name, index)
-               else
-                  newOption = new Option(songs[index].jpname, index)
-               newOption.style.color = attcolor[songs[index].attribute]
-               sel.options.add(newOption)
-
+      var songKeys = Object.keys(songs).sort();
+      for (var i = 0; i < songKeys.length; i++) {
+         var index = songKeys[i];
+         if (!((songatt == "") || (songatt == songs[index].attribute) || (songs[index].attribute == ""))) {
+            continue;
          }
+         if (!((songunit == "") || (songs[index][songunit] == 1))) {
+            continue;
          }
-         index += 1
+         if (!((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword) != -1))) {
+            continue;
+         }
+         //mfhave = false
+         //alert(smhave)
+         var newOption
+         if (language == 0)
+            newOption = new Option(songs[index].name, index)
+         else
+            newOption = new Option(songs[index].jpname, index)
+         newOption.style.color = attcolor[songs[index].attribute]
+         sel.options.add(newOption)
       }
-      //changesongcolor("songchoice")
    }
 
    function havevalue(selectId, value){
@@ -323,21 +326,23 @@
    }
 
    function changesongselect(){
-   	att = document.getElementById("songatt").value
-   	var songchoice = document.getElementById("songchoice").value
-   	getsongselect(att)
-   	if (havevalue("songchoice", songchoice)){
-   		document.getElementById("songchoice").value = songchoice
-   	}
-   	changesongcolor("songchoice")
+      var songatt = document.getElementById("songatt").value
+      var songunit = document.getElementById("songunit").value
+      var songchoice = document.getElementById("songchoice").value
+      var keyword = document.getElementById("songsearch").value.toLowerCase();
+      getsongselect(songatt, songunit, keyword)
+      if (havevalue("songchoice", songchoice)){
+         document.getElementById("songchoice").value = songchoice
+      }
+      changesongcolor("songchoice")
    }
 
    function changecardselect(){
-      rarity = document.getElementById("rarity").value
-      chr = document.getElementById("chr").value
-      att = document.getElementById("att").value
-      cardtype = document.getElementById("cardtype").value
-      special = document.getElementById("special").value
+      var rarity = document.getElementById("rarity").value
+      var chr = document.getElementById("chr").value
+      var att = document.getElementById("att").value
+      var cardtype = document.getElementById("cardtype").value
+      var special = document.getElementById("special").value
       var cardchoice = document.getElementById("cardchoice").value
       getcardselect(rarity, chr, att, cardtype, special)
       if (havevalue("cardchoice", cardchoice)){
@@ -381,25 +386,33 @@
    }
 
    function changesongcolor(which){
-   	index = document.getElementById(which).value
-      diff = document.getElementById('diffchoice').value
-   	if (index != "") {
-   		c = attcolor[songs[index].attribute]
-   		document.getElementById(which).style.color = c
-         document.getElementById("secondbase").innerHTML = songs[index].attribute
-         document.getElementById("secondbase2").innerHTML = songs[index].attribute
-   		selectlist = ["map", "bonus", "bonus2"]
-   		for (i in selectlist){
-   			document.getElementById(selectlist[i]).value = songs[index].attribute
-   		}
-   		if (document.getElementById("percentage").value != 12)
-   			document.getElementById("base").value = songs[index].attribute
-   		if (document.getElementById("percentage2").value != 12)
-   			document.getElementById("base2").value = songs[index].attribute
-   		infolist = ["combo",  "time"]
-   		for (i in infolist){
-   			document.getElementById(infolist[i]).value = songs[index][diff][infolist[i]]
-   		}
+      var index = document.getElementById(which).value;
+      var diff = document.getElementById('diffchoice').value;
+      if (index != "") {
+         var songattr = songs[index].attribute;
+         if (songattr == '') {
+            songattr = document.getElementById("songatt").value;
+            if (songattr == '') {
+               songattr = document.getElementById("map").value;
+            }
+         }
+
+         var c = attcolor[songattr];
+         document.getElementById(which).style.color = c;
+         document.getElementById("secondbase").innerHTML = songattr;
+         document.getElementById("secondbase2").innerHTML = songattr;
+         selectlist = ["map", "bonus", "bonus2"];
+         for (var i in selectlist){
+            document.getElementById(selectlist[i]).value = songattr;
+         }
+         if (document.getElementById("percentage").value != 12)
+            document.getElementById("base").value = songattr;
+         if (document.getElementById("percentage2").value != 12)
+            document.getElementById("base2").value = songattr;
+         infolist = ["combo",  "time"]
+         for (i in infolist){
+            document.getElementById(infolist[i]).value = songs[index][diff][infolist[i]]
+         }
          if (document.getElementById("time").value == ""){
             document.getElementById("time").value = 110
          }
@@ -409,12 +422,12 @@
          c = parseInt(songs[index][diff].combo)
          sl = (totalweight-c)*100/0.25/c
          //document.getElementById('slider').value = sl.toFixed(1)
-   		document.getElementById("perfect").value = parseInt(parseInt(document.getElementById("combo").value)*19/20)
-   		document.getElementById("starperfect").value = 0//parseInt(parseInt(document.getElementById("star").value)*19/20)
-   		for (i = 0; i < 9; i++){
-   			document.getElementById("weight"+String(i)).value = parseFloat(songs[index][diff]["positionweight"][i])
-   		}
-   	}
+         document.getElementById("perfect").value = parseInt(parseInt(document.getElementById("combo").value)*19/20)
+         document.getElementById("starperfect").value = 0//parseInt(parseInt(document.getElementById("star").value)*19/20)
+         for (i = 0; i < 9; i++){
+            document.getElementById("weight"+String(i)).value = parseFloat(songs[index][diff]["positionweight"][i])
+         }
+      }
    }
 
    function cardidtoindex(n){
@@ -491,13 +504,13 @@
    }
 
    function changeavatar(n){
-   	cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('avatar'+String(n)).src = '/static/null.png'
-   	else if (document.getElementById('mezame'+String(n)).value == 0)
+      var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
+      if ((cardid == 0) || (cardid == "") || (cardid == "0"))
+         document.getElementById('avatar'+String(n)).src = '/static/null.png'
+      else if (document.getElementById('mezame'+String(n)).value == 0)
          document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
-   	else
-   		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
+      else
+         document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
    }
 
    function changeavatarselect(){
@@ -607,48 +620,50 @@
    }
 
    function init(){
-   	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
+      //document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
       skilllevel = 0
-   	mezame = getCookie("mezameunit")
-   	language = getCookie("languageunit")
-   	if (mezame == "")
-   		mezame = 0
-   	if (language == "")
-   		language = 0
+      mezame = getCookie("mezameunit")
+      language = getCookie("languageunit")
+      if (mezame == "")
+         mezame = 0
+      if (language == "")
+         language = 0
 
-   	getcardselect("", "", "", "", "", "");
-   	getsongselect("", "", "", "");
-   	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
-   	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
-   			if (getCookie(inputs[i].name+"unit") != "")
-   				inputs[i].value = getCookie(inputs[i].name+"unit");
-   	}
-   	for (var i=0; i<selects.length; i++){
-   		if (getCookie(selects[i].name+"unit") != "")
-   			selects[i].value = getCookie(selects[i].name+"unit");
-   	}
-   	if (mezame == 1)
-   		document.getElementById("mezame").checked = mezame
-   	//selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
-   	//selects["songchoice"].value = getCookie(selects["songchoice"].name);
+      getcardselect("", "", "", "", "", "");
+      getsongselect("", "", "", "");
+      var inputs = document.getElementsByTagName("input");
+      var selects = document.getElementsByTagName("select");
+      for (var i=0; i<inputs.length; i++) {
+         if (inputs[i].type == "text") {
+            var curCookie = getCookie(inputs[i].name+"unit");
+            if (curCookie != "") inputs[i].value = curCookie;
+         }
+      }
+      for (var i=0; i<selects.length; i++) {
+         var curCookie = getCookie(selects[i].name+"unit");
+         if (curCookie != "") selects[i].value = curCookie;
+      }
+      if (mezame == 1)
+         document.getElementById("mezame").checked = mezame
+      //selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
+      //selects["songchoice"].value = getCookie(selects["songchoice"].name);
       try {
-   	changeskilltext("")
-      changeskilllevel()
-   	changeavatarselect()
-   	for (i = 0; i < 9; i++){
-   		//changeskilltext(i)
-   		changeavatar(i)
-         calslot(i)
-   	}
+         changeskilltext("")
+         changeskilllevel()
+         changeavatarselect()
+         for (i = 0; i < 9; i++){
+            //changeskilltext(i)
+            changeavatar(i)
+            calslot(i)
+         }
 
-   	document.getElementById("songsearch").value = ""
-   	//changecolor("cardchoice")
-   	//changesongcolor("songchoice")
-   	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
-   	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
-      } catch (err) {}
+         document.getElementById("songsearch").value = ""
+         // webbrowser may auto fill some fields, so we refresh it...
+         changesongselect();
+         changecardselect();
+      } catch (err) {
+        console.log(err);
+      }
 
       {{additional_script|safe}}
    }
@@ -1356,6 +1371,11 @@
 		<option value="smile">smile</option>
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
+	</select>
+	<select id="songunit" name="songunit" onchange="changesongselect()">
+		<option value="">组合</option>
+		<option value="muse">μ's</option>
+		<option value="aqours">Aqours</option>
 	</select><br>
 歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesongcolor('songchoice')">
 		<option value=""> </option>
@@ -1554,7 +1574,7 @@
    <tr>
       <td>权重</td>
       {% for i in range(0,9) %}
-      <td><input type="number" step="any" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
+      <td><input type="number" step="any" id="weight{{i}}" name="weight{{i}}" size=3 autocomplete="off"></td>
       {% endfor %}
    </tr>
    <tr>
