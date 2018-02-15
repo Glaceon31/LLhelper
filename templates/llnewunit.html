@@ -658,7 +658,7 @@
          }
 
          document.getElementById("songsearch").value = ""
-         // webbrowser may auto fill some fields, so we refresh it...
+         // above codes may select songs/cards/filters according to cookies, so refresh it...
          changesongselect();
          changecardselect();
       } catch (err) {
