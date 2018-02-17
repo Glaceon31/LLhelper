@@ -6,6 +6,7 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
       img {height:65px;width:65px}
@@ -27,40 +28,11 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var defaultsong = new Array()
-   defaultsong["name"] = "默认曲目（缪）"
-   defaultsong["jpname"] = "默认曲目（缪）"
-   defaultsong["muse"] = 1
-   defaultsong["aqours"] = 0
-   defaultsong['attribute'] = ''
-   var defaultsong2 = new Array()
-   defaultsong2["name"] = "默认曲目（水）"
-   defaultsong2["jpname"] = "默认曲目（水）"
-   defaultsong2["muse"] = 0
-   defaultsong2["aqours"] = 1
-   defaultsong2['attribute'] = ''
-   expert_default = new Array()
-   expert_default["positionweight"] = [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75]
-   expert_default["combo"] = 500
-   expert_default["time"] = 110
-   expert_default["star"] = 65
-   master_default = new Array()
-   master_default["positionweight"] = [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5]
-   master_default["combo"] = 700
-   master_default["time"] = 110
-   master_default["star"] = 65
-   defaultsong["expert"] = expert_default
-   defaultsong["master"] = master_default
-   defaultsong["type"] = "0"
-   defaultsong2["expert"] = expert_default
-   defaultsong2["master"] = master_default
-   defaultsong2["type"] = "0"
    var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var cards = eval("("+cardsjson+")")
-   var songs = eval("("+songsjson+")")
-   songs["00"] = defaultsong
-   songs["01"] = defaultsong2
+   var llsong = new LLSong(songsjson);
+
    var attcolor = new Array();
    var mezame = 0
    var language = 0
@@ -289,33 +261,6 @@
       //changecolor("cardchoice")
    }
 
-   function getsongselect(songatt, songunit, keyword){
-      var sel = document.getElementById("songchoice");
-      sel.options.length = 1;
-      var songKeys = Object.keys(songs).sort();
-      for (var i = 0; i < songKeys.length; i++) {
-         var index = songKeys[i];
-         if (!((songatt == "") || (songatt == songs[index].attribute) || (songs[index].attribute == ""))) {
-            continue;
-         }
-         if (!((songunit == "") || (songs[index][songunit] == 1))) {
-            continue;
-         }
-         if (!((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword) != -1))) {
-            continue;
-         }
-         //mfhave = false
-         //alert(smhave)
-         var newOption
-         if (language == 0)
-            newOption = new Option(songs[index].name, index)
-         else
-            newOption = new Option(songs[index].jpname, index)
-         newOption.style.color = attcolor[songs[index].attribute]
-         sel.options.add(newOption)
-      }
-   }
-
    function havevalue(selectId, value){
    	objSelect = document.getElementById(selectId)
    	for (var i = 0; i < objSelect.options.length; i++){
@@ -326,14 +271,7 @@
    }
 
    function changesongselect(){
-      var songatt = document.getElementById("songatt").value
-      var songunit = document.getElementById("songunit").value
-      var songchoice = document.getElementById("songchoice").value
-      var keyword = document.getElementById("songsearch").value.toLowerCase();
-      getsongselect(songatt, songunit, keyword)
-      if (havevalue("songchoice", songchoice)){
-         document.getElementById("songchoice").value = songchoice
-      }
+      llsong.filterSongs();
       changesongcolor("songchoice")
    }
 
@@ -389,7 +327,7 @@
       var index = document.getElementById(which).value;
       var diff = document.getElementById('diffchoice').value;
       if (index != "") {
-         var songattr = songs[index].attribute;
+         var songattr = llsong.songs[index].attribute;
          if (songattr == '') {
             songattr = document.getElementById("songatt").value;
             if (songattr == '') {
@@ -411,21 +349,21 @@
             document.getElementById("base2").value = songattr;
          infolist = ["combo",  "time"]
          for (i in infolist){
-            document.getElementById(infolist[i]).value = songs[index][diff][infolist[i]]
+            document.getElementById(infolist[i]).value = llsong.songs[index][diff][infolist[i]]
          }
          if (document.getElementById("time").value == ""){
             document.getElementById("time").value = 110
          }
          totalweight = 0
          for (i = 0; i < 9; i++)
-            totalweight += parseFloat(songs[index][diff]['positionweight'][i])
-         c = parseInt(songs[index][diff].combo)
+            totalweight += parseFloat(llsong.songs[index][diff]['positionweight'][i])
+         c = parseInt(llsong.songs[index][diff].combo)
          sl = (totalweight-c)*100/0.25/c
          //document.getElementById('slider').value = sl.toFixed(1)
          document.getElementById("perfect").value = parseInt(parseInt(document.getElementById("combo").value)*19/20)
          document.getElementById("starperfect").value = 0//parseInt(parseInt(document.getElementById("star").value)*19/20)
          for (i = 0; i < 9; i++){
-            document.getElementById("weight"+String(i)).value = parseFloat(songs[index][diff]["positionweight"][i])
+            document.getElementById("weight"+String(i)).value = parseFloat(llsong.songs[index][diff]["positionweight"][i])
          }
       }
    }
@@ -527,13 +465,12 @@
    }
 
    function changeLanguage(){
-   	var cardchoice = document.getElementById("cardchoice").value
-   	var songchoice = document.getElementById("songchoice").value
-   	language = 1-language
-   	changecardselect()
-   	changesongselect()
-   	document.getElementById("cardchoice").value = cardchoice
-   	document.getElementById("songchoice").value = songchoice
+      var cardchoice = document.getElementById("cardchoice").value
+      language = 1-language
+      llsong.language = language;
+      changecardselect()
+      changesongselect()
+      document.getElementById("cardchoice").value = cardchoice
    }
 
    function changeskilltext(n){
@@ -629,8 +566,9 @@
       if (language == "")
          language = 0
 
+      llsong.language = language;
+      llsong.showAllSongs();
       getcardselect("", "", "", "", "", "");
-      getsongselect("", "", "", "");
       var inputs = document.getElementsByTagName("input");
       var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++) {
@@ -678,7 +616,7 @@
       finddiff = false
       for (i in diffname){
          diff = diffname[i]
-         if (songs[index][diff] != null){
+         if (llsong.songs[index][diff] != null){
 
                   newOption = new Option(diff, diff)
                   diffsel.options.add(newOption)
@@ -995,7 +933,7 @@
       totalrawst = 0
       for (var i = 0; i < 9; i++) {
          totalrawst += rawattst[i]
-         groupbonus = samegroup(songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]])
+         groupbonus = samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]])
          colorbonus = (mapcenter['map'] == member[i]['main'])
          if (!groupbonus && !colorbonus)
             attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.21/1.21)
@@ -1040,7 +978,7 @@
       */
       result['minscore'] = 0;
       for (var i = 0; i < 9; i++) {
-         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]]) ? 1.1 : 1));
+         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]]) ? 1.1 : 1));
       }
       result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
 
