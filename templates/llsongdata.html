@@ -6,6 +6,7 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	td {size:2}
@@ -18,93 +19,8 @@
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var songs = eval("("+songsjson+")")
-   var attcolor = new Array();
+   var llsong = new LLSong(songsjson);
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
-   
-   function getsongselect(diff, att, cnhave, type){
-   	sel = document.getElementById("songchoice");
-      diffc = document.getElementById('diff').value
-   	var keyword = document.getElementById("search").value
-   	var smnum = ''
-      var mfnum = ''
-   	sel.options.length = 1;
-   	for (index in songs){
-   		if (((att == "") || (att == songs[index].attribute)) && ((cnhave == "") || (cnhave == songs[index]['hard']['cnhave'])) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
-   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
-   			smhave = false
-   			if (smnum != ""){
-               if (diffc == ''){
-   			      smList = songs[index]['hard'].sm.split(" ")
-                  if (songs[index]['expert'] != null)
-                     smList = (songs[index]['hard'].sm+' '+songs[index]['expert'].sm).split(" ")
-               }
-               else if (diffc == 'expert'){
-                  smList = []
-                  if (songs[index]['expert'] != null)
-                     smList = songs[index]['expert'].sm.split(" ")
-               }
-               else{
-                  smList = songs[index]['hard'].sm.split(" ")
-               }
-   				for (i in smList){
-   					if (smnum == smList[i]){
-   						smhave = true
-   						break
-   					}
-   				}
-   			}
-            mfhave = false
-            if (mfnum != ""){
-               if (diffc == ''){
-                  mfList = songs[index]['hard'].mf.split(" ")
-                  if (songs[index]['expert'] != null)
-                     mfList = (songs[index]['hard'].mf+' '+songs[index]['expert'].mf).split(" ")
-               }
-               else if (diffc == 'expert'){
-                  mfList = []
-                  if (songs[index]['expert'] != null)
-                     mfList = songs[index]['expert'].mf.split(" ")
-               }
-               else{
-                  mfList = songs[index]['hard'].mf.split(" ")
-               }
-               for (i in mfList){
-                  if (mfnum == mfList[i]){
-                     mfhave = true
-                     break
-                  }
-               }
-            }
-   			//alert(smhave)
-   			if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
-   				var newOption
-   				if (language == 0)
-   					newOption = new Option(songs[index].name, index)
-   				else
-   					newOption = new Option(songs[index].jpname, index)
-   				newOption.style.color = attcolor[songs[index].attribute]
-   				sel.options.add(newOption)
-   			}
-            
-   		}
-   		}
-   		index += 1
-   	}
-   	//changesongcolor("songchoice")
-   }
-   
-   function havevalue(selectId, value){
-   	objSelect = document.getElementById(selectId)
-   	for (var i = 0; i < objSelect.options.length; i++){
-   		if (objSelect.options[i].value == value)
-   			return true;
-   	}
-   	return false;
-   }
    
    function kizuna(combo){
    	var result = 0
@@ -139,170 +55,169 @@
    }
    
    function changesongselect(){
-   	diff = document.getElementById("diff").value
-   	att = document.getElementById("songatt").value
-   	//type = document.getElementById("songtype").value
-   	var songchoice = document.getElementById("songchoice").value
-   	getsongselect(diff, att, '', '')
-   	if (havevalue("songchoice", songchoice)){
-   		document.getElementById("songchoice").value = songchoice
-   	}
-   	changesonginfo("songchoice")
+      llsong.filterSongs();
+      changesonginfo("songchoice")
    }
    
    function changediffinfo(){
-      savediff = document.getElementById('diffchoice').value
-      index = document.getElementById('songchoice').value
-      diffc = document.getElementById('diff').value
+      var index = llsong.getSelectedSongIndex();
+      var diffsel = document.getElementById('diffchoice');
+      var savediff = diffsel.value;
+      var songdiff = document.getElementById('songdiff').value
       //smnum =document.getElementById("smfilter").value
       //mfnum =document.getElementById("mffilter").value
 
-      diffsel = document.getElementById('diffchoice')
       diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
-      finddiff = false
-      //if (index == '')
-      //   return
-      for (i in diffname){
-         diff = diffname[i]
-         if (songs[index][diff] != null){
-            cnhave = ''
-            if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
-
-                  newOption = new Option(diff, diff)
-                  diffsel.options.add(newOption)
-                  if (savediff == diff){
-                     document.getElementById('diffchoice').value = savediff
-                     finddiff = true
+      if (index == '') return;
+      var diffname = ['easy', 'normal', 'hard', 'expert', 'master'];
+      var finddiff = false;
+      var curSong = llsong.songs[index];
+      for (var i in diffname){
+         var diff = diffname[i];
+         var curSongWithDiff = curSong[diff];
+         if (curSongWithDiff){
+            cnhave = '';
+            if (((curSongWithDiff['cnhave'] == cnhave) || (cnhave == ''))) {
+               var newOption = new Option(diff, diff);
+               diffsel.options.add(newOption);
+               if (savediff == diff){
+                  diffsel.value = savediff;
+                  finddiff = true;
                }
             }
          }
       }
-      if (!finddiff)
-         document.getElementById('diffchoice').value = 'expert'
+      if (!finddiff) {
+         if (songdiff != "") {
+            diffsel.value = songdiff;
+         } else {
+            diffsel.value = 'expert';
+         }
+      }
       return 
    }
 
    function changesonginfo(which){
-      index = document.getElementById(which).value
-   	diff = document.getElementById('diffchoice').value
-   	if (index != "") {
-   		c = attcolor[songs[index].attribute]
-   		document.getElementById(which).style.color = c
-   		
-   		document.getElementById("attribute").innerHTML = songs[index].attribute
-   		//改颜色
-   		colorList = ["attribute", "name","jpname"]
-   		for (i in colorList){
-   			document.getElementById(colorList[i]).style.color = c
-   		}
-   		
-         songinfolist = ["totaltime","bpm","name","jpname"]
-   		diffinfolist = ["combo", "time", "stardifficulty", "randomdifficulty","star",  "cscore", "bscore", "ascore", "sscore","lp","exp"]
-   		songextend = ["秒", "", "", ""]
-         diffextend = ["", "秒", "", "", "",  "", "", "", "", "", "", "", "","","","","",""]
-   		if (songs[index]['jpname'] == songs[index]['name']){
-   			document.getElementById("name").style.display = "none"
-   			document.getElementById("cnametag").style.display = "none"
-   		}
-   		else{
-   			document.getElementById("name").style.display = ""
-   			document.getElementById("cnametag").style.display = ""
-   		}
-   		for (i in songinfolist){
-   			document.getElementById(songinfolist[i]).innerHTML = songs[index][songinfolist[i]]+songextend[i]
-   		}
-         for (i in diffinfolist){
-            document.getElementById(diffinfolist[i]).innerHTML = songs[index][diff][diffinfolist[i]]+diffextend[i]
+      var index = llsong.getSelectedSongIndex(which);
+      if (index != "") {
+         var diff = document.getElementById('diffchoice').value;
+         var songAttr = llsong.getSongAttr(index);
+         var curSong = llsong.songs[index];
+         var curSongWithDiff = curSong[diff];
+         var c = llsong.attcolor[songAttr];
+         document.getElementById(which).style.color = c;
+         document.getElementById("attribute").innerHTML = songAttr;
+         //改颜色
+         colorList = ["attribute", "name","jpname"]
+         for (i in colorList){
+            document.getElementById(colorList[i]).style.color = c;
          }
-   			
-         
-   		arraylist = ["positionweight"]
-   		for (i in arraylist){
-   			for (j = 0; j < 9; j++){
-   				document.getElementById(arraylist[i]+String(j)).innerHTML=songs[index][diff][arraylist[i]][j]
-   			}
-   		}
+
+         songinfolist = ["totaltime","bpm","name","jpname"]
+         diffinfolist = ["combo", "time", "stardifficulty", "randomdifficulty","star",  "cscore", "bscore", "ascore", "sscore","lp","exp"]
+         songextend = ["秒", "", "", ""]
+         diffextend = ["", "秒", "", "", "",  "", "", "", "", "", "", "", "","","","","",""]
+         if (curSong['jpname'] == curSong['name']){
+            document.getElementById("name").style.display = "none"
+            document.getElementById("cnametag").style.display = "none"
+         }
+         else{
+            document.getElementById("name").style.display = ""
+            document.getElementById("cnametag").style.display = ""
+         }
+         for (i in songinfolist){
+            document.getElementById(songinfolist[i]).innerHTML = curSong[songinfolist[i]]+songextend[i]
+         }
+         for (i in diffinfolist){
+            document.getElementById(diffinfolist[i]).innerHTML = curSong[diff][diffinfolist[i]]+diffextend[i]
+         }
+
+         arraylist = ["positionweight"]
+         for (i in arraylist){
+            for (j = 0; j < 9; j++){
+               document.getElementById(arraylist[i]+String(j)).innerHTML=curSong[diff][arraylist[i]][j]
+            }
+         }
          totalweight = 0
          for (i = 0; i < 9; i++)
-            totalweight += parseFloat(songs[index][diff]['positionweight'][i])
-   		c = parseInt(songs[index][diff].combo)
-   		sl = (totalweight-c)*100/0.25/c
+            totalweight += parseFloat(curSongWithDiff['positionweight'][i])
+         c = parseInt(curSongWithDiff.combo)
+         sl = (totalweight-c)*100/0.25/c
          document.getElementById('noteweight').innerHTML = String(totalweight)
-   		for (i = 0; i < 9; i++){
-   			p = parseFloat(songs[index][diff].positionweight[i])
-   			percentage = p/(c*(1+0.0025*sl))
-   			document.getElementById("positionmulti"+String(i)).innerHTML=String((10*percentage).toFixed(3))+"%"
-   		}
-   		//隐藏没有的信息
-   		hidelist = ["randomdifficulty"]
-   		for (i in hidelist){
-   			if (songs[index][diff][hidelist[i]] == ""){
-   				document.getElementById(hidelist[i]).style.display = "none"
-   				document.getElementById(hidelist[i]+"tag").style.display = "none"
-   			}
-   			else{
-   				document.getElementById(hidelist[i]).style.display = ""
-   				document.getElementById(hidelist[i]+"tag").style.display = ""
-   			}
-   		}
-   		//其他信息
-   		document.getElementById("kizunaget").innerHTML = kizuna(parseInt(songs[index][diff].combo))
-   		document.getElementById("combomulti").innerHTML = combomulti(parseInt(songs[index][diff].combo)).toFixed(3)
-   		document.getElementById("scoreperstrength").innerHTML = (1.1*1.1/80*combomulti(c)*totalweight).toFixed(3)
-   		
-   		//属性需求信息
-   		cbmulti = combomulti(parseInt(songs[index][diff].combo))
-   		rankList = ['c', 'b', 'a', 's']
-   		for (i in rankList){
-   			if (songs[index][diff][rankList+"score"] == "")
-   				continue
-   			//document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
-   			//document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(songs[index][diff][rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
-   		}
-   		
-   		//高亮低权重位置
-   		we = new Array(8)
-   		po = [0, 1, 2 ,3 ,5 ,6, 7, 8]
-   		for (i = 0; i < 4; i++){
-   			we[i] = parseFloat(songs[index][diff].positionweight[i])
-   		}
-   		for (i = 5; i < 9; i++){
-   			we[i-1] = parseFloat(songs[index][diff].positionweight[i])
-   		}
-   		for (i = 0; i < 8; i ++){
-   			for (j = 0; j < 7; j++){
-   				if (we[j] > we[j+1]){
-   					tmp = we[j]
-   					we[j] = we[j+1]
-   					we[j+1] = tmp
-   					tmp = po[j]
-   					po[j] = po[j+1]
-   					po[j+1] = tmp
-   				}
-   			}
-   		}
-		for (i = 0; i < 9; i++){
-   			document.getElementById("positionweight"+String(i)).style.background = ""
-   		}
-    		document.getElementById("positionweight"+String(po[0])).style.background = "#f2dede"
-    		document.getElementById("positionweight"+String(po[0])).style.color = "#a94442"
-    		document.getElementById("positionweight"+String(po[1])).style.background = "#fcf8e3"
-    		document.getElementById("positionweight"+String(po[1])).style.color = "#8a6d3b"
-    		document.getElementById("positionweight"+String(po[2])).style.background = "#ffffcc"
-    		document.getElementById("positionweight"+String(po[2])).style.color = "#a0a003"
-   	}
+         for (i = 0; i < 9; i++){
+            p = parseFloat(curSongWithDiff.positionweight[i])
+            percentage = p/(c*(1+0.0025*sl))
+            document.getElementById("positionmulti"+String(i)).innerHTML=String((10*percentage).toFixed(3))+"%"
+         }
+         //隐藏没有的信息
+         hidelist = ["randomdifficulty"]
+         for (i in hidelist){
+            if (curSongWithDiff[hidelist[i]] == ""){
+               document.getElementById(hidelist[i]).style.display = "none"
+               document.getElementById(hidelist[i]+"tag").style.display = "none"
+            }
+            else{
+               document.getElementById(hidelist[i]).style.display = ""
+               document.getElementById(hidelist[i]+"tag").style.display = ""
+            }
+         }
+         //其他信息
+         document.getElementById("kizunaget").innerHTML = kizuna(parseInt(curSongWithDiff.combo))
+         document.getElementById("combomulti").innerHTML = combomulti(parseInt(curSongWithDiff.combo)).toFixed(3)
+         document.getElementById("scoreperstrength").innerHTML = (1.1*1.1/80*combomulti(c)*totalweight).toFixed(3)
+
+         //属性需求信息
+         cbmulti = combomulti(parseInt(curSongWithDiff.combo))
+         rankList = ['c', 'b', 'a', 's']
+         for (i in rankList){
+            if (curSongWithDiff[rankList+"score"] == "")
+               continue
+            //document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(curSongWithDiff[rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
+            //document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(curSongWithDiff[rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
+         }
+
+         //高亮低权重位置
+         we = new Array(8)
+         po = [0, 1, 2 ,3 ,5 ,6, 7, 8]
+         for (i = 0; i < 4; i++){
+            we[i] = parseFloat(curSongWithDiff.positionweight[i])
+         }
+         for (i = 5; i < 9; i++){
+            we[i-1] = parseFloat(curSongWithDiff.positionweight[i])
+         }
+         for (i = 0; i < 8; i ++){
+            for (j = 0; j < 7; j++){
+               if (we[j] > we[j+1]){
+                  tmp = we[j]
+                  we[j] = we[j+1]
+                  we[j+1] = tmp
+                  tmp = po[j]
+                  po[j] = po[j+1]
+                  po[j+1] = tmp
+               }
+            }
+         }
+         for (i = 0; i < 9; i++){
+            document.getElementById("positionweight"+String(i)).style.background = ""
+         }
+         document.getElementById("positionweight"+String(po[0])).style.background = "#f2dede"
+         document.getElementById("positionweight"+String(po[0])).style.color = "#a94442"
+         document.getElementById("positionweight"+String(po[1])).style.background = "#fcf8e3"
+         document.getElementById("positionweight"+String(po[1])).style.color = "#8a6d3b"
+         document.getElementById("positionweight"+String(po[2])).style.background = "#ffffcc"
+         document.getElementById("positionweight"+String(po[2])).style.color = "#a0a003"
+      }
    }
    
    function changeLanguage(){
-   	var songchoice = document.getElementById("songchoice").value
-   	language = 1-language
-	changesongselect()
-   	document.getElementById("songchoice").value = songchoice
+   	  language = 1-language
+      llsong.language = language;
+	  changesongselect()
    }
    
    function init(){
-   	getsongselect("", "", "", "");
+      //llsong.filterSongs();
+	  changesongselect()
    }
    
    document.addEventListener("change", function () {
@@ -329,18 +244,24 @@
 <label class="control-label">搜索</label><input class="form-control" type="text" id="search" value="" onchange="changesongselect()"></input>
 </div>
 <div class="form-group">
-<label class="control-label">筛选</label><select class="form-control" id="diff" name="diff" onchange="changesongselect();changediffinfo()" style="display:none">
+<label class="control-label">筛选</label><select class="form-control" id="songdiff" name="songdiff" onchange="changesongselect();changediffinfo()">
 		<option value="">难度</option>
-		<option value="easy">easy</option>
-		<option value="normal">normal</option>
-		<option value="hard">hard</option>
-		<option value="expert">expert</option>
+		<option value="easy">包含easy难度</option>
+		<option value="normal">包含normal难度</option>
+		<option value="hard">包含hard难度</option>
+		<option value="expert">包含expert难度</option>
+		<option value="master">包含master难度</option>
 	</select>
 	<select class="form-control" id="songatt" name="songatt" onchange="changesongselect()">
 		<option value="">属性</option>
 		<option value="smile">Smile</option>
 		<option value="pure">Pure</option>
 		<option value="cool">Cool</option>
+	</select>
+	<select class="form-control" id="songunit" name="songunit" onchange="changesongselect()">
+		<option value="">组合</option>
+		<option value="muse">μ's</option>
+		<option value="aqours">Aqours</option>
 	</select>
 </div>
    <!--

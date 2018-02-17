@@ -34,8 +34,8 @@ function LLSong(songjson) {
    defaultsong2["master"] = master_default
    defaultsong2["type"] = "0"
    var songs = eval("("+songsjson+")");
-   songs["00"] = defaultsong
-   songs["01"] = defaultsong2
+   songs["-2"] = defaultsong
+   songs["-1"] = defaultsong2
 
    var attcolor = new Array();
    attcolor["smile"] = "red"
@@ -50,7 +50,10 @@ function LLSong(songjson) {
    this.songAttId = 'songatt';
    this.songUnitId = 'songunit';
    this.songSearchId = 'songsearch';
+   this.songDiffId = 'songdiff';
+   this.mapAttId = 'map';
    this.getElementValue = function (id, defaultValue) {
+      if (!id) return defaultValue;
       var ret = undefined;
       var element = document.getElementById(id);
       if (element) ret = element.value;
@@ -58,23 +61,24 @@ function LLSong(songjson) {
       return ret;
    };
    this.getElementOrThrow = function (id) {
+      if (!id) throw "Not given id";
       var ret = document.getElementById(id);
-      if (!ret) {
-         throw ("Not found " + id);
-      }
+      if (!ret) throw ("Not found " + id);
       return ret;
    };
-   this.filterSongs = function (songsel, songatt, songunit, keyword) {
+   this.filterSongs = function (songsel, songatt, songunit, songdiff, keyword) {
+      // TODO: filter by event(sm, mf, etc.), by star, by special flags (限时, 超难关, 滑键, etc.)
       if (songsel === undefined) songsel = this.getElementOrThrow(this.songSelId);
       if (songatt === undefined) songatt = this.getElementValue(this.songAttId, "");
       if (songunit === undefined) songunit = this.getElementValue(this.songUnitId, "");
+      if (songdiff === undefined) songdiff = this.getElementValue(this.songDiffId, "");
       if (keyword === undefined) keyword = this.getElementValue(this.songSearchId, "");
 
       var lastSelected = songsel.value;
       var keepLastSelected = false;
       songsel.options.length = 1;
       if (keyword) keyword = keyword.toLowerCase();
-      var songKeys = Object.keys(this.songs).sort();
+      var songKeys = Object.keys(this.songs).sort(function(a,b){return parseInt(a) - parseInt(b);});
       for (var i = 0; i < songKeys.length; i++) {
          var index = songKeys[i];
          var curSong = this.songs[index];
@@ -82,6 +86,9 @@ function LLSong(songjson) {
             continue;
          }
          if (songunit && !(curSong[songunit] == 1)) {
+            continue;
+         }
+         if (songdiff && curSong[songdiff] === undefined) {
             continue;
          }
          if (keyword && !((curSong.name.toLowerCase().indexOf(keyword) != -1) || (curSong.jpname.toLowerCase().indexOf(keyword) != -1))) {
@@ -102,7 +109,21 @@ function LLSong(songjson) {
       }
    };
    this.showAllSongs = function (songsel) {
-      this.filterSongs(songsel, "", "", "");
+      this.filterSongs(songsel, "", "", "", "");
+   };
+   this.getSelectedSongIndex = function (selid) {
+      if (selid === undefined) selid = this.songSelId;
+      return this.getElementValue(selid, "");
+   };
+   this.getSongAttr = function (songindex) {
+      if (songindex === undefined) songindex = this.getSelectedSongIndex();
+      if (songindex == "") return "";
+      var song = this.songs[songindex];
+      if (!song) return "";
+      var songattr = song.attribute;
+      if (songattr == "") songattr = this.getElementValue(this.songAttId, "");
+      if (songattr == "") songattr = this.getElementValue(this.mapAttId, "");
+      return songattr;
    };
 }
 

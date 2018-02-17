@@ -324,16 +324,10 @@
    }
 
    function changesongcolor(which){
-      var index = document.getElementById(which).value;
-      var diff = document.getElementById('diffchoice').value;
+      var index = llsong.getSelectedSongIndex(which);
       if (index != "") {
-         var songattr = llsong.songs[index].attribute;
-         if (songattr == '') {
-            songattr = document.getElementById("songatt").value;
-            if (songattr == '') {
-               songattr = document.getElementById("map").value;
-            }
-         }
+         var diff = document.getElementById('diffchoice').value;
+         var songattr = llsong.getSongAttr(index);
 
          var c = attcolor[songattr];
          document.getElementById(which).style.color = c;
