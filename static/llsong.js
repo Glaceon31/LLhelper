@@ -100,7 +100,7 @@ LLSong.prototype.getSelectedSongIndex = function (selid) {
    return this.getElementValue(selid, "");
 };
 LLSong.prototype.getSelectedSong = function (selid) {
-   return this.songs[getSelectedSongIndex(selid)];
+   return this.songs[this.getSelectedSongIndex(selid)];
 };
 LLSong.prototype.getSongAttr = function (songindex) {
    if (songindex === undefined) songindex = this.getSelectedSongIndex();
