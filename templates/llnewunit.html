@@ -411,12 +411,32 @@
    	window.location.href="/llsaveunit/"+unitjson
    }
 
+   function handleLoadUnit(unit) {
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc'];
+      for (var i = 0; i < 9; i++) {
+         var member = unit[i];
+         for (var j in attlist) {
+            var att = attlist[j];
+            var value = 0;
+            if (member && member[att] !== undefined) value = member[att];
+            document.getElementById(att + i).value = value;
+         }
+         if (member && member.cardid) {
+            document.getElementById("main" + i).value = llcard.cards[member.cardid].attribute;
+         }
+         changeavatar(i);
+         calslot(i);
+      }
+      changecenter();
+      precalcu();
+   }
+
    var tmponsubmit
    function loadunit(){
-   	document.getElementById("unitform").action = '/llloadnewunit'
-   	tmponsubmit = document.getElementById("unitform").onsubmit
-   	document.getElementById("unitform").onsubmit = ''
-   	document.getElementById("unitform").target = 'if'
+      document.getElementById("unitform").action = '/llload/parent.handleLoadUnit'
+      tmponsubmit = document.getElementById("unitform").onsubmit
+      document.getElementById("unitform").onsubmit = ''
+      document.getElementById("unitform").target = 'if'
    }
 
    function precalcu(){
