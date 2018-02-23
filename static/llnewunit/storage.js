@@ -4,6 +4,19 @@
 
   function loadUnitFromJSON(json) {
     console.log(json);
+    var member = JSON.parse(json);
+    var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
+    for (var i = 0; i < 9; i++) {
+      for (var j in attlist) {
+        var att = attlist[j];
+        document.getElementById(att + i).value = member[i][att];
+      }
+      document.getElementById('main' + i).value = llcard.cards[member[i]['cardid']].attribute;
+      changeavatar(i);
+      calslot(i);
+    }
+    changecenter();
+    /*
     $.ajax({
       url: '/llloadnewunit-api',
       type: 'POST',
@@ -15,6 +28,7 @@
       },
       contentType: 'application/json',
     });
+    */
   }
 
   function readUnitJSON(name) {

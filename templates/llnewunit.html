@@ -8,6 +8,7 @@
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
       img {height:65px;width:65px}
@@ -29,11 +30,13 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songsjson);
-   var llcard = new LLCard(cardsjson);
+   var llcard = 0;
+   //var llcard = new LLCard(cardsjson);
+   var handleFailedRequest = function() {
+      alert('载入失败!');
+   };
 
    var attcolor = new Array();
    var mezame = 0
@@ -64,6 +67,13 @@
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
 
    var skilllevel = 0
+
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+   }, handleFailedRequest);
 
    function threetonumber(three){
       var result = three
@@ -139,21 +149,11 @@
       index = document.getElementById('cardid'+String(n)).value
       level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1
       if ((level < 0) || (level > 7)) return
-      document.getElementById('require'+String(n)).value = cards[index]['skilldetail'][level].require
-      document.getElementById('possibility'+String(n)).value = cards[index]['skilldetail'][level].possibility
-      document.getElementById('score'+String(n)).value = cards[index]['skilldetail'][level].score
-   }
-
-   function getskilllevel(n){
-
-      score = document.getElementById('score'+String(n)).value
-      index = threetonumber(document.getElementById('cardid'+String(n)).value)
-      if (!cards[index].skill) return 0
-      for (i=0;i<8;i++){
-         if (cards[index]['skilldetail'][i].score == score)
-            return i+1
-      }
-      return 0
+      LLCardData.getDetailedData(index).then(function(card) {
+         document.getElementById('require'+String(n)).value = card['skilldetail'][level].require
+         document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility
+         document.getElementById('score'+String(n)).value = card['skilldetail'][level].score
+      }, handleFailedRequest);
    }
 
    function cardtoskilltype(c){
@@ -196,38 +196,38 @@
    }
 
    function changecolor(){
-      var which = 'cardchoice';
-   	index = document.getElementById(which).value
-   	if (index != "") {
-   		c = attcolor[cards[index].attribute]
-   		document.getElementById(which).style.color = c
-   		document.getElementById("main").value = cards[index].attribute
+      var index = document.getElementById('cardchoice').value;
+      if (index != "") {
+         LLCardData.getDetailedData(index).then(function(card) {
+            var c = llcard.attcolor[card.attribute];
+            document.getElementById('cardchoice').style.color = c
+            document.getElementById("main").value = card.attribute
 
-         //document.getElementById('skill').value = cardtoskilltype(cards[index])
-         if (cards[index].skill){
-            //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-            document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
-            document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
-            document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
-         }
-   		infolist2 = ["smile", "pure", "cool"]
-        console.log("mezame=" + mezame);
-   		if (mezame == 0){
-   			for (i in infolist2){
-   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]]
-   				document.getElementById("mezame").value = "未觉醒"
-   			}
-   		}
-   		else{
-   			for (i in infolist2){
-   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]+"2"]
-   				document.getElementById("mezame").value = "已觉醒"
-   			}
-   		}
-   		document.getElementById("kizuna").value = kizuna[cards[index].rarity][mezame]
-   		changeskilltext("")
-   	}
-   	changeavatarselect()
+            //document.getElementById('skill').value = cardtoskilltype(card)
+            if (card.skill){
+               //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
+               document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
+               document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
+               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].score
+            }
+            var infolist2 = ["smile", "pure", "cool"]
+            if (mezame == 0){
+               for (var i in infolist2){
+                  document.getElementById(infolist2[i]).value = card[infolist2[i]]
+               }
+               document.getElementById("mezame").value = "未觉醒"
+            }
+            else{
+               for (var i in infolist2){
+                  document.getElementById(infolist2[i]).value = card[infolist2[i]+"2"]
+               }
+               document.getElementById("mezame").value = "已觉醒"
+            }
+            document.getElementById("kizuna").value = kizuna[card.rarity][mezame]
+            changeskilltext(card, "")
+         }, handleFailedRequest);
+      }
+      changeavatarselect(index)
    }
 
    function changemapcolor(attr) {
@@ -255,15 +255,6 @@
       llsong.applyDataOfSongWithDiff(applyTarget);
    }
 
-   function cardidtoindex(n){
-   	cardid = parseInt(n)
-   	for (i in cards){
-   		if (cards[i].id == n){
-   			return i
-   		}
-   	}
-   }
-
    function calslot(n){
       result = 0
       result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
@@ -284,7 +275,7 @@
    	}
       document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
    	document.getElementById("mezame"+String(n)).value = mezame
-   	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id
+   	document.getElementById("cardid"+String(n)).value = document.getElementById("cardchoice").value
    	//changeskilltext(n)
    	if (n == 4){
    		changecenter()
@@ -293,23 +284,18 @@
    }
 
    function changecenter(){
-   	cardid = parseInt(document.getElementById("cardid4").value)
-   	index = 0
-   	for (i in cards){
-   		if (cards[i].id == cardid){
-   			index = i
-   			break
-   		}
-   	}
-   	document.getElementById("bonus").value = cards[index]["attribute"]
-   	document.getElementById("percentage").value = cards[index]["Cskillpercentage"]
-   	document.getElementById("base").value = cards[index]["Cskillattribute"]
-      document.getElementById("secondpercentage").value = "0"
-      if (cards[index]["rarity"] == "SSR" || cards[index]["rarity"] == "UR"){
-         document.getElementById("secondlimit").value = cards[index]["Csecondskilllimit"]
-         //document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
-         document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
-      }
+      var cardid = parseInt(document.getElementById("cardid4").value)
+      LLCardData.getDetailedData(cardid).then(function(card) {
+         document.getElementById("bonus").value = card["attribute"]
+         document.getElementById("percentage").value = card["Cskillpercentage"]
+         document.getElementById("base").value = card["Cskillattribute"]
+         document.getElementById("secondpercentage").value = "0"
+         if (card["rarity"] == "SSR" || card["rarity"] == "UR"){
+            document.getElementById("secondlimit").value = card["Csecondskilllimit"]
+            //document.getElementById("secondbase").innerHTML = card["attribute"]
+            document.getElementById("secondpercentage").value = card["Csecondskillattribute"]
+         }
+      }, handleFailedRequest);
    }
 
    function changeavatar(n){
@@ -317,22 +303,19 @@
       if ((cardid == 0) || (cardid == "") || (cardid == "0"))
          document.getElementById('avatar'+String(n)).src = '/static/null.png'
       else if (document.getElementById('mezame'+String(n)).value == 0)
-         document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
+         document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',0)
       else
-         document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
+         document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',1)
    }
 
-   function changeavatarselect(){
+   function changeavatarselect(cardid){
    	document.getElementById('imageselect').src = '/static/null.png'
-   	cardid = 0
-   	if (document.getElementById('cardchoice').value != '')
-   		cardid = cards[document.getElementById('cardchoice').value].id
    	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
    		document.getElementById('imageselect').src = '/static/null.png'
    	else if (mezame == 0)
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',0)
+   		document.getElementById('imageselect').src = getimagepath(cardid,'avatar',0)
    	else
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',1)
+   		document.getElementById('imageselect').src = getimagepath(cardid,'avatar',1)
    }
 
    function changeLanguage(){
@@ -343,11 +326,11 @@
       llcard.onCardFilterChange();
    }
 
-   function changeskilltext(n){
+   function changeskilltext(card, n){
    	var postfix = ""
    	if ((n != "") || (String(n) == "0"))
    		postfix = String(n)
-      var skilltype = cardtoskilltype(cards[document.getElementById("cardchoice").value])
+      var skilltype = cardtoskilltype(card)
    	//var skilltype = document.getElementById("skill"+postfix).value
    	//if (skilltype == 0)
    	//	document.getElementById("skilltext"+postfix).style.display = "none"
@@ -479,9 +462,9 @@
       }
       document.getElementById("mezame").checked = mezame
       try {
-         changeskilltext("")
+         //changeskilltext("")
          changeskilllevel()
-         changeavatarselect()
+         //changeavatarselect()
          for (i = 0; i < 9; i++){
             //changeskilltext(i)
             changeavatar(i)
@@ -623,6 +606,24 @@
    }
 
    function calculate() {
+      var unitCardData = {};
+      var finishedCount = 0;
+      var defer_carddata = $.Deferred();
+      for (var i = 0; i < 9; i++) {
+         var cardid = document.getElementById('cardid' + i).value;
+         LLCardData.getDetailedData(cardid).then(function(card) {
+            // do not use cardid, as its value can change...
+            unitCardData[parseInt(card.id)] = card;
+            finishedCount++;
+            if (finishedCount == 9) defer_carddata.resolve(unitCardData);
+         }, function() {
+            defer_carddata.reject();
+         });
+      }
+      defer_carddata.then(docalculate, handleFailedRequest);
+   }
+
+   function docalculate(cards) {
       var result = {};
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
@@ -1119,11 +1120,6 @@
                   default: return 0.00
             }
       }
-      var cardTypes = []
-      for (var currCardId in cards) {
-            var currCard = cards[currCardId]
-            if (cardTypes.indexOf(currCard.type) === -1) cardTypes.push(currCard.type)
-      }
       var micRawValue = member.reduce(function (sum, currMember) {
             return sum + currMember.skilllevel * getRarityRatio(currMember)
       }, 0.00)
@@ -1141,7 +1137,7 @@
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -1314,7 +1310,7 @@
    <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
    <br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value=""> </option>
+		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	（特典卡需选择觉醒）<br>
