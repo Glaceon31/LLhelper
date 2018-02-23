@@ -6,6 +6,7 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
    <script src="https://app.lovelivewiki.com/Maps/songsjson.js"></script>
@@ -25,6 +26,7 @@
    var regSand = new RegExp("&amp;", "g")
    var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var cards = eval("("+cardsjson+")")
+   var llsong = new LLSong(songs, false); // songs defined in songsjson.js
    var attcolor = new Array();
    var mezame = 0
    var language = 0
@@ -69,11 +71,14 @@
    var skilllevel = 0
 
    function threetonumber(three){
-      result = three
-      if (result[0] == '0'){
+      var result = three
+      if (result == '0') {
+         return 0;
+      }
+      if (result[0] == '0') {
          result = result[1]+result[2]
       }
-      if (result[0] == '0'){
+      if (result[0] == '0') {
          result = result[1]
       }
       return result
@@ -128,7 +133,7 @@
    function changeskilllevel(){
       document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
       index = document.getElementById('cardchoice').value
-      if (cards[index].skill){
+      if (cards[index] && cards[index].skill){
          document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
          document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
          document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
@@ -136,6 +141,7 @@
    }
 
    function cardtoskilltype(c){
+      if (!c) return 0;
       if (!c.skill)
          return 0
       if ((c.skilleffect == 4) || (c.skilleffect == 5)){
@@ -301,13 +307,12 @@
    }
    
    function changeLanguage(){
-   	var cardchoice = document.getElementById("cardchoice").value
-   	var songchoice = document.getElementById("songchoice").value
-   	language = 1-language
-   	changecardselect()
-   	changesongselect()
-   	document.getElementById("cardchoice").value = cardchoice
-   	document.getElementById("songchoice").value = songchoice
+      var cardchoice = document.getElementById("cardchoice").value
+      language = 1-language
+      llsong.language = language;
+      changecardselect()
+      changesongselect()
+      document.getElementById("cardchoice").value = cardchoice
    }
    
    function changeskilltext(n){
@@ -354,94 +359,15 @@
    	changeavatarselect()
    }
 
-   function getsongselect(diff, att, cnhave, type){
-   	sel = document.getElementById("songchoice");
-      diffc = document.getElementById('diff').value
-   	var keyword = document.getElementById("songsearch").value
-   	var smnum = ''
-      var mfnum = ''
-   	sel.options.length = 1;
-   	for (index in songs){
-   		if (((att == "") || (att == songs[index].attribute)) && ((cnhave == "") || (cnhave == songs[index]['hard']['cnhave'])) && ((type == "") || (songs[index].type.indexOf(type) != -1))){
-   		if ((keyword == "") || (songs[index].name.toLowerCase().indexOf(keyword.toLowerCase()) != -1) || (songs[index].jpname.toLowerCase().indexOf(keyword.toLowerCase()) != -1)){
-   			smhave = false
-   			if (smnum != ""){
-               if (diffc == ''){
-   			      smList = songs[index]['hard'].sm.split(" ")
-                  if (songs[index]['expert'] != null)
-                     smList = (songs[index]['hard'].sm+' '+songs[index]['expert'].sm).split(" ")
-               }
-               else if (diffc == 'expert'){
-                  smList = []
-                  if (songs[index]['expert'] != null)
-                     smList = songs[index]['expert'].sm.split(" ")
-               }
-               else{
-                  smList = songs[index]['hard'].sm.split(" ")
-               }
-   				for (i in smList){
-   					if (smnum == smList[i]){
-   						smhave = true
-   						break
-   					}
-   				}
-   			}
-            mfhave = false
-            if (mfnum != ""){
-               if (diffc == ''){
-                  mfList = songs[index]['hard'].mf.split(" ")
-                  if (songs[index]['expert'] != null)
-                     mfList = (songs[index]['hard'].mf+' '+songs[index]['expert'].mf).split(" ")
-               }
-               else if (diffc == 'expert'){
-                  mfList = []
-                  if (songs[index]['expert'] != null)
-                     mfList = songs[index]['expert'].mf.split(" ")
-               }
-               else{
-                  mfList = songs[index]['hard'].mf.split(" ")
-               }
-               for (i in mfList){
-                  if (mfnum == mfList[i]){
-                     mfhave = true
-                     break
-                  }
-               }
-            }
-   			//alert(smhave)
-   			if (((smnum == "") || smhave) && ((mfnum == "") || mfhave)){
-   				var newOption
-   				if (language == 0)
-   					newOption = new Option(songs[index].name, index)
-   				else
-   					newOption = new Option(songs[index].jpname, index)
-   				newOption.style.color = attcolor[songs[index].attribute]
-   				sel.options.add(newOption)
-   			}
-            
-   		}
-   		}
-   		index += 1
-   	}
-   	//changesongcolor("songchoice")
-   }
-   
    function changesongselect(){
-   	diff = document.getElementById("diff").value
-   	att = document.getElementById("songatt").value
-   	//type = document.getElementById("songtype").value
-   	var songchoice = document.getElementById("songchoice").value
-   	getsongselect(diff, att, '', '')
-   	if (havevalue("songchoice", songchoice)){
-   		document.getElementById("songchoice").value = songchoice
-   	}
-   	changesonginfo("songchoice")
+      llsong.filterSongs();
+      changesonginfo("songchoice")
    }
    
    function changediffinfo(){
       savediff = document.getElementById('diffchoice').value
       index = document.getElementById('songchoice').value
-      diffc = document.getElementById('diff').value
+      diffc = document.getElementById('songdiff').value
       //smnum =document.getElementById("smfilter").value
       //mfnum =document.getElementById("mffilter").value
 
@@ -493,9 +419,7 @@
     }
    
    function changesonginfo(which){
-    index = document.getElementById(which).value
-   	diff = document.getElementById('diffchoice').value
-	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
+      document.getElementById("songchoice").style.color = llsong.attcolor[llsong.getSongAttr()]
    }
    
    function copyTo(n){
@@ -602,8 +526,9 @@
    	if (language == "")
    		language = 0
    	
+      llsong.language = language;
+      llsong.showAllSongs();
    	getcardselect("", "", "", "", "");
-   	getsongselect("", "", "", "");
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
 	var nospan = document.getElementsByTagName("nospan");
@@ -635,10 +560,9 @@
 		}
    	}
    	document.getElementById("songsearch").value = ""
-   	//changecolor("cardchoice")
-   	//changesongcolor("songchoice")
-   	document.getElementById("songchoice").style.color = attcolor[songs[document.getElementById("songchoice").value].attribute]
-   	document.getElementById("cardchoice").style.color = attcolor[cards[document.getElementById("cardchoice").value].attribute]
+      // above codes may select songs/cards/filters according to cookies, so refresh it...
+      changesongselect();
+      changecardselect();
    }
    
    </script>
@@ -667,18 +591,24 @@
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <h3>Live信息</h3>
 搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
-筛选：<select id="diff" name="diff" onchange="changesongselect();changediffinfo();changespeeds()" style="display:none">
+筛选：<select id="songdiff" name="songdiff" onchange="changesongselect();changediffinfo();changespeeds()">
 		<option value="">难度</option>
-		<option value="easy">easy</option>
-		<option value="normal">normal</option>
-		<option value="hard">hard</option>
-		<option value="expert">expert</option>
+		<option value="easy">包含easy难度</option>
+		<option value="normal">包含normal难度</option>
+		<option value="hard">包含hard难度</option>
+		<option value="expert">包含expert难度</option>
+		<option value="master">包含master难度</option>
 	</select>
 	<select id="songatt" name="songatt" onchange="changesongselect()">
 		<option value="">属性</option>
 		<option value="smile">smile</option>
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
+	</select>
+	<select id="songunit" name="songunit" onchange="changesongselect()">
+		<option value="">组合</option>
+		<option value="muse">μ's</option>
+		<option value="aqours">Aqours</option>
 	</select>
 <br>
 歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');changespeeds()">
