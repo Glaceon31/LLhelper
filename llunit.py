@@ -41,6 +41,12 @@ def llsaveallmembers(content):
     response.headers['Content-Disposition']='attachment; filename=submembers.sd'
     return response
 
+@app.route("/llload/<callback>", methods=['GET', 'POST'])
+def llload(callback):
+    print request.files, callback
+    for f in request.files['file']:
+        return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
+
 @app.route("/llloadnewsubmemberssis", methods=['GET', 'POST'])
 def llnewsubmembersload():
     print request.files
