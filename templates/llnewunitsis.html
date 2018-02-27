@@ -279,11 +279,6 @@
    	return false;
    }
    
-   function changesongselect(){
-      llsong.filterSongs();
-      changesongcolor("songchoice")
-   }
-   
    function changecardselect(){
       rarity = document.getElementById("rarity").value
       chr = document.getElementById("chr").value
@@ -332,45 +327,31 @@
    	changeavatarselect()
    }
    
-   function changesongcolor(which){
-      var index = llsong.getSelectedSongIndex(which);
-      if (index != "") {
-         var diff = document.getElementById('diffchoice').value;
-         var songattr = llsong.getSongAttr(index);
-
-         var c = attcolor[songattr];
-         document.getElementById(which).style.color = c;
-//         document.getElementById("secondbase").innerHTML = songattr;
-         document.getElementById("secondbase2").innerHTML = songattr;
-         selectlist = ["map", "bonus2"];
-         for (var i in selectlist) {
-            document.getElementById(selectlist[i]).value = songattr;
-         }
-//   		if (document.getElementById("percentage").value != 12)
-//   			document.getElementById("base").value = songattr;
-         if (document.getElementById("percentage2").value != 12)
-            document.getElementById("base2").value = songattr;
-         infolist = ["combo",  "time"]
-         for (i in infolist){
-            document.getElementById(infolist[i]).value = llsong.songs[index][diff][infolist[i]]
-         }
-         if (document.getElementById("time").value == ""){
-            document.getElementById("time").value = 110
-         }
-         totalweight = 0
-         for (i = 0; i < 9; i++)
-            totalweight += parseFloat(llsong.songs[index][diff]['positionweight'][i])
-         c = parseInt(llsong.songs[index][diff].combo)
-         sl = (totalweight-c)*100/0.25/c
-         //document.getElementById('slider').value = sl.toFixed(1)
-         document.getElementById("perfect").value = parseInt(parseInt(document.getElementById("combo").value)*19/20)
-         document.getElementById("starperfect").value = 0//parseInt(parseInt(document.getElementById("star").value)*19/20)
-         for (i = 0; i < 9; i++){
-            document.getElementById("weight"+String(i)).value = parseFloat(llsong.songs[index][diff]["positionweight"][i])
-         }
-      }
+   function changemapcolor(attr) {
+      if (attr === undefined) attr = document.getElementById('map').value;
+      // do not update base, secondbase, bonus, because they are set by center
+      document.getElementById('map').style.color = llsong.attcolor[attr];
+      if (attr == llsong.getSongAttr()) document.getElementById('songchoice').style.color = llsong.attcolor[attr];
+      document.getElementById('secondbase2').innerHTML = attr;
+      if (document.getElementById("percentage2").value != 12) document.getElementById('base2').value = attr;
+      document.getElementById('bonus2').value = attr;
    }
-   
+
+   function applysongdata() {
+      var handleTime = function(t) { document.getElementById("time").value = (t ? t : 110); };
+      var handlePerfect = function(combo) { document.getElementById("perfect").value = parseInt(combo*19/20); };
+      var handleStar = function() { document.getElementById("starperfect").value = 0; };
+      var handleWeight = function(w) { for (var i = 0; i < 9; i++) { document.getElementById("weight"+i).value = parseFloat(w[i]); } };
+      var applyTarget = {
+         'attribute': ['map', changemapcolor],
+         'combo': ['combo', handlePerfect],
+         'time': [handleTime],
+         'star': [handleStar],
+         'positionweight': [handleWeight]
+      };
+      llsong.applyDataOfSongWithDiff(applyTarget);
+   }
+
    function cardidtoindex(n){
    	cardid = parseInt(n)
    	for (i in cards){
@@ -485,8 +466,8 @@
       var cardchoice = document.getElementById("cardchoice").value
       language = 1-language
       llsong.language = language;
+      llsong.onSongFilterChange();
       changecardselect()
-      changesongselect()
       document.getElementById("cardchoice").value = cardchoice
    }
    
@@ -577,17 +558,20 @@
    }
    
    function init(){
-   	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
+      //document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
       skilllevel = 0
-   	mezame = getCookie("mezameunit")
-   	language = getCookie("languageunit")
-   	if (mezame == "")
-   		mezame = 0
-   	if (language == "")
-   		language = 0
-   	
+      mezame = getCookie("mezameunit")
+      language = getCookie("languageunit")
+      if (mezame == "")
+         mezame = 0
+      if (language == "")
+         language = 0
+
       llsong.language = language;
+      llsong.onDiffSelectChange = applysongdata;
       llsong.showAllSongs();
+      llsong.initListeners();
+      llsong.initAttrSelectColor('map');
    	getcardselect("", "", "", "", "", "");
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
@@ -614,40 +598,15 @@
          calslot(i)
    	}
       
-   	document.getElementById("songsearch").value = ""
+         document.getElementById("songsearch").value = ""
          // above codes may select songs/cards/filters according to cookies, so refresh it...
-         changesongselect();
+         llsong.onSongFilterChange();
          changecardselect();
       } catch (err) {}
 
       {{additional_script|safe}}
    }
    
-   function changediffinfo(){
-      savediff = document.getElementById('diffchoice').value
-      index = document.getElementById('songchoice').value
-
-      diffsel = document.getElementById('diffchoice')
-      diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert','master']
-      finddiff = false
-      for (i in diffname){
-         diff = diffname[i]
-         if (llsong.songs[index][diff] != null){
-
-                  newOption = new Option(diff, diff)
-                  diffsel.options.add(newOption)
-                  if (savediff == diff){
-                     document.getElementById('diffchoice').value = savediff
-                     finddiff = true
-                  }
-         }
-      }
-      if (!finddiff)
-         document.getElementById('diffchoice').value = 'expert'
-      return 
-   }
-
    function sortstrength(){
    	min = parseInt(document.getElementById("strength0").innerHTML)
    	minnum = 0
@@ -1584,13 +1543,6 @@ function calc_bestarm(){
       document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
    }
 
-   function changemapcolor(){
- //     document.getElementById('secondbase').innerHTML = document.getElementById('map').value
-      document.getElementById('secondbase2').innerHTML = document.getElementById('map').value
-      document.getElementById('base2').value = document.getElementById('map').value
-      document.getElementById('bonus2').value = document.getElementById('map').value
-   }
-
    function callback(){
    	alert('4')
    }
@@ -1623,25 +1575,25 @@ function calc_bestarm(){
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <!--<form action="/llloadunit"  onsubmit=""  target="if">-->
 <h3>歌曲信息</h3>
-搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
+搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
 筛选：
-	<select id="songatt" name="songatt" onchange="changesongselect()">
+	<select id="songatt" name="songatt">
 		<option value="">属性</option>
 		<option value="smile">smile</option>
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
 	</select>
-	<select id="songunit" name="songunit" onchange="changesongselect()">
+	<select id="songunit" name="songunit">
 		<option value="">组合</option>
 		<option value="muse">μ's</option>
 		<option value="aqours">Aqours</option>
 	</select><br>
-歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesongcolor('songchoice')">
+歌曲：<select id="songchoice" name="songchoice">
 		<option value=""> </option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	<br>
-   难度：<select id="diffchoice" name="diffchoice" onchange="changesongcolor('songchoice')">
+   难度：<select id="diffchoice" name="diffchoice">
       <option value="easy">easy</option>
       <option value="normal">normal</option>
       <option value="hard">hard</option>

@@ -70,6 +70,14 @@
    
    var skilllevel = 0
 
+   var diffspeed = {
+      'easy': 2,
+      'normal': 4,
+      'hard': 6,
+      'expert': 8,
+      'master': 9
+   };
+
    function threetonumber(three){
       var result = three
       if (result == '0') {
@@ -310,8 +318,8 @@
       var cardchoice = document.getElementById("cardchoice").value
       language = 1-language
       llsong.language = language;
+      llsong.onSongFilterChange();
       changecardselect()
-      changesongselect()
       document.getElementById("cardchoice").value = cardchoice
    }
    
@@ -359,67 +367,12 @@
    	changeavatarselect()
    }
 
-   function changesongselect(){
-      llsong.filterSongs();
-      changesonginfo("songchoice")
-   }
-   
-   function changediffinfo(){
-      savediff = document.getElementById('diffchoice').value
-      index = document.getElementById('songchoice').value
-      diffc = document.getElementById('songdiff').value
-      //smnum =document.getElementById("smfilter").value
-      //mfnum =document.getElementById("mffilter").value
-
-      diffsel = document.getElementById('diffchoice')
-      diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
-      finddiff = false
-      //if (index == '')
-      //   return
-      for (i in diffname){
-         diff = diffname[i]
-         if (songs[index][diff] != null){
-            cnhave = ''
-            if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
-
-                  newOption = new Option(diff, diff)
-                  diffsel.options.add(newOption)
-                  if (savediff == diff){
-                     document.getElementById('diffchoice').value = savediff
-                     finddiff = true
-               }
-            }
-         }
+   function applysongdata() {
+      llsong.applyDataOfSongWithDiff({'attrcolor':['songchoice']});
+      var diff = document.getElementById("diffchoice").value;
+      if (diffspeed[diff]) {
+         document.getElementById("speeds").value = diffspeed[diff];
       }
-      if (!finddiff)
-         document.getElementById('diffchoice').value = 'expert'
-      return 
-   }
-   
-   function changespeeds(){
-        switch (document.getElementById("diffchoice").value)
-        {
-            case "easy":
-                document.getElementById("speeds")[1].selected = true;
-                break;
-            case "normal":
-                document.getElementById("speeds")[3].selected = true;
-                break;
-            case "hard":
-                document.getElementById("speeds")[5].selected = true;
-                break;
-            case "expert":
-                document.getElementById("speeds")[7].selected = true;
-                break;
-            case "master":
-                document.getElementById("speeds")[8].selected = true;
-                break;
-        }
-    }
-   
-   function changesonginfo(which){
-      document.getElementById("songchoice").style.color = llsong.attcolor[llsong.getSongAttr()]
    }
    
    function copyTo(n){
@@ -527,7 +480,9 @@
    		language = 0
    	
       llsong.language = language;
+      llsong.onDiffSelectChange = applysongdata;
       llsong.showAllSongs();
+      llsong.initListeners();
    	getcardselect("", "", "", "", "");
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
@@ -559,9 +514,9 @@
             //calslot(i)
 		}
    	}
-   	document.getElementById("songsearch").value = ""
+      document.getElementById("songsearch").value = ""
       // above codes may select songs/cards/filters according to cookies, so refresh it...
-      changesongselect();
+      llsong.onSongFilterChange();
       changecardselect();
    }
    
@@ -590,8 +545,8 @@
 {% block main %}
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <h3>Live信息</h3>
-搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
-筛选：<select id="songdiff" name="songdiff" onchange="changesongselect();changediffinfo();changespeeds()">
+搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
+筛选：<select id="songdiff" name="songdiff">
 		<option value="">难度</option>
 		<option value="easy">包含easy难度</option>
 		<option value="normal">包含normal难度</option>
@@ -599,24 +554,24 @@
 		<option value="expert">包含expert难度</option>
 		<option value="master">包含master难度</option>
 	</select>
-	<select id="songatt" name="songatt" onchange="changesongselect()">
+	<select id="songatt" name="songatt">
 		<option value="">属性</option>
 		<option value="smile">smile</option>
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
 	</select>
-	<select id="songunit" name="songunit" onchange="changesongselect()">
+	<select id="songunit" name="songunit">
 		<option value="">组合</option>
 		<option value="muse">μ's</option>
 		<option value="aqours">Aqours</option>
 	</select>
 <br>
-歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');changespeeds()">
+歌曲：<select id="songchoice" name="songchoice">
 		<option value=""> </option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	<br>
-难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice');changespeeds()">
+难度：<select id="diffchoice" name="diffchoice">
       <option value="easy">easy</option>
       <option value="normal">normal</option>
       <option value="hard">hard</option>
