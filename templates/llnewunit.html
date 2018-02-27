@@ -38,12 +38,8 @@
       alert('载入失败!');
    };
 
-   var attcolor = new Array();
    var mezame = 0
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
    var kizuna = new Array();
    kizuna["N"] = [25, 50]
    kizuna["R"] = [100, 200]
@@ -63,8 +59,6 @@
                   ["松浦果南","黒澤ダイヤ","国木田花丸"],
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
-
-   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
 
    var skilllevel = 0
 
@@ -145,6 +139,7 @@
       }
    }
 
+   /*
    function changeunitskilllevel(n){
       index = document.getElementById('cardid'+String(n)).value
       level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1
@@ -155,46 +150,9 @@
          document.getElementById('score'+String(n)).value = card['skilldetail'][level].score
       }, handleFailedRequest);
    }
+   */
 
-   function cardtoskilltype(c){
-      if (!c)
-         return 0
-      if (!c.skill)
-         return 0
-      if ((c.skilleffect == 4) || (c.skilleffect == 5)){
-         if (c.triggertype == 1)
-            return 5
-         else if (c.triggertype == 3)
-            return 6
-         else if (c.triggertype == 4)
-            return 12
-      }
-      else if (c.skilleffect == 9){
-         if (c.triggertype == 1)
-            return 8
-         else if (c.triggertype == 3)
-            return 7
-         else if (c.triggertype == 4)
-            return 13
-         else if (c.triggertype == 6)
-            return 9
-      }
-      else if (c.skilleffect == 11){
-         if (c.triggertype == 1)
-            return 4
-         else if (c.triggertype == 3)
-            return 1
-         else if (c.triggertype == 4)
-            return 11
-         else if (c.triggertype == 5)
-            return 3
-         else if (c.triggertype == 6)
-            return 2
-         else if (c.triggertype == 12)
-            return 10
-      }
-   }
-
+   /*
    function changecolor(){
       var index = document.getElementById('cardchoice').value;
       if (index != "") {
@@ -203,7 +161,7 @@
             document.getElementById('cardchoice').style.color = c
             document.getElementById("main").value = card.attribute
 
-            //document.getElementById('skill').value = cardtoskilltype(card)
+            //document.getElementById('skill').value = LLUnit.cardtoskilltype(card)
             if (card.skill){
                //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
                document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
@@ -224,11 +182,12 @@
                document.getElementById("mezame").value = "已觉醒"
             }
             document.getElementById("kizuna").value = kizuna[card.rarity][mezame]
-            changeskilltext(card, "")
+            //LLUnit.changeskilltext(card, "")
          }, handleFailedRequest);
       }
-      changeavatarselect(index)
+      LLUnit.changeavatar('imageselect', index)
    }
+   */
 
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
@@ -278,11 +237,12 @@
    	document.getElementById("cardid"+String(n)).value = document.getElementById("cardchoice").value
    	//changeskilltext(n)
    	if (n == 4){
-   		changecenter()
+   		LLUnit.changecenter()
    	}
    	changeavatar(n)
    }
 
+   /*
    function changecenter(){
       var cardid = parseInt(document.getElementById("cardid4").value)
       LLCardData.getDetailedData(cardid).then(function(card) {
@@ -297,6 +257,7 @@
          }
       }, handleFailedRequest);
    }
+   */
 
    function changeavatar(n){
       var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
@@ -308,6 +269,7 @@
          document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',1)
    }
 
+   /*
    function changeavatarselect(cardid){
    	document.getElementById('imageselect').src = '/static/null.png'
    	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
@@ -317,6 +279,7 @@
    	else
    		document.getElementById('imageselect').src = getimagepath(cardid,'avatar',1)
    }
+   */
 
    function changeLanguage(){
       language = 1-language
@@ -326,47 +289,10 @@
       llcard.onCardFilterChange();
    }
 
-   function changeskilltext(card, n){
-   	var postfix = ""
-   	if ((n != "") || (String(n) == "0"))
-   		postfix = String(n)
-      var skilltype = cardtoskilltype(card)
-   	//var skilltype = document.getElementById("skill"+postfix).value
-   	//if (skilltype == 0)
-   	//	document.getElementById("skilltext"+postfix).style.display = "none"
-   	//else
-   	//	document.getElementById("skilltext"+postfix).style.display = ""
-   	//require
-   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个图标"
-   	else if ((skilltype == 2) || (skilltype == 9))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
-   	else if (skilltype == 3)
-   		document.getElementById("requiretext"+postfix).innerHTML = "分"
-   	else if (skilltype == 10)
-   		document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
-   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
-   		document.getElementById("requiretext"+postfix).innerHTML = "秒"
-   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
-   		document.getElementById("requiretext"+postfix).innerHTML = "combo"
-   	//effect
-   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增加"
-   		document.getElementById("unittext"+postfix).innerHTML = "分"
-   	}
-   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
-   		document.getElementById("unittext"+postfix).innerHTML = "秒"
-   	}
-   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "回复"
-   		document.getElementById("unittext"+postfix).innerHTML = "点体力"
-   	}
-   }
-
    function toMezame(){
-   	mezame = 1-mezame
-   	changecolor()
+      mezame = 1-mezame
+      //changecolor()
+      LLCardData.applycarddata();
    }
 
    function clearall(){
@@ -410,7 +336,7 @@
          changeavatar(i);
          calslot(i);
       }
-      changecenter();
+      LLUnit.changecenter();
       precalcu();
    }
 
@@ -444,7 +370,7 @@
       llsong.initAttrSelectColor('map');
 
       llcard.language = language;
-      llcard.onCardSelectChange = changecolor;
+      llcard.onCardSelectChange = LLUnit.applycarddata;
       llcard.showAllCards();
       llcard.initListeners();
 
@@ -512,7 +438,8 @@
 
    function check(){
    	saveToCookie();
-      calculate()
+      //calculate()
+      LLUnit.calculate(docalculate);
       document.getElementById("result").scrollIntoView()
    	return true;
    }
@@ -605,6 +532,7 @@
     return basic+skill
    }
 
+   /*
    function calculate() {
       var unitCardData = {};
       var finishedCount = 0;
@@ -622,6 +550,7 @@
       }
       defer_carddata.then(docalculate, handleFailedRequest);
    }
+   */
 
    function docalculate(cards) {
       var result = {};
@@ -658,7 +587,7 @@
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
          member[i]["main"] = document.getElementById("main" + i.toString()).value;
-         member[i]["skill"] = cardtoskilltype(cards[member[i]["cardid"]])
+         member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
          member[i]["require"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].require
          member[i]["possibility"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].possibility
          member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].score
@@ -1433,7 +1362,7 @@
    <tr>
       <td>技能</td>
       {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitskilllevel({{i}})"></td>
+      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="LLUnit.changeunitskilllevel({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
