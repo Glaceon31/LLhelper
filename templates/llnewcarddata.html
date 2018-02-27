@@ -6,6 +6,7 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.12"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	table {position:relative;margin-left:30px;}
@@ -20,6 +21,8 @@
    var regSand = new RegExp("&amp;", "g")
    var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var cards = eval("("+cardsjson+")")
+   var llcard = new LLCard(cardsjson);
+
    var attcolor = new Array();
    var language = 0
    var skilllevel = 0
@@ -42,25 +45,6 @@
    cskill['smile'] = "公主"
    cskill['pure'] = "天使"
    cskill['cool'] = "皇后"
-   nametojp = new Array()
-   nametojp["高坂穗乃果"] = "高坂穂乃果"
-   nametojp["绚濑绘里"] = "絢瀬絵里"
-   nametojp["南小鸟"] = "南ことり"
-   nametojp["园田海未"] = "園田海未"
-   nametojp["星空凛"] = "星空凛"
-   nametojp["西木野真姬"] = "西木野真姫"
-   nametojp["东条希"] = "東條希"
-   nametojp["小泉花阳"] = "小泉花陽"
-   nametojp["矢泽妮可"] = "矢澤にこ"
-   nametojp["高海千歌"] = "高海千歌"
-   nametojp["樱内梨子"] = "桜内梨子"
-   nametojp["松浦果南"] = "松浦果南"
-   nametojp["黑泽黛雅"] = "黒澤ダイヤ"
-   nametojp["渡边曜"] = "渡辺曜"
-   nametojp["津岛善子"] = "津島善子"
-   nametojp["国木田花丸"] = "国木田花丸"
-   nametojp["小原鞠莉"] = "小原鞠莉"
-   nametojp["黑泽露比"] = "黒澤ルビィ"
    unitgradechr = [[],
                   ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
                   ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
@@ -77,139 +61,69 @@
 
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
-   function isinunitgroup(unitgrade, character){
-      if (unitgrade == 0)
-         return true
-      for (i in unitgradechr[unitgrade]){
-         if (unitgradechr[unitgrade][i] == character)
-            return true
-      }
-      return false
-   }
-
-   function getcardselect(rarity, chr, att, cardtype,special){
-   	sel = document.getElementById("cardchoice");
-      skilltype = document.getElementById("skilltype").value
-      triggertype = document.getElementById("triggertype").value
-      setname = document.getElementById("setname").value
-      lowbound = document.getElementById("lowbound").value
-      unitgrade = document.getElementById("unitgrade").value
-   	sel.options.length = 1;
-   	var index = 1;
-   	//alert(chr)
-   	for (card in cards){
-   		if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
-            if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
-               index += 1
-               continue
-            }
-            if ((lowbound != "")){
-               if (parseInt(lowbound) > getmaxstrength(cards[index],1)) {
-                  index += 1
-                  continue
-               }
-            }
-            if (!isinunitgroup(unitgrade, cards[index].jpname)){
-               index += 1
-               continue
-            }
-   			var newOption
-            if (cards[index].eponym) {eponym = "【"+cards[index].eponym+"】"} else eponym = ""
-            if (cards[index].series && (cards[index].series != '')) {series = "("+cards[index].series+")"} else series = ""
-            if (cards[index].jpeponym) {jpeponym = "【"+cards[index].jpeponym+"】"} else jpeponym = ""
-            if (cards[index].jpseries && (cards[index].jpseries != '')) {jpseries = "("+cards[index].jpseries+")"} else jpseries = ""
-   			if (language == 0)
-   				newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+eponym+cards[index].name+" "+series, index)
-   			else
-   				newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+jpeponym+cards[index].jpname+" "+jpseries, index)
-   			newOption.style.color = attcolor[cards[index].attribute]
-   			sel.options.add(newOption)
-   		}
-   		index += 1
-   	}
-   	//changecolor("cardchoice")
-   }
-   
    function changenaipan(){
       if (!document.getElementById('naipan').checked)
          naipan = 26667
       else
          naipan = 15000
-      changecolor('cardchoice')
+      changecolor()
    }
 
    function lvlup(){
       skilllevel += 1
       if (skilllevel == 8)
          skilllevel = 0
-      changecolor('cardchoice')
+      changecolor()
    }
 
    function lvldown(){
       skilllevel -= 1
       if (skilllevel == -1)
          skilllevel = 7
-      changecolor('cardchoice')
+      changecolor()
    }
 
    function slotup(){
       cslot += 1
       if (cslot > maxslot)
          cslot = minslot
-      changecolor('cardchoice')
+      changecolor()
    }
 
    function slotdown(){
       cslot -= 1
       if (cslot < minslot)
          cslot = maxslot
-      changecolor('cardchoice')
+      changecolor()
    }
 
-   function changecardselect(){
-   	rarity = document.getElementById("rarity").value
-   	chr = document.getElementById("chr").value
-   	att = document.getElementById("att").value
-      cardtype = document.getElementById("cardtype").value
-   	special = document.getElementById("special").value
-   	var cardchoice = document.getElementById("cardchoice").value
-   	getcardselect(rarity, chr, att, cardtype, special)
-   	if (havevalue("cardchoice", cardchoice)){
-   		document.getElementById("cardchoice").value = cardchoice
-   	}
-   	changecolor("cardchoice")
-   }
-
-   function getmaxstrength(card, mezame){
-      result = 0
-
-         tmpc = card
-         if (card.smile != 0){
-            sl = slots[card['rarity']][1]
-         }
-         else{
-            sl = slots[card['rarity']][3]
-         }
-         att = tmpc[tmpc.attribute+'2']+kizuna[tmpc.rarity][1]
-         skill = skillstrength(tmpc, 7, 1, 1)
-         if (tmpc.skilleffect == 11){
-            if ((skill*1.5 > att*0.208*1.15) && (sl >= 4))
-               result = parseInt(att*(1+0.052*(sl-4))*1.15+skill*2.5)
-            else
-               result = parseInt(att*(1+0.052*(sl))*1.15+skill)
-         }
-         else if (tmpc.skilleffect == 9){
-            if ((skill*naipan > att*0.208*1.15) && (sl >= 4))
-                  result = parseInt(att*(1+0.052*(sl-4))*1.15+skill*naipan)
-               else
-                  result = parseInt(att*(1+0.052*(sl))*1.15)
-         }
+   function getmaxstrength(card){
+      var result = 0;
+      var slot = slots[card.rarity][(card.smile != 0 ? 1 : 3)];
+      var att = card[card.attribute+'2']+kizuna[card.rarity][1];
+      var skill = 0;
+      if (card.skilldetail !== undefined) {
+         skill = skillstrength(card, 7, 1, 1);
+      }
+      if (card.skilleffect == 11){
+         if ((skill*1.5 > att*0.208*1.15) && (slot >= 4))
+            result = parseInt(att*(1+0.052*(slot-4))*1.15+skill*2.5)
          else
-            result = parseInt(att*(1+0.052*(sl))*1.15)
+            result = parseInt(att*(1+0.052*(slot))*1.15+skill)
+      }
+      else if (card.skilleffect == 9){
+         if ((skill*naipan > att*0.208*1.15) && (slot >= 4))
+            result = parseInt(att*(1+0.052*(slot-4))*1.15+skill*naipan)
+         else
+            result = parseInt(att*(1+0.052*(slot))*1.15)
+      }
+      else
+         result = parseInt(att*(1+0.052*(slot))*1.15)
       return result
    }
 
-   function changecolor(which){
+   function changecolor(){
+      var which = 'cardchoice';
    	document.getElementById("result").style.display = ''
    	index = document.getElementById(which).value
    	if (index != "") {
@@ -315,14 +229,14 @@
          colors = ['smile','pure','cool']
          for (i in colors){
             atttype = colors[i]
-      		if (cards[index].smile != 0){
+            if (cards[index].smile != 0){
                tmpc = cards[index]
                att = tmpc[atttype]
                if (tmpc.attribute != atttype)
                   att /= 1.1
                else
                   att += kizuna[tmpc.rarity][0]
-               skill = skillstrength(tmpc, skilllevel, 1, 1)
+               skill = (tmpc.skilldetail === undefined ? 0 : skillstrength(tmpc, skilllevel, 1, 1));
                if (tmpc.skilleffect == 11){
                   if ((skill*1.5 > att*0.208*1.15) && (minslot >= 4)){
                      document.getElementById(atttype+'strength1').innerHTML = parseInt(att*(1+0.052*(minslot-4))*1.15+skill*2.5)+'<br>(加分宝石)'
@@ -355,14 +269,14 @@
                //document.getElementById('3pstrength1').style.color = attcolor[cards[index].attribute]
       			//document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(cards[index], 0, skilllevel, 0, 1))
       			//document.getElementById('strengthlevel1').style.color = attcolor[cards[index].attribute]
-      		}
+         }
             tmpc = cards[index]
             att = tmpc[atttype+'2']
             if (tmpc.attribute != atttype)
                   att /= 1.1
                else
                   att += kizuna[tmpc.rarity][1]
-            skill = skillstrength(tmpc, skilllevel, 1, 1)
+            skill = (tmpc.skilldetail === undefined ? 0 : skillstrength(tmpc, skilllevel, 1, 1));
             if (tmpc.skilleffect == 11){
                if ((skill*1.5 > att*0.208*1.15) && (cslot >= 4)){
                   document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot-4))*1.15+skill*2.5)+'<br>(加分宝石)'
@@ -394,7 +308,7 @@
       		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(cards[index], 1, skilllevel, 0, 1))
       		//document.getElementById('strengthlevel2').style.color = attcolor[cards[index].attribute]
          }
-   	}
+      }
    }
    
    function changeskilleffect(c){
@@ -428,10 +342,9 @@
    }
    
    function changeLanguage(){
-   	var cardchoice = document.getElementById("cardchoice").value
-   	language = 1-language
-	changecardselect()
-   	document.getElementById("cardchoice").value = cardchoice
+      language = 1-language
+      llcard.language = language;
+      llcard.onCardFilterChange();
    }
    
    
@@ -477,25 +390,17 @@
    	return skilldesc
    }
    
-   function havevalue(selectId, value){
-   	objSelect = document.getElementById(selectId)
-   	for (var i = 0; i < objSelect.options.length; i++){
-   		if (objSelect.options[i].value == value)
-   			return true;
-   	}
-   	return false;
-   }
-   
    function toMezame(){
    	mezame = 1-mezame
-   	changecolor("cardchoice")
+   	changecolor()
    	changeavatarselect()
    }
    
-   
-   
    function init(){
-   	getcardselect("", "", "", "", "" ,"");
+      llcard.onCardSelectChange = changecolor;
+      llcard.calcCardMaxStrength = getmaxstrength;
+      llcard.initListeners();
+      llcard.onCardFilterChange();
    }
    
    </script>
@@ -518,7 +423,7 @@
 
 {% block main %}
 <h3>卡片库</h3>
-筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
+筛选：<select id="rarity" name="rarity">
 		<option value="">稀有度</option>
       <option value="N">N</option>
 		<option value="R">R</option>
@@ -526,7 +431,7 @@
       <option value="SSR">SSR</option>
 		<option value="UR">UR</option>
 	</select>
-	<select id="chr" name="chr" onchange="changecardselect()">
+	<select id="chr" name="chr">
 		<option value="">角色</option>
 		<option value="高坂穗乃果">高坂穗乃果</option>
 		<option value="绚濑绘里">绚濑绘里</option>
@@ -547,7 +452,7 @@
       <option value="小原鞠莉">小原鞠莉</option>
       <option value="黑泽露比">黑泽露比</option>  
 	</select>
-   <select id="unitgrade" name="unitgrade" onchange="changecardselect()">
+   <select id="unitgrade" name="unitgrade">
       <option value="">年级小队</option>
       <option value="4">μ's</option>
       <option value="5">Aqours</option>
@@ -561,13 +466,13 @@
       <option value="10">AZALEA</option>
       <option value="11">Guilty Kiss</option>
    </select>
-	<select id="att" name="att" onchange="changecardselect()">
+	<select id="att" name="att">
 		<option value="">属性</option>
 		<option value="smile" style="color:red">smile</option>
 		<option value="pure" style="color:green">pure</option>
 		<option value="cool" style="color:blue">cool</option>
 	</select>
-   <select id="triggertype" name="triggertype" onchange="changecardselect()">
+   <select id="triggertype" name="triggertype">
       <option value="">触发类型</option>
       <option value="1">时间</option>
       <option value="3">图标</option>
@@ -576,24 +481,24 @@
       <option value="6">perfect</option>
       <option value="12">星星perfect</option>
    </select>
-   <select id="skilltype" name="skilltype" onchange="changecardselect()">
+   <select id="skilltype" name="skilltype">
       <option value="">技能类型</option>
       <option value="4">小判定</option>
       <option value="5">大判定</option>
       <option value="9">回血</option>
       <option value="11">加分</option>
    </select>
-   <select id="cardtype" name="cardtype" onchange="changecardselect()">
+   <select id="cardtype" name="cardtype">
       <option value="">卡片类型</option>
       <option value="活动卡">活动卡</option>
       <option value="登录奖励">登录奖励</option>
    </select>
-	<select id="special" name="special" onchange="changecardselect()">
+	<select id="special" name="special">
 		<option value="">是否特典卡</option>
 		<option value=0>不是特典</option>
 		<option value=1>是特典</option>
 	</select>
-   <select id="setname" name="setname" onchange="changecardselect()">
+   <select id="setname" name="setname">
       <option value="">套卡名</option>
       <option value="初期">初期</option>
       <option value="職業編">职业篇</option>
@@ -635,15 +540,15 @@
       <option value="アイドル衣装編">偶像篇</option>
       <option value="小悪魔編">小恶魔篇</option>
    </select><br>
-高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" onchange="changecardselect()" style="width:50px"><br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1;skilllevel=0;changecolor('cardchoice')">
+高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" style="width:50px"><br>
+卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1;skilllevel=0">
 		<option value=""> </option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	<br>
-   <input type="checkbox" id="showcard" name="showcard" onchange="changecolor('cardchoice')" checked>显示图片</input>
-   <input type="checkbox" id="smallcard" name="smallcard" onchange="changecolor('cardchoice')" checked>小图</input>
-   <input type="checkbox" id="showncard" name="showncard" onchange="changecardselect()">显示N卡</input>
+   <input type="checkbox" id="showcard" name="showcard" onchange="changecolor()" checked>显示图片</input>
+   <input type="checkbox" id="smallcard" name="smallcard" onchange="changecolor()" checked>小图</input>
+   <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
    <input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>
    <br>
 	
