@@ -82,12 +82,10 @@ def llurcardrank():
 
 @app.route("/lldata/cardbrief", methods=['GET'])
 def lldata_cardbrief():
-    print request.args
     return json.dumps(g_llcarddata.queryByKeys(request.args['keys']))
 
 @app.route("/lldata/card/<index>", methods=['GET'])
 def lldata_carddetail(index):
-    print index
     return json.dumps(g_llcarddata.queryByIndex(index))
 
 ### data api ###

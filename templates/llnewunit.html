@@ -38,12 +38,8 @@
       alert('载入失败!');
    };
 
-   var attcolor = new Array();
    var mezame = 0
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
    var kizuna = new Array();
    kizuna["N"] = [25, 50]
    kizuna["R"] = [100, 200]
@@ -63,8 +59,6 @@
                   ["松浦果南","黒澤ダイヤ","国木田花丸"],
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
-
-   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
 
    var skilllevel = 0
 
@@ -145,91 +139,6 @@
       }
    }
 
-   function changeunitskilllevel(n){
-      index = document.getElementById('cardid'+String(n)).value
-      level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1
-      if ((level < 0) || (level > 7)) return
-      LLCardData.getDetailedData(index).then(function(card) {
-         document.getElementById('require'+String(n)).value = card['skilldetail'][level].require
-         document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility
-         document.getElementById('score'+String(n)).value = card['skilldetail'][level].score
-      }, handleFailedRequest);
-   }
-
-   function cardtoskilltype(c){
-      if (!c)
-         return 0
-      if (!c.skill)
-         return 0
-      if ((c.skilleffect == 4) || (c.skilleffect == 5)){
-         if (c.triggertype == 1)
-            return 5
-         else if (c.triggertype == 3)
-            return 6
-         else if (c.triggertype == 4)
-            return 12
-      }
-      else if (c.skilleffect == 9){
-         if (c.triggertype == 1)
-            return 8
-         else if (c.triggertype == 3)
-            return 7
-         else if (c.triggertype == 4)
-            return 13
-         else if (c.triggertype == 6)
-            return 9
-      }
-      else if (c.skilleffect == 11){
-         if (c.triggertype == 1)
-            return 4
-         else if (c.triggertype == 3)
-            return 1
-         else if (c.triggertype == 4)
-            return 11
-         else if (c.triggertype == 5)
-            return 3
-         else if (c.triggertype == 6)
-            return 2
-         else if (c.triggertype == 12)
-            return 10
-      }
-   }
-
-   function changecolor(){
-      var index = document.getElementById('cardchoice').value;
-      if (index != "") {
-         LLCardData.getDetailedData(index).then(function(card) {
-            var c = llcard.attcolor[card.attribute];
-            document.getElementById('cardchoice').style.color = c
-            document.getElementById("main").value = card.attribute
-
-            //document.getElementById('skill').value = cardtoskilltype(card)
-            if (card.skill){
-               //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-               document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
-               document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
-               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].score
-            }
-            var infolist2 = ["smile", "pure", "cool"]
-            if (mezame == 0){
-               for (var i in infolist2){
-                  document.getElementById(infolist2[i]).value = card[infolist2[i]]
-               }
-               document.getElementById("mezame").value = "未觉醒"
-            }
-            else{
-               for (var i in infolist2){
-                  document.getElementById(infolist2[i]).value = card[infolist2[i]+"2"]
-               }
-               document.getElementById("mezame").value = "已觉醒"
-            }
-            document.getElementById("kizuna").value = kizuna[card.rarity][mezame]
-            changeskilltext(card, "")
-         }, handleFailedRequest);
-      }
-      changeavatarselect(index)
-   }
-
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
       // do not update base, secondbase, bonus, because they are set by center
@@ -265,39 +174,6 @@
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
-   function copyTo(n){
-   	copyList = ["main", "smile", "pure", "cool"]
-   	for (i in copyList){
-         if (copyList[i] == document.getElementById("main").value)
-            document.getElementById(copyList[i]+String(n)).value = parseInt(document.getElementById(copyList[i]).value)+parseInt(document.getElementById("kizuna").value)
-         else
-   		document.getElementById(copyList[i]+String(n)).value = document.getElementById(copyList[i]).value
-   	}
-      document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
-   	document.getElementById("mezame"+String(n)).value = mezame
-   	document.getElementById("cardid"+String(n)).value = document.getElementById("cardchoice").value
-   	//changeskilltext(n)
-   	if (n == 4){
-   		changecenter()
-   	}
-   	changeavatar(n)
-   }
-
-   function changecenter(){
-      var cardid = parseInt(document.getElementById("cardid4").value)
-      LLCardData.getDetailedData(cardid).then(function(card) {
-         document.getElementById("bonus").value = card["attribute"]
-         document.getElementById("percentage").value = card["Cskillpercentage"]
-         document.getElementById("base").value = card["Cskillattribute"]
-         document.getElementById("secondpercentage").value = "0"
-         if (card["rarity"] == "SSR" || card["rarity"] == "UR"){
-            document.getElementById("secondlimit").value = card["Csecondskilllimit"]
-            //document.getElementById("secondbase").innerHTML = card["attribute"]
-            document.getElementById("secondpercentage").value = card["Csecondskillattribute"]
-         }
-      }, handleFailedRequest);
-   }
-
    function changeavatar(n){
       var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
       if ((cardid == 0) || (cardid == "") || (cardid == "0"))
@@ -308,16 +184,6 @@
          document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',1)
    }
 
-   function changeavatarselect(cardid){
-   	document.getElementById('imageselect').src = '/static/null.png'
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('imageselect').src = '/static/null.png'
-   	else if (mezame == 0)
-   		document.getElementById('imageselect').src = getimagepath(cardid,'avatar',0)
-   	else
-   		document.getElementById('imageselect').src = getimagepath(cardid,'avatar',1)
-   }
-
    function changeLanguage(){
       language = 1-language
       llsong.language = language;
@@ -326,47 +192,9 @@
       llcard.onCardFilterChange();
    }
 
-   function changeskilltext(card, n){
-   	var postfix = ""
-   	if ((n != "") || (String(n) == "0"))
-   		postfix = String(n)
-      var skilltype = cardtoskilltype(card)
-   	//var skilltype = document.getElementById("skill"+postfix).value
-   	//if (skilltype == 0)
-   	//	document.getElementById("skilltext"+postfix).style.display = "none"
-   	//else
-   	//	document.getElementById("skilltext"+postfix).style.display = ""
-   	//require
-   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个图标"
-   	else if ((skilltype == 2) || (skilltype == 9))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
-   	else if (skilltype == 3)
-   		document.getElementById("requiretext"+postfix).innerHTML = "分"
-   	else if (skilltype == 10)
-   		document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
-   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
-   		document.getElementById("requiretext"+postfix).innerHTML = "秒"
-   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
-   		document.getElementById("requiretext"+postfix).innerHTML = "combo"
-   	//effect
-   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增加"
-   		document.getElementById("unittext"+postfix).innerHTML = "分"
-   	}
-   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
-   		document.getElementById("unittext"+postfix).innerHTML = "秒"
-   	}
-   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "回复"
-   		document.getElementById("unittext"+postfix).innerHTML = "点体力"
-   	}
-   }
-
    function toMezame(){
-   	mezame = 1-mezame
-   	changecolor()
+      mezame = 1-mezame
+      LLUnit.applycarddata();
    }
 
    function clearall(){
@@ -410,7 +238,7 @@
          changeavatar(i);
          calslot(i);
       }
-      changecenter();
+      LLUnit.changecenter();
       precalcu();
    }
 
@@ -444,7 +272,7 @@
       llsong.initAttrSelectColor('map');
 
       llcard.language = language;
-      llcard.onCardSelectChange = changecolor;
+      llcard.onCardSelectChange = LLUnit.applycarddata;
       llcard.showAllCards();
       llcard.initListeners();
 
@@ -512,7 +340,7 @@
 
    function check(){
    	saveToCookie();
-      calculate()
+      LLUnit.calculate(docalculate);
       document.getElementById("result").scrollIntoView()
    	return true;
    }
@@ -605,24 +433,6 @@
     return basic+skill
    }
 
-   function calculate() {
-      var unitCardData = {};
-      var finishedCount = 0;
-      var defer_carddata = $.Deferred();
-      for (var i = 0; i < 9; i++) {
-         var cardid = document.getElementById('cardid' + i).value;
-         LLCardData.getDetailedData(cardid).then(function(card) {
-            // do not use cardid, as its value can change...
-            unitCardData[parseInt(card.id)] = card;
-            finishedCount++;
-            if (finishedCount == 9) defer_carddata.resolve(unitCardData);
-         }, function() {
-            defer_carddata.reject();
-         });
-      }
-      defer_carddata.then(docalculate, handleFailedRequest);
-   }
-
    function docalculate(cards) {
       var result = {};
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
@@ -658,7 +468,7 @@
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
          member[i]["main"] = document.getElementById("main" + i.toString()).value;
-         member[i]["skill"] = cardtoskilltype(cards[member[i]["cardid"]])
+         member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
          member[i]["require"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].require
          member[i]["possibility"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].possibility
          member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].score
@@ -1375,7 +1185,7 @@
    <tr>
       <td></td>
       {% for i in range(0,9) %}
-      <td><input type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})"></td>
+      <td><input type="button" value="放卡{{i+1}}" onclick="LLUnit.copyTo({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1433,7 +1243,7 @@
    <tr>
       <td>技能</td>
       {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="changeunitskilllevel({{i}})"></td>
+      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:20px" onchange="LLUnit.changeunitskilllevel({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>

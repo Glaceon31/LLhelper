@@ -8,6 +8,7 @@
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	img {height:65px;width:65px}
@@ -19,19 +20,12 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songsjson);
-   var llcard = new LLCard(cardsjson);
+   var llcard = 0;
 
-   var attcolor = new Array();
    var mezame = 0
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
-   attcolor[""] = "purple"
    var kizuna = new Array();
    kizuna["N"] = [25, 50]
    kizuna["R"] = [100, 200]
@@ -51,8 +45,6 @@
                   ["松浦果南","黒澤ダイヤ","国木田花丸"],
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
-
-   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var skilllevel = 0
 	attr = new Array();//↓成员属性值*0
@@ -75,6 +67,14 @@
 	skillcount=new Array();
 	SNum = new Array();//↓每种宝石的数量*z0
    currslot=0;
+
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+   }, defaultHandleFailedRequest);
+
    function threetonumber(three){
       var result = three
       if (result == '0') {
@@ -139,107 +139,12 @@
          } 
 	 calslot(pos)
 	 calslot(i)
-         changeavatar(pos)
-         changeavatar(i)
+         LLUnit.changeavatarn(pos)
+         LLUnit.changeavatarn(i)
          pos = -1 
       }
    }
 
-   function changeunitskilllevel(n){
-      index = document.getElementById('cardid'+String(n)).value
-      level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1
-      if ((level < 0) || (level > 7)) return
-      document.getElementById('require'+String(n)).value = cards[index]['skilldetail'][level].require
-      document.getElementById('possibility'+String(n)).value = cards[index]['skilldetail'][level].possibility
-      document.getElementById('score'+String(n)).value = cards[index]['skilldetail'][level].score
-   }
-
-   function getskilllevel(n){
-
-      score = document.getElementById('score'+String(n)).value
-      index = threetonumber(document.getElementById('cardid'+String(n)).value)
-      if (!cards[index].skill) return 0
-      for (i=0;i<8;i++){
-         if (cards[index]['skilldetail'][i].score == score)
-            return i+1
-      }
-      return 0
-   }
-
-   function cardtoskilltype(c){
-      if (!c)
-         return 0
-      if (!c.skill)
-         return 0
-      if ((c.skilleffect == 4) || (c.skilleffect == 5)){
-         if (c.triggertype == 1)
-            return 5
-         else if (c.triggertype == 3)
-            return 6
-         else if (c.triggertype == 4)
-            return 12
-      }
-      else if (c.skilleffect == 9){
-         if (c.triggertype == 1)
-            return 8
-         else if (c.triggertype == 3)
-            return 7
-         else if (c.triggertype == 4)
-            return 13
-         else if (c.triggertype == 6)
-            return 9
-      }
-      else if (c.skilleffect == 11){
-         if (c.triggertype == 1)
-            return 4
-         else if (c.triggertype == 3)
-            return 1
-         else if (c.triggertype == 4)
-            return 11
-         else if (c.triggertype == 5)
-            return 3
-         else if (c.triggertype == 6)
-            return 2
-         else if (c.triggertype == 12)
-            return 10
-      }
-   }
-
-   function changecolor(){
-      var which = "cardchoice";
-
-   	index = document.getElementById(which).value
-   	if (index != "") {
-   		c = attcolor[cards[index].attribute]
-   		document.getElementById(which).style.color = c
-   		document.getElementById("main").value = cards[index].attribute
-   		
-         //document.getElementById('skill').value = cardtoskilltype(cards[index])
-         if (cards[index].skill){
-            //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-            document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
-            document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
-            document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
-         }
-   		infolist2 = ["smile", "pure", "cool"]
-   		if (mezame == 0){
-   			for (i in infolist2){
-   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]]
-   				document.getElementById("mezame").value = "未觉醒"
-   			}
-   		}
-   		else{
-   			for (i in infolist2){
-   				document.getElementById(infolist2[i]).value = cards[index][infolist2[i]+"2"]
-   				document.getElementById("mezame").value = "已觉醒"
-   			}
-   		}
-   		document.getElementById("kizuna").value = kizuna[cards[index].rarity][mezame]
-   		changeskilltext("")
-   	}
-   	changeavatarselect()
-   }
-   
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
       // do not update base, secondbase, bonus, because they are set by center
@@ -265,15 +170,6 @@
       llsong.applyDataOfSongWithDiff(applyTarget);
    }
 
-   function cardidtoindex(n){
-   	cardid = parseInt(n)
-   	for (i in cards){
-   		if (cards[i].id == n){
-   			return i
-   		}
-   	}
-   }
-   
    function calslot(n){
       result = 0
       result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
@@ -284,81 +180,6 @@
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
-   function copyTo(n){
-   	copyList = ["main", "smile", "pure", "cool"]
-   	for (i in copyList){
-         if (copyList[i] == document.getElementById("main").value)
-            document.getElementById(copyList[i]+String(n)).value = parseInt(document.getElementById(copyList[i]).value)+parseInt(document.getElementById("kizuna").value)
-         else
-   		document.getElementById(copyList[i]+String(n)).value = document.getElementById(copyList[i]).value
-   	}
-      document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
-   	document.getElementById("mezame"+String(n)).value = mezame
-   	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id
-	index=document.getElementById("cardchoice").value;
-	if(cards[index].type=='卡池卡' || cards[index].type=='活动卡'){
-			if(cards[index].rarity=='UR') currslot=4;
-			if(cards[index].rarity=='SSR') currslot=3;
-			if(cards[index].rarity=='SR') currslot=2;
-			if(cards[index].rarity=='R') currslot=1;
-		}
-		else{
-			if(cards[index].rarity=='UR') currslot=2;
-			if(cards[index].rarity=='SR') currslot=1;
-			if(cards[index].rarity=='R') currslot=1;
-		}
-	document.getElementById("maxcost"+String(n)).value=currslot;
-   	//changeskilltext(n)
-   	if (n == 4){
-   		changecenter()
-   	}
-   	changeavatar(n)
-	
-   }
-   function changecenter(){
-   	cardid = parseInt(document.getElementById("cardid4").value)
-   	index = 0
-   	for (i in cards){
-   		if (cards[i].id == cardid){
-   			index = i
-   			break
-   		}
-   	}
-   	document.getElementById("bonus").value = cards[index]["attribute"]
-   	document.getElementById("percentage").value = cards[index]["Cskillpercentage"]
-   	document.getElementById("base").value = cards[index]["Cskillattribute"]
-      document.getElementById("secondpercentage").value = "0"
-      if (cards[index]["rarity"] == "SSR" || cards[index]["rarity"] == "UR"){
-         document.getElementById("secondlimit").value = cards[index]["Csecondskilllimit"]
-         document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
-         document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
-      }
-   }
-   
-   function changeavatar(n){
-   	cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('avatar'+String(n)).src = '/static/null.png'
-   	else if (document.getElementById('mezame'+String(n)).value == 0)
-         document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
-   	else
-   		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
-   }
-   
-   
-   function changeavatarselect(){
-   	document.getElementById('imageselect').src = '/static/null.png'
-   	cardid = 0
-   	if (document.getElementById('cardchoice').value != '')
-   		cardid = cards[document.getElementById('cardchoice').value].id
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('imageselect').src = '/static/null.png'
-   	else if (mezame == 0)
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',0)
-   	else
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',1)
-   }
-   
    function changeLanguage(){
       language = 1-language
       llsong.language = language;
@@ -367,47 +188,10 @@
       llcard.onCardFilterChange();
    }
    
-   function changeskilltext(n){
-   	var postfix = ""
-   	if ((n != "") || (String(n) == "0")) 
-   		postfix = String(n)
-      var skilltype = cardtoskilltype(cards[document.getElementById("cardchoice").value])
-   	//var skilltype = document.getElementById("skill"+postfix).value
-   	//if (skilltype == 0)
-   	//	document.getElementById("skilltext"+postfix).style.display = "none"
-   	//else 
-   	//	document.getElementById("skilltext"+postfix).style.display = ""
-   	//require
-   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个图标"
-   	else if ((skilltype == 2) || (skilltype == 9))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
-   	else if (skilltype == 3)
-   		document.getElementById("requiretext"+postfix).innerHTML = "分"
-   	else if (skilltype == 10)
-   		document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
-   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
-   		document.getElementById("requiretext"+postfix).innerHTML = "秒"
-   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
-   		document.getElementById("requiretext"+postfix).innerHTML = "combo"
-   	//effect
-   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增加"
-   		document.getElementById("unittext"+postfix).innerHTML = "分"
-   	}
-   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
-   		document.getElementById("unittext"+postfix).innerHTML = "秒"
-   	}
-   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "回复"
-   		document.getElementById("unittext"+postfix).innerHTML = "点体力"
-   	}
-   }
-   
    function toMezame(){
    	mezame = 1-mezame
-   	changecolor()
+   	//changecolor()
+      LLUnit.applycarddata();
    }
 
 
@@ -436,9 +220,29 @@
    	window.location.href="/llsaveunit/"+unitjson
    }
    
+   function handleLoadUnit(unit) {
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
+      for (var i = 0; i < 9; i++) {
+         var member = unit[i];
+         for (var j in attlist) {
+            var att = attlist[j];
+            var value = 0;
+            if (member && member[att] !== undefined) value = member[att];
+            document.getElementById(att + i).value = value;
+         }
+         if (member && member.cardid) {
+            document.getElementById("main" + i).value = llcard.cards[member.cardid].attribute;
+         }
+         LLUnit.changeavatarn(i);
+         calslot(i);
+      }
+      LLUnit.changecenter();
+      precalcu();
+   }
+
    var tmponsubmit
    function loadunit(){
-   	document.getElementById("unitform").action = '/llloadnewunitsis'
+   	document.getElementById("unitform").action = '/llload/parent.handleLoadUnit'
    	tmponsubmit = document.getElementById("unitform").onsubmit
    	document.getElementById("unitform").onsubmit = ''
    	document.getElementById("unitform").target = 'if'
@@ -466,7 +270,7 @@
       llsong.initAttrSelectColor('map');
 
       llcard.language = language;
-      llcard.onCardSelectChange = changecolor;
+      llcard.onCardSelectChange = LLUnit.applycarddata;
       llcard.showAllCards();
       llcard.initListeners();
    	var inputs = document.getElementsByTagName("input");
@@ -481,13 +285,13 @@
    			selects[i].value = getCookie(selects[i].name+"unit");
    	}
       document.getElementById("mezame").checked = mezame
-      try {
-   	changeskilltext("")
+      //try {
+   	//changeskilltext("")
       changeskilllevel()
-   	changeavatarselect()
+   	//changeavatarselect()
    	for (i = 0; i < 9; i++){
    		//changeskilltext(i)
-   		changeavatar(i)
+   		LLUnit.changeavatarn(i)
          calslot(i)
    	}
       
@@ -495,7 +299,7 @@
          // above codes may select songs/cards/filters according to cookies, so refresh it...
          llsong.onSongFilterChange();
          llcard.onCardFilterChange();
-      } catch (err) {}
+      //} catch (err) {}
 
       {{additional_script|safe}}
    }
@@ -822,30 +626,33 @@ function calc_bestarm(){
    		}
    	}
    	saveToCookie();
-	/////////////
-	if(document.getElementById('autoarm0').checked){
-		Sum_Max_Mem=0;
-		Current_MP=0;
-		Team_Method=[];
-		for(var i=0;i<9;i++){
-			document.getElementById("gemskill"+String(i)).value="1";
-			Match_c[i]=0;
-		}
-		for(var i=0;i<3;i++) gradecount[i]=0;
-		for(var i=0;i<6;i++) skillcount[i]=0;
+      var handle_calculate = function(cards) {
+         /////////////
+         if(document.getElementById('autoarm0').checked){
+            Sum_Max_Mem=0;
+            Current_MP=0;
+            Team_Method=[];
+            for(var i=0;i<9;i++){
+               document.getElementById("gemskill"+String(i)).value="1";
+               Match_c[i]=0;
+            }
+            for(var i=0;i<3;i++) gradecount[i]=0;
+            for(var i=0;i<6;i++) skillcount[i]=0;
 		
-		Precal=true;
-		calculate();
-		Precal=false;
-		Sis_get_Data();
-		P_Matrix();
-		calc_MPM();
-		calc_bestarm();
-	}
-	/////////////////////
-      calculate();
-      document.getElementById("result").scrollIntoView()
-   	return true;
+            Precal=true;
+            docalculate(cards);
+            Precal=false;
+            Sis_get_Data();
+            P_Matrix();
+            calc_MPM();
+            calc_bestarm();
+         }
+	 /////////////////////
+         docalculate(cards);
+         document.getElementById("result").scrollIntoView()
+      }
+      LLUnit.calculate(handle_calculate);
+      return true;
    }
    
    function cbmulti(cb) {
@@ -936,7 +743,7 @@ function calc_bestarm(){
     return basic+skill
    }
 
-   function calculate() {
+   function docalculate(cards) {
       var result = {};
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
@@ -972,7 +779,7 @@ function calc_bestarm(){
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
          member[i]["main"] = document.getElementById("main" + i.toString()).value;
-         member[i]["skill"] = cardtoskilltype(cards[member[i]["cardid"]])
+         member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
 	 if((member[i]["skill"]==1) || (member[i]["skill"]==2) ||(member[i]["skill"]==3) ||(member[i]["skill"]==4) ||(member[i]["skill"]==10) ||(member[i]["skill"]==11)){
 		if(member[i]["main"]=="smile") skind[i]=0;
 		if(member[i]["main"]=="pure") skind[i]=1;
@@ -1443,7 +1250,7 @@ function calc_bestarm(){
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -1619,7 +1426,7 @@ function calc_bestarm(){
    <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
    <br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value=""> </option>
+		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	（特典卡需选择觉醒）<br>
@@ -1684,7 +1491,7 @@ function calc_bestarm(){
    <tr>
       <td></td>
       {% for i in range(0,9) %}
-      <td><input type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})"></td>
+      <td><input type="button" value="放卡{{i+1}}" onclick="LLUnit.copyTo({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -1748,7 +1555,7 @@ function calc_bestarm(){
    <tr>
       <td>技能</td>
       {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="changeunitskilllevel({{i}})"></td>
+      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="LLUnit.changeunitskilllevel({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
