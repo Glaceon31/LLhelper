@@ -204,7 +204,7 @@ var LLUnit = {
    // kizuna from twintailos.js
    applycarddata: function () {
       var index = document.getElementById('cardchoice').value;
-      var mezame = 0;
+      var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
          document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
          LLCardData.getDetailedData(index).then(function(card) {
@@ -218,7 +218,6 @@ var LLUnit = {
                document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].score
             }
             var infolist2 = ["smile", "pure", "cool"]
-            mezame = (document.getElementById("mezame").checked ? 1 : 0);
             if (!mezame){
                for (var i in infolist2){
                   document.getElementById(infolist2[i]).value = card[infolist2[i]]
@@ -240,7 +239,7 @@ var LLUnit = {
 
    // getimagepath require twintailos.js
    changeavatar: function (elementid, cardid, mezame) {
-      if (!cardid)
+      if ((!cardid) || cardid == "0")
          document.getElementById(elementid).src = '/static/null.png'
       else if (!mezame)
          document.getElementById(elementid).src = getimagepath(cardid,'avatar',0)
@@ -249,7 +248,7 @@ var LLUnit = {
    },
    changeavatarn: function (n) {
       var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-      var mezame = document.getElementById('mezame'+String(n)).value;
+      var mezame = parseInt(document.getElementById('mezame'+String(n)).value);
       LLUnit.changeavatar('avatar' + n, cardid, mezame);
    },
 
@@ -268,11 +267,12 @@ var LLUnit = {
             defer_carddata.reject();
          });
       }
-      defer_carddata.then(docalculate, handleFailedRequest);
+      defer_carddata.then(docalculate, defaultHandleFailedRequest);
    },
 
    changecenter: function () {
       var cardid = parseInt(document.getElementById("cardid4").value)
+      if (cardid == "") return;
       LLCardData.getDetailedData(cardid).then(function(card) {
          document.getElementById("bonus").value = card["attribute"]
          document.getElementById("percentage").value = card["Cskillpercentage"]
@@ -283,9 +283,43 @@ var LLUnit = {
             document.getElementById("secondbase").innerHTML = card["attribute"] // ?
             document.getElementById("secondpercentage").value = card["Csecondskillattribute"]
          }
-      }, handleFailedRequest);
-   }
+      }, defaultHandleFailedRequest);
+   },
 
+   copyTo: function (n) {
+      var index=document.getElementById("cardchoice").value;
+      var copyList = ["main", "smile", "pure", "cool"];
+      for (var i in copyList){
+         if (copyList[i] == document.getElementById("main").value)
+            document.getElementById(copyList[i]+String(n)).value = parseInt(document.getElementById(copyList[i]).value)+parseInt(document.getElementById("kizuna").value)
+         else
+            document.getElementById(copyList[i]+String(n)).value = document.getElementById(copyList[i]).value
+      }
+      document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
+      document.getElementById("mezame"+String(n)).value = (document.getElementById("mezame").checked ? 1 : 0);
+      document.getElementById("cardid"+String(n)).value = index;
+      if (index != "" && document.getElementById("maxcost"+String(n))) {
+         LLCardData.getDetailedData(index).then(function(card) {
+            var currslot=0;
+            if(card.type=='卡池卡' || card.type=='活动卡'){
+               if(card.rarity=='UR') currslot=4;
+               if(card.rarity=='SSR') currslot=3;
+               if(card.rarity=='SR') currslot=2;
+               if(card.rarity=='R') currslot=1;
+            } else {
+               if(card.rarity=='UR') currslot=2;
+               if(card.rarity=='SR') currslot=1;
+               if(card.rarity=='R') currslot=1;
+            }
+            document.getElementById("maxcost"+String(n)).value=currslot;
+         }, defaultHandleFailedRequest);
+      }
+      //changeskilltext(n)
+      if (n == 4){
+         LLUnit.changecenter()
+      }
+      LLUnit.changeavatarn(n)
+   }
 };
 
 

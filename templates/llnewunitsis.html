@@ -20,12 +20,9 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songsjson);
    var llcard = 0;
-   //var llcard = new LLCard(cardsjson);
 
    var mezame = 0
    var language = 0
@@ -183,71 +180,6 @@
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
-   function copyTo(n){
-   	copyList = ["main", "smile", "pure", "cool"]
-   	for (i in copyList){
-         if (copyList[i] == document.getElementById("main").value)
-            document.getElementById(copyList[i]+String(n)).value = parseInt(document.getElementById(copyList[i]).value)+parseInt(document.getElementById("kizuna").value)
-         else
-   		document.getElementById(copyList[i]+String(n)).value = document.getElementById(copyList[i]).value
-   	}
-      document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
-   	document.getElementById("mezame"+String(n)).value = mezame
-   	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id
-	index=document.getElementById("cardchoice").value;
-	if(cards[index].type=='卡池卡' || cards[index].type=='活动卡'){
-			if(cards[index].rarity=='UR') currslot=4;
-			if(cards[index].rarity=='SSR') currslot=3;
-			if(cards[index].rarity=='SR') currslot=2;
-			if(cards[index].rarity=='R') currslot=1;
-		}
-		else{
-			if(cards[index].rarity=='UR') currslot=2;
-			if(cards[index].rarity=='SR') currslot=1;
-			if(cards[index].rarity=='R') currslot=1;
-		}
-	document.getElementById("maxcost"+String(n)).value=currslot;
-   	//changeskilltext(n)
-   	if (n == 4){
-   		LLUnit.changecenter()
-   	}
-   	LLUnit.changeavatarn(n)
-	
-   }
-   /*
-   function changecenter(){
-   	cardid = parseInt(document.getElementById("cardid4").value)
-   	index = 0
-   	for (i in cards){
-   		if (cards[i].id == cardid){
-   			index = i
-   			break
-   		}
-   	}
-   	document.getElementById("bonus").value = cards[index]["attribute"]
-   	document.getElementById("percentage").value = cards[index]["Cskillpercentage"]
-   	document.getElementById("base").value = cards[index]["Cskillattribute"]
-      document.getElementById("secondpercentage").value = "0"
-      if (cards[index]["rarity"] == "SSR" || cards[index]["rarity"] == "UR"){
-         document.getElementById("secondlimit").value = cards[index]["Csecondskilllimit"]
-         document.getElementById("secondbase").innerHTML = cards[index]["attribute"]
-         document.getElementById("secondpercentage").value = cards[index]["Csecondskillattribute"]
-      }
-   }
-   */
-   
-   /*
-   function changeavatar(n){
-   	cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('avatar'+String(n)).src = '/static/null.png'
-   	else if (document.getElementById('mezame'+String(n)).value == 0)
-         document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
-   	else
-   		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
-   }
-   */
-   
    function changeLanguage(){
       language = 1-language
       llsong.language = language;
@@ -1559,7 +1491,7 @@ function calc_bestarm(){
    <tr>
       <td></td>
       {% for i in range(0,9) %}
-      <td><input type="button" value="放卡{{i+1}}" onclick="copyTo({{i}})"></td>
+      <td><input type="button" value="放卡{{i+1}}" onclick="LLUnit.copyTo({{i}})"></td>
       {% endfor %}
    </tr>
    <tr>
