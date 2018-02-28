@@ -5,10 +5,14 @@ from flask import Flask, render_template, redirect, session, request, send_file
 import string
 import random
 import json
+from lldata import LLData
 
 app = Flask(__name__)
 app.secret_key = "hatsune miku"
 app.debug = True
+
+g_llcarddata = LLData()
+g_llcarddata.loadJson('newcardsjson.txt')
 
 ### activity ###
 @app.route("/activitypt")
@@ -75,6 +79,14 @@ def llnewcarddata():
 def llurcardrank():
     cardsjson = open('newcardsjson.txt', 'rb').read()
     return render_template('llurcardrank.html', cardsjson = cardsjson)
+
+@app.route("/lldata/cardbrief", methods=['GET'])
+def lldata_cardbrief():
+    return json.dumps(g_llcarddata.queryByKeys(request.args['keys']))
+
+@app.route("/lldata/card/<index>", methods=['GET'])
+def lldata_carddetail(index):
+    return json.dumps(g_llcarddata.queryByIndex(index))
 
 ### data api ###
 @app.route("/llcardapiwiki")

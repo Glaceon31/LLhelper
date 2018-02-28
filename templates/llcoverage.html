@@ -7,6 +7,7 @@
 {% block additional_header %}
    <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
    <script src="https://app.lovelivewiki.com/Maps/songsjson.js"></script>
@@ -27,31 +28,14 @@
    var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songs, false); // songs defined in songsjson.js
+   var llcard = new LLCard(cards);
+
    var attcolor = new Array();
    var mezame = 0
    var language = 0
    attcolor["smile"] = "red"
    attcolor["pure"] = "green"
    attcolor["cool"] = "blue"
-   nametojp = new Array()
-   nametojp["高坂穗乃果"] = "高坂穂乃果"
-   nametojp["绚濑绘里"] = "絢瀬絵里"
-   nametojp["南小鸟"] = "南ことり"
-   nametojp["园田海未"] = "園田海未"
-   nametojp["星空凛"] = "星空凛"
-   nametojp["西木野真姬"] = "西木野真姫"
-   nametojp["东条希"] = "東條希"
-   nametojp["小泉花阳"] = "小泉花陽"
-   nametojp["矢泽妮可"] = "矢澤にこ"
-   nametojp["高海千歌"] = "高海千歌"
-   nametojp["樱内梨子"] = "桜内梨子"
-   nametojp["松浦果南"] = "松浦果南"
-   nametojp["黑泽黛雅"] = "黒澤ダイヤ"
-   nametojp["渡边曜"] = "渡辺曜"
-   nametojp["津岛善子"] = "津島善子"
-   nametojp["国木田花丸"] = "国木田花丸"
-   nametojp["小原鞠莉"] = "小原鞠莉"
-   nametojp["黑泽露比"] = "黒澤ルビィ"
    unitgradechr = [[],
                   ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
                   ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
@@ -69,6 +53,14 @@
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var skilllevel = 0
+
+   var diffspeed = {
+      'easy': 2,
+      'normal': 4,
+      'hard': 6,
+      'expert': 8,
+      'master': 9
+   };
 
    function threetonumber(three){
       var result = three
@@ -120,16 +112,6 @@
 	    document.getElementById('offset').value = 0;
    }
    
-   function isinunitgroup(unitgrade, character){
-      if (unitgrade == 0)
-         return true
-      for (i in unitgradechr[unitgrade]){
-         if (unitgradechr[unitgrade][i] == character)
-            return true
-      }
-      return false
-   }
-
    function changeskilllevel(){
       document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
       index = document.getElementById('cardchoice').value
@@ -192,67 +174,8 @@
     }
    }
    
-   function getcardselect(rarity, chr, att, cardtype, special){
-      sel = document.getElementById("cardchoice");
-      skilltype = "5"
-      triggertype = document.getElementById("triggertype").value
-      setname = document.getElementById("setname").value
-      unitgrade = document.getElementById("unitgrade").value
-      sel.options.length = 1;
-      var index = 1;
-      //alert(chr)
-      for (card in cards){
-         if (!cards[index]) continue
-         if (((rarity == "") || (rarity == cards[index].rarity)) && ((chr == "") || (cards[index].jpname.indexOf(nametojp[chr]) != -1)) && ((att == "") || (att == cards[index].attribute)) && ((special == "") || ((cards[index].special == 0) && (special == 0)) || ((cards[index].special == 1) && (special == 1))) && ((cardtype == "") || (cards[index].type.indexOf(cardtype) != -1)) && ((skilltype == "") || (skilltype == cards[index].skilleffect)) && ((triggertype == "") || (triggertype == cards[index].triggertype)) && ((setname == "") || (setname == cards[index].jpseries))){
-            //if ((!(document.getElementById('showncard').checked) && (cards[index].rarity == 'N')) || (cards[index].support == 1)){
-             //  index += 1
-            //   continue
-            //}
-            if (!isinunitgroup(unitgrade, cards[index].jpname)){
-               index += 1
-               continue
-            }
-            var newOption
-            if (cards[index].eponym) {eponym = "【"+cards[index].eponym+"】"} else eponym = ""
-            if (cards[index].series && (cards[index].series != '')) {series = "("+cards[index].series+")"} else series = ""
-            if (cards[index].jpeponym) {jpeponym = "【"+cards[index].jpeponym+"】"} else jpeponym = ""
-            if (cards[index].jpseries && (cards[index].jpseries != '')) {jpseries = "("+cards[index].jpseries+")"} else jpseries = ""
-            if (language == 0)
-               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+eponym+cards[index].name+" "+series, index)
-            else
-               newOption = new Option(tothree(cards[index].id)+" "+cards[index].rarity+" "+jpeponym+cards[index].jpname+" "+jpseries, index)
-            newOption.style.color = attcolor[cards[index].attribute]
-            sel.options.add(newOption)
-         }
-         index += 1
-      }
-      //changecolor("cardchoice")
-   }
-   
-   function havevalue(selectId, value){
-   	objSelect = document.getElementById(selectId)
-   	for (var i = 0; i < objSelect.options.length; i++){
-   		if (objSelect.options[i].value == value)
-   			return true;
-   	}
-   	return false;
-   }
-   
-   function changecardselect(){
-      rarity = document.getElementById("rarity").value
-      chr = document.getElementById("chr").value
-      att = document.getElementById("att").value
-      cardtype = document.getElementById("cardtype").value
-      special = 0
-      var cardchoice = document.getElementById("cardchoice").value
-      getcardselect(rarity, chr, att, cardtype, special)
-      if (havevalue("cardchoice", cardchoice)){
-         document.getElementById("cardchoice").value = cardchoice
-      }
-      changecolor("cardchoice")
-   }
-   
-   function changecolor(which){
+   function changecolor(){
+      var which = "cardchoice";
    	index = document.getElementById(which).value
    	if (index != "") {
    		c = attcolor[cards[index].attribute]
@@ -285,14 +208,6 @@
    	changeavatarselect()
    }
     
-   function tothree(string){
-   	str = String(string)
-   	while (str.length < 3){
-   		str = '0'+str
-   	}
-   	return str
-   }
- 
    function changeavatarselect(){
    	document.getElementById('imageselect').src = '/static/null.png'
    	cardid = 0
@@ -307,12 +222,11 @@
    }
    
    function changeLanguage(){
-      var cardchoice = document.getElementById("cardchoice").value
       language = 1-language
       llsong.language = language;
-      changecardselect()
-      changesongselect()
-      document.getElementById("cardchoice").value = cardchoice
+      llsong.onSongFilterChange();
+      llcard.language = language;
+      llcard.onCardFilterChange();
    }
    
    function changeskilltext(n){
@@ -355,71 +269,15 @@
    
    function toMezame(){
    	mezame = 1-mezame
-   	changecolor("cardchoice")
-   	changeavatarselect()
+   	changecolor()
    }
 
-   function changesongselect(){
-      llsong.filterSongs();
-      changesonginfo("songchoice")
-   }
-   
-   function changediffinfo(){
-      savediff = document.getElementById('diffchoice').value
-      index = document.getElementById('songchoice').value
-      diffc = document.getElementById('songdiff').value
-      //smnum =document.getElementById("smfilter").value
-      //mfnum =document.getElementById("mffilter").value
-
-      diffsel = document.getElementById('diffchoice')
-      diffsel.options.length = 0;
-      diffname = ['easy', 'normal', 'hard', 'expert', 'master']
-      finddiff = false
-      //if (index == '')
-      //   return
-      for (i in diffname){
-         diff = diffname[i]
-         if (songs[index][diff] != null){
-            cnhave = ''
-            if (((songs[index][diff]['cnhave'] == cnhave) || (cnhave == '')) && ((diffc == '') || (diff == diffc))) {
-
-                  newOption = new Option(diff, diff)
-                  diffsel.options.add(newOption)
-                  if (savediff == diff){
-                     document.getElementById('diffchoice').value = savediff
-                     finddiff = true
-               }
-            }
-         }
+   function applysongdata() {
+      llsong.applyDataOfSongWithDiff({'attrcolor':['songchoice']});
+      var diff = document.getElementById("diffchoice").value;
+      if (diffspeed[diff]) {
+         document.getElementById("speeds").value = diffspeed[diff];
       }
-      if (!finddiff)
-         document.getElementById('diffchoice').value = 'expert'
-      return 
-   }
-   
-   function changespeeds(){
-        switch (document.getElementById("diffchoice").value)
-        {
-            case "easy":
-                document.getElementById("speeds")[1].selected = true;
-                break;
-            case "normal":
-                document.getElementById("speeds")[3].selected = true;
-                break;
-            case "hard":
-                document.getElementById("speeds")[5].selected = true;
-                break;
-            case "expert":
-                document.getElementById("speeds")[7].selected = true;
-                break;
-            case "master":
-                document.getElementById("speeds")[8].selected = true;
-                break;
-        }
-    }
-   
-   function changesonginfo(which){
-      document.getElementById("songchoice").style.color = llsong.attcolor[llsong.getSongAttr()]
    }
    
    function copyTo(n){
@@ -521,14 +379,20 @@
       skilllevel = 0
    	mezame = getCookie("mezameperfect")
    	language = getCookie("languageperfect")
-   	if (mezame == "")
-   		mezame = 0
+      if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
    	if (language == "")
    		language = 0
    	
       llsong.language = language;
+      llsong.onDiffSelectChange = applysongdata;
       llsong.showAllSongs();
-   	getcardselect("", "", "", "", "");
+      llsong.initListeners();
+
+      llcard.language = language;
+      llcard.onCardSelectChange = changecolor;
+      llcard.showAllCards();
+      llcard.initListeners();
+
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
 	var nospan = document.getElementsByTagName("nospan");
@@ -545,10 +409,7 @@
    		if (getCookie("nospan"+String(i)+"perfect") != "")
    			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
    	}
-   	if (mezame == 1)
-   		document.getElementById("mezame").checked = mezame
-   	//selects["cardchoice"].value = getCookie(selects["cardchoice"].name);
-   	//selects["songchoice"].value = getCookie(selects["songchoice"].name);
+      document.getElementById("mezame").checked = mezame
    	changeskilltext("")
       changeskilllevel()
    	changeavatarselect()
@@ -556,13 +417,12 @@
 	    if (document.getElementById("member"+String(i)).value != 0){
    		    //changeskilltext(i)
    		    changeavatar(i)
-            //calslot(i)
 		}
    	}
-   	document.getElementById("songsearch").value = ""
+      document.getElementById("songsearch").value = ""
       // above codes may select songs/cards/filters according to cookies, so refresh it...
-      changesongselect();
-      changecardselect();
+      llsong.onSongFilterChange();
+      llcard.onCardFilterChange();
    }
    
    </script>
@@ -590,8 +450,8 @@
 {% block main %}
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <h3>Live信息</h3>
-搜索：<input type="text" id="songsearch" name="songsearch" value="" onchange="changesongselect()"></input><br>
-筛选：<select id="songdiff" name="songdiff" onchange="changesongselect();changediffinfo();changespeeds()">
+搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
+筛选：<select id="songdiff" name="songdiff">
 		<option value="">难度</option>
 		<option value="easy">包含easy难度</option>
 		<option value="normal">包含normal难度</option>
@@ -599,24 +459,24 @@
 		<option value="expert">包含expert难度</option>
 		<option value="master">包含master难度</option>
 	</select>
-	<select id="songatt" name="songatt" onchange="changesongselect()">
+	<select id="songatt" name="songatt">
 		<option value="">属性</option>
 		<option value="smile">smile</option>
 		<option value="pure">pure</option>
 		<option value="cool">cool</option>
 	</select>
-	<select id="songunit" name="songunit" onchange="changesongselect()">
+	<select id="songunit" name="songunit">
 		<option value="">组合</option>
 		<option value="muse">μ's</option>
 		<option value="aqours">Aqours</option>
 	</select>
 <br>
-歌曲：<select id="songchoice" name="songchoice" onchange="changediffinfo();changesonginfo('songchoice');changespeeds()">
+歌曲：<select id="songchoice" name="songchoice">
 		<option value=""> </option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	<br>
-难度：<select id="diffchoice" name="diffchoice" onchange="changesonginfo('songchoice');changespeeds()">
+难度：<select id="diffchoice" name="diffchoice">
       <option value="easy">easy</option>
       <option value="normal">normal</option>
       <option value="hard">hard</option>
@@ -645,13 +505,13 @@
 <br>
 
 <h3>判卡库</h3>
-筛选：<select id="rarity" name="rarity" onchange="changecardselect()">
+筛选：<select id="rarity" name="rarity">
       <option value="">稀有度</option>
       <option value="SR">SR</option>
       <option value="SSR">SSR</option>
       <option value="UR">UR</option>
    </select>
-   <select id="chr" name="chr" onchange="changecardselect()">
+   <select id="chr" name="chr">
       <option value="">角色</option>
       <option value="高坂穗乃果">高坂穗乃果</option>
       <option value="绚濑绘里">绚濑绘里</option>
@@ -672,7 +532,7 @@
       <option value="小原鞠莉">小原鞠莉</option>
       <option value="黑泽露比">黑泽露比</option>
    </select>
-   <select id="unitgrade" name="unitgrade" onchange="changecardselect()">
+   <select id="unitgrade" name="unitgrade">
       <option value="">年级小队</option>
       <option value="4">μ's</option>
       <option value="5">Aqours</option>
@@ -686,24 +546,27 @@
       <option value="10">AZALEA</option>
       <option value="11">Guilty Kiss</option>
    </select>
-   <select id="att" name="att" onchange="changecardselect()">
+   <select id="att" name="att">
       <option value="">属性</option>
       <option value="smile" style="color:red">smile</option>
       <option value="pure" style="color:green">pure</option>
       <option value="cool" style="color:blue">cool</option>
    </select>
-   <select id="triggertype" name="triggertype" onchange="changecardselect()">
+   <select id="triggertype" name="triggertype">
       <option value="">触发类型</option>
       <option value="1">时间</option>
       <option value="3">图标</option>
       <option value="4">combo</option>
    </select>
-   <select id="cardtype" name="cardtype" onchange="changecardselect()">
+   <select id="skilltype" name="skilltype">
+      <option value="5">大判定</option>
+   </select>
+   <select id="cardtype" name="cardtype">
       <option value="">卡片类型</option>
       <option value="活动卡">活动卡</option>
       <option value="登录奖励">登录奖励</option>
    </select>
-   <select id="setname" name="setname" onchange="changecardselect()">
+   <select id="setname" name="setname">
       <option value="">套卡名</option>
       <option value="初期">初期</option>
       <option value="職業編">职业篇</option>
@@ -741,7 +604,7 @@
       <option value="妖精の国編">妖精之国篇</option>
    </select>
    <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel();changecolor('cardchoice')">
+卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
 		<option value=""> </option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
