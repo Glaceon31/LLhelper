@@ -12,10 +12,10 @@
         document.getElementById(att + i).value = member[i][att];
       }
       document.getElementById('main' + i).value = llcard.cards[member[i]['cardid']].attribute;
-      changeavatar(i);
+      LLUnit.changeavatarn(i);
       calslot(i);
     }
-    changecenter();
+    LLUnit.changecenter();
     /*
     $.ajax({
       url: '/llloadnewunit-api',

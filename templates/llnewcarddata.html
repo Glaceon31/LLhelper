@@ -7,6 +7,7 @@
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.12"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	table {position:relative;margin-left:30px;}
@@ -124,15 +125,17 @@
 
    function changecolor(){
       var which = 'cardchoice';
-   	document.getElementById("result").style.display = ''
-   	index = document.getElementById(which).value
-   	if (index != "") {
+      var index = document.getElementById(which).value
+      if (index == "") {
+         document.getElementById("result").style.display = 'none'
+         return;
+      }
+      document.getElementById("result").style.display = ''
    		c = attcolor[cards[index].attribute]
    		document.getElementById(which).style.color = c
    		infolist = []
    		infolist2 = ["smile", "pure", "cool"]
-   		//avatar
-   		cardid = cards[index].id
+      //avatar
          document.getElementById('avatar1').src = ''
          document.getElementById('avatar2').src = ''
          document.getElementById('card').src = ''
@@ -150,8 +153,8 @@
             if (document.getElementById('showcard').checked){
                document.getElementById('card').style.display = ''
                document.getElementById('navi').style.display = ''
-               document.getElementById('card').src = getimagepath(cards[index]['id'],'card',0)
-               document.getElementById('navi').src = getimagepath(cards[index]['id'],'navi',0)
+               document.getElementById('card').src = getimagepath(index,'card',0)
+               document.getElementById('navi').src = getimagepath(index,'navi',0)
                if (document.getElementById('smallcard').checked){
                document.getElementById('card').style.height = '422px'
                document.getElementById('card').style.width = '300px'
@@ -163,7 +166,7 @@
                document.getElementById('card').style.width = ''
             }
             }
-   			document.getElementById('avatar1').src = getimagepath(cards[index]['id'],'avatar',0)
+   			document.getElementById('avatar1').src = getimagepath(index,'avatar',0)
    			document.getElementById('notmezame').style.display = ''
    			document.getElementById('skill2').style.display = 'none'
    			document.getElementById('centerskill2').style.display = 'none'
@@ -175,8 +178,8 @@
          if (document.getElementById('showcard').checked){
             document.getElementById('card2').style.display = ''
             document.getElementById('navi2').style.display = ''
-            document.getElementById('card2').src = getimagepath(cards[index]['id'],'card',1)
-            document.getElementById('navi2').src = getimagepath(cards[index]['id'],'navi',1)
+            document.getElementById('card2').src = getimagepath(index,'card',1)
+            document.getElementById('navi2').src = getimagepath(index,'navi',1)
             if (document.getElementById('smallcard').checked){
                document.getElementById('card2').style.height = '422px'
                document.getElementById('card2').style.width = '300px'
@@ -189,7 +192,7 @@
             }
                
          }
-   		document.getElementById('avatar2').src = getimagepath(cards[index]['id'],'avatar',1)
+   		document.getElementById('avatar2').src = getimagepath(index,'avatar',1)
    		document.getElementById('hp1').innerHTML = cards[index].hp
    		document.getElementById('hp2').innerHTML = parseInt(cards[index].hp)+1
    		document.getElementById('kizuna1').innerHTML = kizuna[cards[index].rarity][0]
@@ -209,12 +212,12 @@
          document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
    		if (cnname == jpname){
    			if (!cnname)
-   				document.getElementById('skill').innerHTML = changeskilltext(cards[index])
+   				document.getElementById('skill').innerHTML = LLUnit.getCardSkillText(cards[index], skilllevel)
    			else
-   				document.getElementById('skill').innerHTML = '【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+changeskilltext(cards[index])
+   				document.getElementById('skill').innerHTML = '【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(cards[index], skilllevel)
    		}
    		else
-   			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+changeskilltext(cards[index])
+   			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(cards[index], skilllevel)
    		document.getElementById('skill2').innerHTML = document.getElementById('skill').innerHTML
          document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
    		document.getElementById('centerskill').innerHTML = cskilltext(cards[index])
@@ -308,7 +311,6 @@
       		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(cards[index], 1, skilllevel, 0, 1))
       		//document.getElementById('strengthlevel2').style.color = attcolor[cards[index].attribute]
          }
-      }
    }
    
    function changeskilleffect(c){
@@ -378,16 +380,6 @@
       }
       
    	return c.attribute+cpostfix+'<br>'+ceffect
-   }
-   
-   function changeskilltext(c){
-      if (!c.skill)
-         return '无'
-      t1 = ['', '秒','','个图标','combo','','个perfect','','','','','','个星星perfect']
-      t2 = ['', '','','','稍微增强判定','增强判定','','','','回复','','增加']
-      t3 = ['', '','','','秒','秒','','','','点体力','','分']
-   	skilldesc = "每"+c.skilldetail[skilllevel].require+t1[c.triggertype]+"有"+c.skilldetail[skilllevel].possibility+"%概率"+t2[c.skilleffect]+c.skilldetail[skilllevel].score+t3[c.skilleffect]
-   	return skilldesc
    }
    
    function toMezame(){
@@ -480,6 +472,7 @@
       <option value="5">分数</option>
       <option value="6">perfect</option>
       <option value="12">星星perfect</option>
+      <option value="100">其它成员技能发动</option>
    </select>
    <select id="skilltype" name="skilltype">
       <option value="">技能类型</option>
@@ -487,6 +480,11 @@
       <option value="5">大判定</option>
       <option value="9">回血</option>
       <option value="11">加分</option>
+      <option value="2000">提升技能发动率</option>
+      <option value="2100">repeat</option>
+      <option value="2201">perfect分数提升</option>
+      <option value="2400">属性同步</option>
+      <option value="2600">属性提升</option>
    </select>
    <select id="cardtype" name="cardtype">
       <option value="">卡片类型</option>
