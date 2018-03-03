@@ -44,7 +44,9 @@ def namechange(name):
 
 if __name__ == "__main__":
     jpdbconn = sqlite3.connect(jpdbpath)
-    cndbconn = sqlite3.connect(cndbpath)
+    has_cndb = os.path.exists(cndbpath)
+    if has_cndb:
+        cndbconn = sqlite3.connect(cndbpath)
     jptc = jpdbconn.execute('SELECT * FROM unit_m;')
     jptmp = jptc.fetchone()
     #cntc = cndbconn.execute('SELECT * FROM unit_m;')
@@ -58,10 +60,14 @@ if __name__ == "__main__":
             card['series'] = ''
             card['jpseries'] = ''
             card['type'] = u'卡池卡'
+        skillid = jptmp[13]
         card = cards[str(jptmp[1])]
         card['id'] = jptmp[1]
-        cncard = cndbconn.execute('SELECT * FROM unit_m WHERE unit_number = '+str(jptmp[1])+';')
-        cntmp = cncard.fetchone()
+        if has_cndb:
+            cncard = cndbconn.execute('SELECT * FROM unit_m WHERE unit_number = '+str(jptmp[1])+';')
+            cntmp = cncard.fetchone()
+        else:
+            cntmp = 0
         card['rarity'] = rarity[jptmp[11]]
         card['attribute'] = attribute[jptmp[12]]
         card['eponym'] = jptmp[3]
@@ -75,7 +81,7 @@ if __name__ == "__main__":
         card['smile'] =  0
         card['pure'] = 0
         card['cool'] = 0
-        card['skill'] = jptmp[13]
+        card['skill'] = skillid
         card['Cskill'] = jptmp[15]
         card['support'] = 0
         card['special'] = 0
@@ -99,8 +105,8 @@ if __name__ == "__main__":
             card['cool'] = card['cool2']-tmp[6]
         #skill
         
-        if jptmp[13] and card['support'] == 0:
-            jpskilltmp = jpdbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(jptmp[13])+';')
+        if skillid and card['support'] == 0:
+            jpskilltmp = jpdbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(skillid)+';')
             jpskill = jpskilltmp.fetchone()
             card['jpskillname'] = jpskill[1]
             #cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(jptmp[20])+';')
@@ -108,21 +114,34 @@ if __name__ == "__main__":
             card['skillname'] = jpskill[1]
             card['skilleffect'] = jpskill[4]
             card['triggertype'] = jpskill[6]
-            skilldetail = jpdbconn.execute('SELECT * FROM unit_skill_level_m WHERE unit_skill_id = '+str(jptmp[13])+';')
-            card['skilldetail'] = []
             if cntmp:
-                cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(jptmp[13])+';')
+                cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(skillid)+';')
                 cnskill = cnskilltmp.fetchone()
                 card['skillname'] = cnskill[1]
+            # skill detailed effect for each level
+            skilldetail = jpdbconn.execute('SELECT effect_value,discharge_time,trigger_value,activation_rate FROM unit_skill_level_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY skill_level ASC;')
+            card['skilldetail'] = []
             for i in range(0, 8):
                 tmp = skilldetail.fetchone()
                 card['skilldetail'].append({})
-                if card['skilleffect'] == 4 or card['skilleffect'] == 5:
-                    card['skilldetail'][i]['score'] = tmp[5]
-                else:
-                    card['skilldetail'][i]['score'] = tmp[4]
-                card['skilldetail'][i]['require'] = tmp[6]
-                card['skilldetail'][i]['possibility'] = tmp[7]
+                card['skilldetail'][i]['score'] = tmp[0]
+                card['skilldetail'][i]['time'] = tmp[1]
+                card['skilldetail'][i]['require'] = tmp[2]
+                card['skilldetail'][i]['possibility'] = tmp[3]
+            triggertarget = jpdbconn.execute('SELECT trigger_target FROM unit_skill_trigger_target_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY trigger_target DESC;')
+            tmp = triggertarget.fetchone()
+            if tmp:
+                card['triggertarget'] = []
+                while tmp:
+                    card['triggertarget'].append(tmp[0])
+                    tmp = triggertarget.fetchone()
+            effecttarget = jpdbconn.execute('SELECT effect_target FROM unit_skill_effect_target_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY effect_target DESC;')
+            tmp = effecttarget.fetchone()
+            if tmp:
+                card['effecttarget'] = []
+                while tmp:
+                    card['effecttarget'].append(tmp[0])
+                    tmp = effecttarget.fetchone()
         #leader skill
         if jptmp[15]:
             Cskilldetail = jpdbconn.execute('SELECT * FROM unit_leader_skill_m WHERE unit_leader_skill_id = '+str(jptmp[15])+';')
@@ -170,7 +189,7 @@ if __name__ == "__main__":
 
 
     output = open('newcardsjson.txt', 'wb')
-    output.write(json.dumps(cards))
+    output.write(json.dumps(cards, sort_keys=True))
     output.close()
 
 

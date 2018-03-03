@@ -211,19 +211,20 @@ function itembylp(lp){
     teamstrength = 80000
     totalscore = 1000000
     noteweight = 1
-    score = c['skilldetail'][level].score
-    possibility = c['skilldetail'][level].possibility
-    require = c['skilldetail'][level].require
+    var score = c['skilldetail'][level].score
+    var duration = c['skilldetail'][level].time
+    var possibility = c['skilldetail'][level].possibility
+    var require = c['skilldetail'][level].require
     if (tail == 0){
       //accurracy
       if ((c.skilleffect == 4) || (c.skilleffect == 5)){
         if (c.triggertype == 1){
-          skill = score*possibility/100/require
+          skill = duration*possibility/100/require
           skill = skill/(skill+1.0)
           skill = parseInt(1000*skill)/10
         }
         else if ((c.triggertype == 3) || (c.triggertype == 4)){
-          skill = parseInt(1000*500*score*possibility/100/require/120)/10
+          skill = parseInt(1000*500*duration*possibility/100/require/120)/10
         }
       }
       //recover
@@ -263,16 +264,16 @@ function itembylp(lp){
       //accurracy
       if ((c.skilleffect == 4) || (c.skilleffect == 5)){
         if (c.triggertype == 1){
-          skill = score*possibility/100/require
+          skill = duration*possibility/100/require
           skill = skill/(skill+1.0)
-          waste = (1-skill)*skill*require/2+skill*score/2
+          waste = (1-skill)*skill*require/2+skill*duration/2
           skill = (skill*120-waste)/120
           skill = parseInt(1000*skill)/10
         }
         else if ((c.triggertype == 3) || (c.triggertype == 4)){
-          skill = 500*score*possibility/100/require/120
-          waste = skill*score/2
-          skill = 500*score*possibility/100/require/120*(500-require/2)/500
+          skill = 500*duration*possibility/100/require/120
+          waste = skill*duration/2
+          skill = 500*duration*possibility/100/require/120*(500-require/2)/500
           skill = (skill*120-waste)/120
           skill = parseInt(1000*skill)/10
         }
@@ -314,18 +315,19 @@ function itembylp(lp){
    }
 
    function skillstrengthdetail(c, level, combo, longrate, perfectrate, time, starperfect){
-    score = c['skilldetail'][level].score
-    possibility = c['skilldetail'][level].possibility
-    require = c['skilldetail'][level].require
+    var score = c['skilldetail'][level].score
+    var duration = c['skilldetail'][level].time
+    var possibility = c['skilldetail'][level].possibility
+    var require = c['skilldetail'][level].require
       //accurracy
       if ((c.skilleffect == 4) || (c.skilleffect == 5)){
         if (c.triggertype == 1){
-          skill = score*possibility/100/require
+          skill = duration*possibility/100/require
           skill = skill/(skill+1.0)
           skill = parseInt(1000*skill)/10
         }
         else if ((c.triggertype == 3) || (c.triggertype == 4)){
-          skill = parseInt(1000*combo*score*possibility/100/require/time)/10
+          skill = parseInt(1000*combo*duration*possibility/100/require/time)/10
         }
       }
       //recover

@@ -123,6 +123,59 @@
       return result
    }
 
+   function update_visible(elementid, show, show_callback) {
+      if (show) {
+         document.getElementById(elementid).style.display = '';
+         show_callback(elementid);
+      } else {
+         document.getElementById(elementid).style.display = 'none';
+      }
+   }
+
+   function update_avatar(elementid, cardid, mezame, show) {
+      update_visible(elementid, show, function() {
+         LLUnit.changeavatar(elementid, cardid, mezame);
+      });
+   }
+
+   function update_card_image(elementid, cardid, mezame, show, small) {
+      update_visible(elementid, show, function() {
+         var element = document.getElementById(elementid);
+         var path = ((cardid && cardid != "0") ? getimagepath(cardid, 'card', mezame) : '');
+         if (path != element.src) {
+            // avoid showing last image before new image is loaded
+            element.src = '';
+         }
+         element.src = path;
+         if (small) {
+            element.style.height = '422px';
+            element.style.width = '300px';
+         } else {
+            element.style.height = '';
+            element.style.width = '';
+         }
+      });
+   }
+
+   function update_navi_image(elementid, cardid, mezame, show, small) {
+      update_visible(elementid, show, function() {
+         var element = document.getElementById(elementid);
+         var path = ((cardid && cardid != "0") ? getimagepath(cardid, 'navi', mezame) : '');
+         if (path != element.src) {
+            // avoid showing last image before new image is loaded
+            element.src = '';
+         }
+         element.src = path;
+         if (small) {
+            element.style.height = '300px';
+            element.style.width = '300px';
+         } else {
+            element.style.height = '';
+            element.style.width = '';
+         }
+      });
+   }
+
    function changecolor(){
       var which = 'cardchoice';
       var index = document.getElementById(which).value
@@ -136,63 +189,26 @@
    		infolist = []
    		infolist2 = ["smile", "pure", "cool"]
       //avatar
-         document.getElementById('avatar1').src = ''
-         document.getElementById('avatar2').src = ''
-         document.getElementById('card').src = ''
-         document.getElementById('card2').src = ''
-         document.getElementById('navi').src = ''
-         document.getElementById('navi2').src = ''
-   		document.getElementById('notmezame').style.display = 'none'
-         document.getElementById('card').style.display = 'none'
-         document.getElementById('navi').style.display = 'none'
+      var show_not_mezame = ((cards[index].special == 0) && (cards[index].support == 0));
+      var show_card = document.getElementById('showcard').checked;
+      var show_small = document.getElementById('smallcard').checked;
+      document.getElementById('notmezame').style.display = (show_not_mezame ? '' : 'none');
+      update_avatar('avatar1', index, 0, show_not_mezame);
+      update_avatar('avatar2', index, 1, true);
+      update_card_image('card', index, 0, show_not_mezame && show_card, show_small);
+      update_card_image('card2', index, 1, show_card, show_small);
+      update_navi_image('navi', index, 0, show_not_mezame && show_card, show_small);
+      update_navi_image('navi2', index, 1, show_card, show_small);
    		document.getElementById('skill2').style.display = ''
          document.getElementById('skillslot2').style.display = ''
    		document.getElementById('centerskill2').style.display = ''
    		document.getElementById('skilleffect2').style.display = ''
-   		if ((cards[index].special == 0) && (cards[index].support == 0)){
-            if (document.getElementById('showcard').checked){
-               document.getElementById('card').style.display = ''
-               document.getElementById('navi').style.display = ''
-               document.getElementById('card').src = getimagepath(index,'card',0)
-               document.getElementById('navi').src = getimagepath(index,'navi',0)
-               if (document.getElementById('smallcard').checked){
-               document.getElementById('card').style.height = '422px'
-               document.getElementById('card').style.width = '300px'
-               document.getElementById('navi').style.height = '300px'
-               document.getElementById('navi').style.width = '300px'
-               }
-               else{
-               document.getElementById('card').style.height = ''
-               document.getElementById('card').style.width = ''
-            }
-            }
-   			document.getElementById('avatar1').src = getimagepath(index,'avatar',0)
-   			document.getElementById('notmezame').style.display = ''
+         if ((cards[index].special == 0) && (cards[index].support == 0)){
    			document.getElementById('skill2').style.display = 'none'
    			document.getElementById('centerskill2').style.display = 'none'
             document.getElementById('skillslot2').style.display = 'none'
    			document.getElementById('skilleffect2').style.display = 'none'
    		}
-         document.getElementById('card2').style.display = 'none'
-         document.getElementById('navi2').style.display = 'none'
-         if (document.getElementById('showcard').checked){
-            document.getElementById('card2').style.display = ''
-            document.getElementById('navi2').style.display = ''
-            document.getElementById('card2').src = getimagepath(index,'card',1)
-            document.getElementById('navi2').src = getimagepath(index,'navi',1)
-            if (document.getElementById('smallcard').checked){
-               document.getElementById('card2').style.height = '422px'
-               document.getElementById('card2').style.width = '300px'
-               document.getElementById('navi2').style.height = '300px'
-               document.getElementById('navi2').style.width = '300px'
-            }
-            else{
-               document.getElementById('card2').style.height = ''
-               document.getElementById('card2').style.width = ''
-            }
-               
-         }
-   		document.getElementById('avatar2').src = getimagepath(index,'avatar',1)
    		document.getElementById('hp1').innerHTML = cards[index].hp
    		document.getElementById('hp2').innerHTML = parseInt(cards[index].hp)+1
    		document.getElementById('kizuna1').innerHTML = kizuna[cards[index].rarity][0]
@@ -552,7 +568,7 @@
 	
 <div id="result" style="display:none">
 <h3>基本信息</h3>
-<table border='1' style="text-align:center">
+<table border='1' style="text-align:center;width:100%">
 <tr>
 	<td></td>
 	<td>HP</td>
@@ -560,7 +576,7 @@
 	<td>pure</td>
 	<td>cool</td>
 	<td>最大绊</td>
-	<td>技能</td>
+	<td style="width:30%">技能</td>
 	<td id='skilleffecttitle'></td>
 	<td id='skilleffecttitle8' style="display:none"></td>
    <td>技能槽数</td>
