@@ -62,6 +62,7 @@
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var defer_onload = $.Deferred();
+   LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
       init();
@@ -106,7 +107,8 @@
 
    function getmaxstrength(card){
       var result = 0;
-      var slot = slots[card.rarity][(card.smile != 0 ? 1 : 3)];
+      var slot = card.maxslot;
+      if (card.maxslot === undefined) slot = 0;
       var att = card[card.attribute+'2']+kizuna[card.rarity][1];
       var skill = 0;
       if (card.skilldetail !== undefined) {
@@ -218,14 +220,8 @@
          document.getElementById('kizuna2').innerHTML = kizuna[curCard.rarity][1]
          var cnname = curCard.skillname
          var jpname = curCard.jpskillname
-         if (curCard.smile != 0){
-            minslot = slots[curCard.rarity][0]
-            maxslot = slots[curCard.rarity][1]
-         }
-         else{
-            minslot = slots[curCard.rarity][2]
-            maxslot = slots[curCard.rarity][3]
-         }
+         minslot = curCard.minslot;
+         maxslot = curCard.maxslot;
          if (cslot == -1)
             cslot = minslot
          document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
@@ -335,10 +331,9 @@
    }
    
    function changeskilleffect(c){
-   	skilltype = c.skill
    	document.getElementById('skilleffecttitle').style.display = ''
    	document.getElementById('skilleffect').style.display = ''
-   	if ((!skilltype) || (c.support == 1)){
+   	if ((!c.skill) || (c.support == 1) || !LLUnit.isStrengthSupported(c)){
    		document.getElementById('skilleffecttitle').style.display = 'none'
    		document.getElementById('skilleffect').style.display = 'none'
          document.getElementById('skilleffect2').style.display = 'none'

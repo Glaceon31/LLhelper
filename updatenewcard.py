@@ -70,10 +70,13 @@ if __name__ == "__main__":
             cntmp = 0
         card['rarity'] = rarity[jptmp[11]]
         card['attribute'] = attribute[jptmp[12]]
-        card['eponym'] = jptmp[3]
         card['jpeponym'] = jptmp[3]
-        card['name'] = jptmp[4]
         card['jpname'] = jptmp[4]
+        # do not overwrite old data
+        if not card.has_key('eponym'):
+            card['eponym'] = jptmp[3]
+        if not card.has_key('name'):
+            card['name'] = jptmp[4]
         card['hp'] =  jptmp[24]-1
         card['smile2'] = jptmp[25]
         card['pure2'] = jptmp[26]
@@ -85,6 +88,8 @@ if __name__ == "__main__":
         card['Cskill'] = jptmp[15]
         card['support'] = 0
         card['special'] = 0
+        card['minslot'] = jptmp[20]
+        card['maxslot'] = jptmp[21]
 
         #card['type'] = ''
         card['Cskillattribute'] = card['attribute']
@@ -111,7 +116,9 @@ if __name__ == "__main__":
             card['jpskillname'] = jpskill[1]
             #cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(jptmp[20])+';')
             #cnskill = cnskilltmp.fetchone()
-            card['skillname'] = jpskill[1]
+            # do not overwrite old data
+            if not card.has_key('skillname'):
+                card['skillname'] = jpskill[1]
             card['skilleffect'] = jpskill[4]
             card['triggertype'] = jpskill[6]
             if cntmp:
