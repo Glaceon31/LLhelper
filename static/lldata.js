@@ -239,12 +239,19 @@ var LLUnit = {
 
    // getimagepath require twintailos.js
    changeavatar: function (elementid, cardid, mezame) {
+      var path;
       if ((!cardid) || cardid == "0")
-         document.getElementById(elementid).src = '/static/null.png'
+         path = '/static/null.png'
       else if (!mezame)
-         document.getElementById(elementid).src = getimagepath(cardid,'avatar',0)
+         path = getimagepath(cardid,'avatar',0)
       else
-         document.getElementById(elementid).src = getimagepath(cardid,'avatar',1)
+         path = getimagepath(cardid,'avatar',1)
+      var element = document.getElementById(elementid);
+      if (element.src != path) {
+         // avoid showing last image before new image is loaded
+         element.src = '';
+      }
+      element.src = path;
    },
    changeavatarn: function (n) {
       var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
@@ -340,7 +347,7 @@ var LLUnit = {
       else if (effect_type == 2100) effect_text = '发动上一个发动的非repeat的特技';
       else if (effect_type == 2201) effect_text = discharge_time + '秒内的PERFECT提升' + effect_value + '分';
       else if (effect_type == 2400) effect_text = discharge_time + '秒内自身的属性P变为与' + effect_target + '的随机一位成员的属性P一致';
-      else if (effect_type == 2600) effect_text = discharge_time + '秒内的成员的属性P提高到' + effect_value + '倍';
+      else if (effect_type == 2600) effect_text = discharge_time + '秒内' + effect_target + '的成员的属性P提高到' + effect_value + '倍';
       return trigger_text + rate_text + effect_text;
    },
 
@@ -356,7 +363,7 @@ var LLUnit = {
       if (!targets) return '(数据缺失)';
       var ret = '';
       for (var i = 0; i < targets.length; i++) {
-         ret += LLUnit.targetIdToName(parseInt(targets[i]));
+         ret += LLUnit.targetIdToName[parseInt(targets[i])];
       }
       return ret;
    },
@@ -379,7 +386,7 @@ var LLUnit = {
       var trigger_target = LLUnit.getTriggerTarget(card.triggertarget);
       var effect_target = LLUnit.getTriggerTarget(card.effecttarget);
       var text = LLUnit.getSkillText(effect_type, card.triggertype, effect_value, discharge_time, level_detail.require, level_detail.possibility, trigger_target, effect_target);
-      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能不支持强度计算)';
+      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能暂不支持强度计算)';
       return text;
    },
 
