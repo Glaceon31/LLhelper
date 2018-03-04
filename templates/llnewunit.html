@@ -34,9 +34,6 @@
    var llsong = new LLSong(songsjson);
    var llcard = 0;
    //var llcard = new LLCard(cardsjson);
-   var handleFailedRequest = function() {
-      alert('载入失败!');
-   };
 
    var mezame = 0
    var language = 0
@@ -67,7 +64,7 @@
       llcard = new LLCard(cardData);
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
-   }, handleFailedRequest);
+   }, LLUnit.defaultHandleFailedRequest);
 
    function threetonumber(three){
       var result = three
@@ -341,7 +338,6 @@
    function check(){
    	saveToCookie();
       LLUnit.calculate(docalculate);
-      document.getElementById("result").scrollIntoView()
    	return true;
    }
 
@@ -940,6 +936,7 @@
       })[0].mics
       var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
       document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + micRawValue.toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')'
+      document.getElementById("result").scrollIntoView()
    }
 
    function callback(){

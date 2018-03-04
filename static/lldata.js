@@ -386,7 +386,7 @@ var LLUnit = {
       var trigger_target = LLUnit.getTriggerTarget(card.triggertarget);
       var effect_target = LLUnit.getTriggerTarget(card.effecttarget);
       var text = LLUnit.getSkillText(effect_type, card.triggertype, effect_value, discharge_time, level_detail.require, level_detail.possibility, trigger_target, effect_target);
-      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能不支持强度计算)';
+      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能暂不支持强度计算)';
       return text;
    },
 

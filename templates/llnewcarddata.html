@@ -20,9 +20,8 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
-   var llcard = new LLCard(cardsjson);
+   //var llcard = new LLCard(cardsjson);
+   var llcard = 0;
 
    var attcolor = new Array();
    var language = 0
@@ -62,6 +61,13 @@
 
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+   }, LLUnit.defaultHandleFailedRequest);
+
    function changenaipan(){
       if (!document.getElementById('naipan').checked)
          naipan = 26667
@@ -126,7 +132,7 @@
    function update_visible(elementid, show, show_callback) {
       if (show) {
          document.getElementById(elementid).style.display = '';
-         show_callback(elementid);
+         if (show_callback) show_callback(elementid);
       } else {
          document.getElementById(elementid).style.display = 'none';
       }
@@ -177,79 +183,76 @@
    }
 
    function changecolor(){
-      var which = 'cardchoice';
-      var index = document.getElementById(which).value
+      var index = document.getElementById('cardchoice').value
       if (index == "") {
          document.getElementById("result").style.display = 'none'
          return;
       }
-      document.getElementById("result").style.display = ''
-   		c = attcolor[cards[index].attribute]
-   		document.getElementById(which).style.color = c
-   		infolist = []
-   		infolist2 = ["smile", "pure", "cool"]
-      //avatar
-      var show_not_mezame = ((cards[index].special == 0) && (cards[index].support == 0));
-      var show_card = document.getElementById('showcard').checked;
-      var show_small = document.getElementById('smallcard').checked;
-      document.getElementById('notmezame').style.display = (show_not_mezame ? '' : 'none');
-      update_avatar('avatar1', index, 0, show_not_mezame);
-      update_avatar('avatar2', index, 1, true);
-      update_card_image('card', index, 0, show_not_mezame && show_card, show_small);
-      update_card_image('card2', index, 1, show_card, show_small);
-      update_navi_image('navi', index, 0, show_not_mezame && show_card, show_small);
-      update_navi_image('navi2', index, 1, show_card, show_small);
-   		document.getElementById('skill2').style.display = ''
-         document.getElementById('skillslot2').style.display = ''
-   		document.getElementById('centerskill2').style.display = ''
-   		document.getElementById('skilleffect2').style.display = ''
-         if ((cards[index].special == 0) && (cards[index].support == 0)){
-   			document.getElementById('skill2').style.display = 'none'
-   			document.getElementById('centerskill2').style.display = 'none'
-            document.getElementById('skillslot2').style.display = 'none'
-   			document.getElementById('skilleffect2').style.display = 'none'
-   		}
-   		document.getElementById('hp1').innerHTML = cards[index].hp
-   		document.getElementById('hp2').innerHTML = parseInt(cards[index].hp)+1
-   		document.getElementById('kizuna1').innerHTML = kizuna[cards[index].rarity][0]
-   		document.getElementById('kizuna2').innerHTML = kizuna[cards[index].rarity][1]
-   		cnname = cards[index].skillname
-   		jpname = cards[index].jpskillname
-         if (cards[index].smile != 0){
-            minslot = slots[cards[index]['rarity']][0]
-            maxslot = slots[cards[index]['rarity']][1]
+      var need_scroll = (document.getElementById("result").style.display == 'none');
+      var c = attcolor[llcard.cards[index].attribute]
+      document.getElementById('cardchoice').style.color = c
+      document.getElementById('result_loading').style.display = '';
+      LLCardData.getDetailedData(index).then(function(curCard) {
+         document.getElementById('result_loading').style.display = 'none';
+         document.getElementById("result").style.display = ''
+         var infolist2 = ["smile", "pure", "cool"]
+
+         //avatar, image
+         var show_not_mezame = ((curCard.special == 0) && (curCard.support == 0));
+         var show_card = document.getElementById('showcard').checked;
+         var show_small = document.getElementById('smallcard').checked;
+         document.getElementById('notmezame').style.display = (show_not_mezame ? '' : 'none');
+         update_avatar('avatar1', index, 0, show_not_mezame);
+         update_avatar('avatar2', index, 1, true);
+         update_card_image('card', index, 0, show_not_mezame && show_card, show_small);
+         update_card_image('card2', index, 1, show_card, show_small);
+         update_navi_image('navi', index, 0, show_not_mezame && show_card, show_small);
+         update_navi_image('navi2', index, 1, show_card, show_small);
+         update_visible('skill2', !show_not_mezame);
+         update_visible('skillslot2', !show_not_mezame);
+         update_visible('centerskill2', !show_not_mezame);
+         update_visible('skilleffect2', !show_not_mezame);
+         document.getElementById('hp1').innerHTML = curCard.hp
+         document.getElementById('hp2').innerHTML = parseInt(curCard.hp)+1
+         document.getElementById('kizuna1').innerHTML = kizuna[curCard.rarity][0]
+         document.getElementById('kizuna2').innerHTML = kizuna[curCard.rarity][1]
+         var cnname = curCard.skillname
+         var jpname = curCard.jpskillname
+         if (curCard.smile != 0){
+            minslot = slots[curCard.rarity][0]
+            maxslot = slots[curCard.rarity][1]
          }
          else{
-            minslot = slots[cards[index]['rarity']][2]
-            maxslot = slots[cards[index]['rarity']][3]
+            minslot = slots[curCard.rarity][2]
+            maxslot = slots[curCard.rarity][3]
          }
          if (cslot == -1)
             cslot = minslot
          document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
    		if (cnname == jpname){
    			if (!cnname)
-   				document.getElementById('skill').innerHTML = LLUnit.getCardSkillText(cards[index], skilllevel)
+   				document.getElementById('skill').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel)
    			else
-   				document.getElementById('skill').innerHTML = '【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(cards[index], skilllevel)
+   				document.getElementById('skill').innerHTML = '【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(curCard, skilllevel)
    		}
    		else
-   			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(cards[index], skilllevel)
+   			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(curCard, skilllevel)
    		document.getElementById('skill2').innerHTML = document.getElementById('skill').innerHTML
          document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
-   		document.getElementById('centerskill').innerHTML = cskilltext(cards[index])
-   		document.getElementById('centerskill2').innerHTML = cskilltext(cards[index])
-   		changeskilleffect(cards[index])
+   		document.getElementById('centerskill').innerHTML = cskilltext(curCard)
+   		document.getElementById('centerskill2').innerHTML = cskilltext(curCard)
+   		changeskilleffect(curCard)
    		for (i in infolist2){
-   			document.getElementById(infolist2[i]+'1').innerHTML = cards[index][infolist2[i]]
+   			document.getElementById(infolist2[i]+'1').innerHTML = curCard[infolist2[i]]
    			document.getElementById(infolist2[i]+'1').style.color = attcolor[infolist2[i]]
-   			document.getElementById(infolist2[i]+'2').innerHTML = cards[index][infolist2[i]+'2']
+   			document.getElementById(infolist2[i]+'2').innerHTML = curCard[infolist2[i]+'2']
    			document.getElementById(infolist2[i]+'2').style.color = attcolor[infolist2[i]]
    		}
          colors = ['smile','pure','cool']
          for (i in colors){
             atttype = colors[i]
-            if (cards[index].smile != 0){
-               tmpc = cards[index]
+            if (curCard.smile != 0){
+               tmpc = curCard
                att = tmpc[atttype]
                if (tmpc.attribute != atttype)
                   att /= 1.1
@@ -285,11 +288,11 @@
                   //document.getElementById('3pstrength1').innerHTML = ''
                }
       			document.getElementById(atttype+'strength1').style.color = attcolor[atttype]
-               //document.getElementById('3pstrength1').style.color = attcolor[cards[index].attribute]
-      			//document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(cards[index], 0, skilllevel, 0, 1))
-      			//document.getElementById('strengthlevel1').style.color = attcolor[cards[index].attribute]
+               //document.getElementById('3pstrength1').style.color = attcolor[curCard.attribute]
+      			//document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(curCard, 0, skilllevel, 0, 1))
+      			//document.getElementById('strengthlevel1').style.color = attcolor[curCard.attribute]
          }
-            tmpc = cards[index]
+            tmpc = curCard
             att = tmpc[atttype+'2']
             if (tmpc.attribute != atttype)
                   att /= 1.1
@@ -321,12 +324,14 @@
                document.getElementById(atttype+'strength2').innerHTML = parseInt(att*(1+0.052*(cslot))*1.15)
                //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot))*1.15)
             }
-      		//document.getElementById('strength2').innerHTML = strength(cards[index], 1, skilllevel, 0, 1)
+      		//document.getElementById('strength2').innerHTML = strength(curCard, 1, skilllevel, 0, 1)
       		document.getElementById(atttype+'strength2').style.color = attcolor[atttype]
-            //document.getElementById('3pstrength2').style.color = attcolor[cards[index].attribute]
-      		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(cards[index], 1, skilllevel, 0, 1))
-      		//document.getElementById('strengthlevel2').style.color = attcolor[cards[index].attribute]
+            //document.getElementById('3pstrength2').style.color = attcolor[curCard.attribute]
+      		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(curCard, 1, skilllevel, 0, 1))
+      		//document.getElementById('strengthlevel2').style.color = attcolor[curCard.attribute]
          }
+         if (need_scroll) document.getElementById('cardchoice').scrollIntoView(true);
+      }, LLUnit.defaultHandleFailedRequest);
    }
    
    function changeskilleffect(c){
@@ -415,7 +420,7 @@
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -556,7 +561,7 @@
    </select><br>
 高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" style="width:50px"><br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1;skilllevel=0">
-		<option value=""> </option>
+		<option value="">载入中...</option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	<br>
@@ -566,6 +571,9 @@
    <input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>
    <br>
 	
+<div id="result_loading" style="display:none">
+<h3>载入中...</h3>
+</div>
 <div id="result" style="display:none">
 <h3>基本信息</h3>
 <table border='1' style="text-align:center;width:100%">
