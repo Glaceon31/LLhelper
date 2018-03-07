@@ -1369,6 +1369,8 @@ function calc_bestarm(){
          if ((sk == 1) || (sk == 2) || (sk == 3) || (sk == 4) || (sk == 11)|| (sk == 10)){
             member[i]["score"] *= (1+1.5*parseInt(member[i]['gemskill']))
             member[i]["score"] = Math.ceil(member[i]["score"])
+         } else if ((sk == 5) || (sk == 6) || (sk == 12)) {
+            member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].time
          }
          for (var j = 0; j < atts.length; j++) {
             result['baseatt'][atts[j]] += member[i][atts[j]];

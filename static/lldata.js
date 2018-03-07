@@ -239,12 +239,19 @@ var LLUnit = {
 
    // getimagepath require twintailos.js
    changeavatar: function (elementid, cardid, mezame) {
+      var path;
       if ((!cardid) || cardid == "0")
-         document.getElementById(elementid).src = '/static/null.png'
+         path = '/static/null.png'
       else if (!mezame)
-         document.getElementById(elementid).src = getimagepath(cardid,'avatar',0)
+         path = getimagepath(cardid,'avatar',0)
       else
-         document.getElementById(elementid).src = getimagepath(cardid,'avatar',1)
+         path = getimagepath(cardid,'avatar',1)
+      var element = document.getElementById(elementid);
+      if (element.src != path) {
+         // avoid showing last image before new image is loaded
+         element.src = '';
+      }
+      element.src = path;
    },
    changeavatarn: function (n) {
       var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
@@ -319,6 +326,73 @@ var LLUnit = {
          LLUnit.changecenter()
       }
       LLUnit.changeavatarn(n)
+   },
+
+   getSkillText: function (effect_type, trigger_type, effect_value, discharge_time, trigger_value, activation_rate, trigger_target, effect_target) {
+      var trigger_text = '(未知条件)';
+      if (trigger_type == 1) trigger_text = '每' + trigger_value + '秒';
+      else if (trigger_type == 3) trigger_text = '每' + trigger_value + '个图标';
+      else if (trigger_type == 4) trigger_text = '每达成' + trigger_value + '次连击';
+      else if (trigger_type == 5) trigger_text = '每达成' + trigger_value + '分';
+      else if (trigger_type == 6) trigger_text = '每获得' + trigger_value + '个PERFECT';
+      else if (trigger_type == 12) trigger_text = '每获得' + trigger_value + '个星星图标的PERFECT';
+      else if (trigger_type == 100) trigger_text = '自身以外的' + trigger_target + '的成员的特技全部发动时';
+      var rate_text = '就有' + activation_rate + '%的概率';
+      var effect_text = '(未知效果)';
+      if (effect_type == 4) effect_text = '稍微增强判定' + discharge_time + '秒'
+      else if (effect_type == 5) effect_text = '增强判定' + discharge_time + '秒';
+      else if (effect_type == 9) effect_text = '恢复' + effect_value + '点体力';
+      else if (effect_type == 11) effect_text = '提升分数' + effect_value + '点';
+      else if (effect_type == 2000) effect_text = discharge_time + '秒内其它的特技发动概率提高到' + effect_value + '倍';
+      else if (effect_type == 2100) effect_text = '发动上一个发动的非repeat的特技';
+      else if (effect_type == 2201) effect_text = discharge_time + '秒内的PERFECT提升' + effect_value + '分';
+      else if (effect_type == 2400) effect_text = discharge_time + '秒内自身的属性P变为与' + effect_target + '的随机一位成员的属性P一致';
+      else if (effect_type == 2600) effect_text = discharge_time + '秒内' + effect_target + '的成员的属性P提高到' + effect_value + '倍';
+      return trigger_text + rate_text + effect_text;
+   },
+
+   targetIdToName: {
+      1: '1年级',
+      2: '2年级',
+      3: '3年级',
+      4: "μ's",
+      5: 'Aqours',
+   },
+
+   getTriggerTarget: function (targets) {
+      if (!targets) return '(数据缺失)';
+      var ret = '';
+      for (var i = 0; i < targets.length; i++) {
+         ret += LLUnit.targetIdToName[parseInt(targets[i])];
+      }
+      return ret;
+   },
+
+   getCardSkillText: function (card, level) {
+      if (!card.skill) return '无';
+      if (card.skilleffect == 0) return '获得特技经验';
+      var level_detail = card.skilldetail[level];
+      var effect_type = card.skilleffect;
+      var effect_value = level_detail.score;
+      var discharge_time = level_detail.time;
+      if (discharge_time === undefined) {
+         if (effect_type == 4 || effect_type == 5) {
+            discharge_time = effect_value;
+            effect_value = 0;
+         } else {
+            discharge_time = '(数据缺失)';
+         }
+      }
+      var trigger_target = LLUnit.getTriggerTarget(card.triggertarget);
+      var effect_target = LLUnit.getTriggerTarget(card.effecttarget);
+      var text = LLUnit.getSkillText(effect_type, card.triggertype, effect_value, discharge_time, level_detail.require, level_detail.possibility, trigger_target, effect_target);
+      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能暂不支持强度计算)';
+      return text;
+   },
+
+   isStrengthSupported: function (card) {
+      if (card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
+      return true;
    }
 };
 
