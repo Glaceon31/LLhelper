@@ -307,18 +307,7 @@ var LLUnit = {
       document.getElementById("cardid"+String(n)).value = index;
       if (index != "" && document.getElementById("maxcost"+String(n))) {
          LLCardData.getDetailedData(index).then(function(card) {
-            var currslot=0;
-            if(card.type=='卡池卡' || card.type=='活动卡'){
-               if(card.rarity=='UR') currslot=4;
-               if(card.rarity=='SSR') currslot=3;
-               if(card.rarity=='SR') currslot=2;
-               if(card.rarity=='R') currslot=1;
-            } else {
-               if(card.rarity=='UR') currslot=2;
-               if(card.rarity=='SR') currslot=1;
-               if(card.rarity=='R') currslot=1;
-            }
-            document.getElementById("maxcost"+String(n)).value=currslot;
+            document.getElementById("maxcost"+String(n)).value = card.minslot;
          }, defaultHandleFailedRequest);
       }
       //changeskilltext(n)

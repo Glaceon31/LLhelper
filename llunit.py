@@ -47,6 +47,12 @@ def llload(callback):
     for f in request.files['file']:
         return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
 
+@app.route("/llloadex/<formid>/<callback>", methods=['POST'])
+def llloadex(formid, callback):
+    print request.files, formid, callback
+    for f in request.files[formid]:
+        return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
+
 @app.route("/llloadnewsubmemberssis", methods=['GET', 'POST'])
 def llnewsubmembersload():
     print request.files
