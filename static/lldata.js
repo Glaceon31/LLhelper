@@ -1,10 +1,67 @@
 /*
  * This script contains following things:
+ *   LoadingUtil
  *   LLData
  *   LLUnit
  *
  * By ben1222
  */
+
+/*
+ * LoadingUtil: utility to show loading box when defers are not resolved
+ * and hide the loading box when defers are resolved or rejected
+ */
+var LoadingUtil = {
+   start: function (defers, loadingboxid, progressboxid, merger) {
+      var loadingbox = document.getElementById(loadingboxid);
+      var progressbox = document.getElementById(progressboxid);
+      var defer = $.Deferred();
+      var result = {};
+      var finishedCount = 0;
+      var totalCount = defers.length;
+
+      var updateProgress = function(){};
+      if (progressbox) {
+         updateProgress = function() {
+            progressbox.innerHTML = finishedCount + ' / ' + totalCount;
+         }
+      }
+      var updateLoadingBox = function(){};
+      if (loadingbox) {
+         updateLoadingBox = function(s) {
+            loadingbox.style.display = s;
+         }
+      }
+
+      updateProgress();
+      updateLoadingBox('');
+      for (var i = 0; i < totalCount; i++) {
+         (function (index) {
+            defers[index].then(function(data) {
+               if (merger) {
+                  merger(data, index, result);
+               } else {
+                  result[index] = data;
+               }
+               finishedCount++;
+               updateProgress();
+               if (finishedCount == totalCount) {
+                  updateLoadingBox('none');
+                  defer.resolve(result);
+               }
+            }, function() {
+               updateLoadingBox('none');
+               defer.reject();
+            });
+         })(i);
+      }
+      return defer;
+   },
+
+   cardDetailMerger: function (card, index, result) {
+      result[parseInt(card.id)] = card;
+   }
+};
 
 /*
  * LLData: class to load json data from backend

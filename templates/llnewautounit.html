@@ -835,7 +835,7 @@ function calc_bestarm(){
       var mainp=document.getElementById("map").value
       var mapsong=llsong.getSelectedSong();
       for (var memi in submember) {
-         groupbonus = samegroup(mapsong,cards[submember[memi]["cardid"]])
+         groupbonus = samegroup(mapsong,llcard.cards[submember[memi]["cardid"]].jpname)
          colorbonus = (mainp == submember[memi]['main'])
          submember[memi]["addition"]=1.21
          if (!groupbonus && !colorbonus)
@@ -961,7 +961,7 @@ function calc_bestarm(){
 		unitmembers[j]=k
 	}
 	var gettotalstrength;
-	function autounit(){
+	function autounit(cards){
 		var curtotalstrength=0;
 		orderposbyweight()
 		getallmembers()
@@ -971,8 +971,8 @@ function calc_bestarm(){
 		ordermembyaddition()
 		arrangepos()
 		refreshsubmemberlist();/////////////////////===del
-		autoarmforeveryunit()
-		calculate()
+		autoarmforeveryunit(cards)
+		calculate(cards)
 		curtotalstrength=gettotalstrength;
 		///////=====
 		for(var i=0;i<subunitmembers.length;i++){
@@ -983,8 +983,8 @@ function calc_bestarm(){
 				swapmember(i,j)
 				ordermembyaddition()
 				arrangepos()
-				autoarmforeveryunit()
-				calculate()
+				autoarmforeveryunit(cards)
+				calculate(cards)
 				if(maxaddition<(gettotalstrength-curtotalstrength)){
 					maxaddition=(gettotalstrength-curtotalstrength)
 					replaceselect=j
@@ -999,7 +999,7 @@ function calc_bestarm(){
 		///==========
 		ordermembyaddition()
 		arrangepos()
-		autoarmforeveryunit()
+		autoarmforeveryunit(cards)
 	}
    ////////*******************
    function check(){
@@ -1014,9 +1014,23 @@ function calc_bestarm(){
    	}
    	saveToCookie();
 	/////////////
-	if(document.getElementById('autoarm0').checked){
+      var requests = [];
+      for (var i = 0; i < 9; i++) {
+         var cardid = document.getElementById('cardid' + i).value;
+         if (cardid) {
+            requests.push(LLCardData.getDetailedData(cardid));
+         }
+      }
+      for (var i = 0; i < submember.length; i++) {
+         var cardid = submember[i].cardid;
+         if (cardid) {
+            requests.push(LLCardData.getDetailedData(cardid));
+         }
+      }
+      LoadingUtil.start(requests, 'loadingbox', 'loadingbox_progress', LoadingUtil.cardDetailMerger).then(function (cards) {
+         if(document.getElementById('autoarm0').checked){
 		Precal=true;
-		autounit()
+		autounit(cards)
 		Precal=false;
 		submember.splice(submember.length-1,1)
 		var premax=submember.length
@@ -1032,13 +1046,14 @@ function calc_bestarm(){
 		for(var i=0;i<9;i++)
 			LLUnit.changeavatarn(i)
 		refreshsubmemberlist()
-	}
-	/////////////////////
-      calculate();
-      document.getElementById("result").scrollIntoView()
-   	return true;
+         }
+         /////////////////////
+         calculate(cards);
+         document.getElementById("result").scrollIntoView()
+      }, LLUnit.defaultHandleFailedRequest);
+      return true;
    }
-   function autoarmforeveryunit(){
+   function autoarmforeveryunit(cards){
 		Sum_Max_Mem=0;//-
 		Current_MP=0;//-
 		Team_Method=[];//-
@@ -1048,7 +1063,7 @@ function calc_bestarm(){
 		}
 		for(var i=0;i<3;i++) gradecount[i]=0;
 		for(var i=0;i<6;i++) skillcount[i]=0;
-		calculate();
+		calculate(cards);
 		Sis_get_Data();
 		P_Matrix();
 		calc_MPM();
@@ -1105,14 +1120,14 @@ function calc_bestarm(){
       return newdist;
    }
 
-   function samegroup(song, card){
+   function samegroup(song, jpname){
       if (song['muse'] == 1)
          for (i in unitgradechr[4])
-            if (card['jpname'] == unitgradechr[4][i])
+            if (jpname == unitgradechr[4][i])
                return true
       if (song['aqours'] == 1)
          for (i in unitgradechr[5])
-            if (card['jpname'] == unitgradechr[5][i])
+            if (jpname == unitgradechr[5][i])
                return true
       return false
    }
@@ -1142,7 +1157,7 @@ function calc_bestarm(){
     return basic+skill
    }
 
-   function calculate() {
+   function calculate(cards) {
       var result = {};
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
@@ -1353,7 +1368,7 @@ function calc_bestarm(){
       totalrawst = 0
       for (var i = 0; i < 9; i++) {
          totalrawst += rawattst[i]
-         groupbonus = samegroup(llsong.getSelectedSong(),cards[member[i]["cardid"]])
+         groupbonus = samegroup(llsong.getSelectedSong(),llcard.cards[member[i]["cardid"]].jpname)
          colorbonus = (mapcenter['map'] == member[i]['main'])
          if (!groupbonus && !colorbonus)
             attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.21/1.21)
@@ -1398,7 +1413,7 @@ function calc_bestarm(){
       */
       result['minscore'] = 0;
       for (var i = 0; i < 9; i++) {
-         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(llsong.getSelectedSong(),cards[member[i]["cardid"]]) ? 1.1 : 1));
+         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(llsong.getSelectedSong(),llcard.cards[member[i]["cardid"]].jpname) ? 1.1 : 1));
       }
       result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
       
@@ -2188,7 +2203,7 @@ function calc_bestarm(){
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
-
+{% include 'components/loadingbox.html' %}
 
 <div id="result" style="display:none">
 <table border="1">
