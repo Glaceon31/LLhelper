@@ -12,11 +12,21 @@
  * and hide the loading box when defers are resolved or rejected
  */
 var LoadingUtil = {
-   start: function (defers, loadingboxid, progressboxid, merger) {
-      var loadingbox = document.getElementById(loadingboxid);
-      var progressbox = document.getElementById(progressboxid);
+   start: function (defers, merger) {
+      return LoadingUtil.startImpl(defers, 'loadingbox', 'loadingbox_progress', merger);
+   },
+   startSingle: function (defer) {
+      return LoadingUtil.startImpl([defer], 'loadingbox', 'loadingbox_progress').then(function (data) { return data[0]; });
+   },
+   startImpl: function (defers, loadingboxid, progressboxid, merger) {
       var defer = $.Deferred();
       var result = {};
+      if ((!defers) || defers.length == 0) {
+         defer.resolve(result);
+         return defer;
+      }
+      var loadingbox = document.getElementById(loadingboxid);
+      var progressbox = document.getElementById(progressboxid);
       var finishedCount = 0;
       var totalCount = defers.length;
 
@@ -174,7 +184,7 @@ var LLUnit = {
       var index = document.getElementById('cardid'+String(n)).value;
       var level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1;
       if ((level < 0) || (level > 7)) return;
-      LLCardData.getDetailedData(index).then(function(card) {
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
          document.getElementById('require'+String(n)).value = card['skilldetail'][level].require;
          document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
          document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
@@ -264,7 +274,7 @@ var LLUnit = {
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
          document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
-         LLCardData.getDetailedData(index).then(function(card) {
+         LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
 
             //document.getElementById('skill').value = LLUnit.cardtoskilltype(card)
@@ -317,27 +327,22 @@ var LLUnit = {
    },
 
    calculate: function (docalculate) {
-      var unitCardData = {};
-      var finishedCount = 0;
-      var defer_carddata = $.Deferred();
+      var requests = [];
       for (var i = 0; i < 9; i++) {
          var cardid = document.getElementById('cardid' + i).value;
-         LLCardData.getDetailedData(cardid).then(function(card) {
-            // do not use cardid, as its value can change...
-            unitCardData[parseInt(card.id)] = card;
-            finishedCount++;
-            if (finishedCount == 9) defer_carddata.resolve(unitCardData);
-         }, function() {
-            defer_carddata.reject();
-         });
+         if (cardid) {
+            requests.push(LLCardData.getDetailedData(cardid));
+         }
       }
-      defer_carddata.then(docalculate, defaultHandleFailedRequest);
+      LoadingUtil.start(requests, LoadingUtil.cardDetailMerger).then(function (cards) {
+         docalculate(cards);
+      }, LLUnit.defaultHandleFailedRequest);
    },
 
    changecenter: function () {
       var cardid = parseInt(document.getElementById("cardid4").value)
       if (cardid == "") return;
-      LLCardData.getDetailedData(cardid).then(function(card) {
+      LoadingUtil.startSingle(LLCardData.getDetailedData(cardid)).then(function(card) {
          document.getElementById("bonus").value = card["attribute"]
          document.getElementById("percentage").value = card["Cskillpercentage"]
          document.getElementById("base").value = card["Cskillattribute"]
@@ -363,7 +368,7 @@ var LLUnit = {
       document.getElementById("mezame"+String(n)).value = (document.getElementById("mezame").checked ? 1 : 0);
       document.getElementById("cardid"+String(n)).value = index;
       if (index != "" && document.getElementById("maxcost"+String(n))) {
-         LLCardData.getDetailedData(index).then(function(card) {
+         LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("maxcost"+String(n)).value = card.minslot;
          }, defaultHandleFailedRequest);
       }

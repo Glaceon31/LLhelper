@@ -20,11 +20,10 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songsjson);
-   var llcard = new LLCard(cardsjson);
+   //var llcard = new LLCard(cardsjson);
+   var llcard = 0;
 
    var attcolor = new Array();
    var mezame = 0
@@ -55,6 +54,15 @@
 
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
 
+   LLCardData.briefKeys.push('minslot');
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
+   }, LLUnit.defaultHandleFailedRequest);
+
    var skilllevel = 0
 	attr = new Array();//↓成员属性值*0
 	HN = new Array();//每张卡的槽数//↓z0
@@ -78,8 +86,6 @@
    songweight=new Array();
    songweightsort=new Array()
 
-   LLCardData.briefKeys.push('minslot');
-   
    function threetonumber(three){
       var result = three
       if (result == '0') {
@@ -310,6 +316,18 @@
    	document.getElementById("unitform").target = 'if'
    }
 
+   function handleLoadSis(sis) {
+      if (sis && Object.keys(sis).length == 15) {
+         for (var i = 1; i < 16; i++) {
+            if (sis[i]) {
+               sisrecord[i] = sis[i];
+            } else {
+               sisrecord[i] = 0;
+            }
+         }
+         autoarm();
+      }
+   }
    function handleLoadUnit(unit) {
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
       for (var i = 0; i < 9; i++) {
@@ -328,16 +346,7 @@
       }
       LLUnit.changecenter();
       precalcu();
-      if (unit[9]) {
-         for (var i = 1; i < 16; i++) {
-            if (unit[9][i]) {
-               sisrecord[i] = unit[9][i];
-            } else {
-               sisrecord[i] = 0;
-            }
-         }
-         autoarm();
-      }
+      handleLoadSis(unit[9]);
    }
 
    function loadunit(){
@@ -352,7 +361,7 @@
    	document.getElementById("unitform").target = ''
    }
    function loadsis(){
-	document.getElementById("unitform").action = '/llloadsis'
+	document.getElementById("unitform").action = '/llloadex/filesis/parent.handleLoadSis'
 //   	tmponsubmit = document.getElementById("unitform").onsubmit
    	document.getElementById("unitform").onsubmit = ''
    	document.getElementById("unitform").target = 'if'
@@ -451,29 +460,32 @@
 	}
    }
    function handleLoadSubmembersData(data) {
+      var requests = [];
       for (var i = 0; i < data.length; i++) {
          if (Object.keys(data[i]).length == 15) continue;
-         // data has: 'cardid','mezame','skilllevel','maxcost'
-         var cur = data[i];
-         //TODO: async load data
-         var card = llcard.cards[cur.cardid];
-         if (!cur.maxcost) {
-            if (card) {
-               cur.maxcost = card.minslot;
+         (function(index){
+            // data has: 'cardid','mezame','skilllevel','maxcost'
+            var cur = data[index];
+            if ((!cur.maxcost) || (!cur.main)) {
+               requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
+                  if (!cur.maxcost) cur.maxcost = card.minslot;
+                  if (!cur.main) {
+                     cur.main = card.attribute;
+                     cur.smile = card.smile2;
+                     cur.pure = card.pure2;
+                     cur.cool = card.cool2;
+                     cur[cur.main] += kizuna[card.rarity][cur.mezame];
+                  }
+                  submember[index] = cur;
+               }));
+            } else {
+               submember[index] = cur;
             }
-         }
-         if (!cur.main) {
-            if (card) {
-               cur.main = card.attribute;
-               cur.smile = card.smile2;
-               cur.pure = card.pure2;
-               cur.cool = card.cool2;
-               cur[cur.main] += kizuna[card.rarity][cur.mezame];
-            }
-         }
-         submember[i] = cur;
+         })(i);
       }
-      refreshsubmemberlist();
+      LoadingUtil.start(requests).then(function () {
+         refreshsubmemberlist();
+      }, LLUnit.defaultHandleFailedRequest);
    }
    function refreshsubmemberlist(){
 	//	submemberhtml="<h3>备选队员</h3>"
@@ -1027,7 +1039,7 @@ function calc_bestarm(){
             requests.push(LLCardData.getDetailedData(cardid));
          }
       }
-      LoadingUtil.start(requests, 'loadingbox', 'loadingbox_progress', LoadingUtil.cardDetailMerger).then(function (cards) {
+      LoadingUtil.start(requests, LoadingUtil.cardDetailMerger).then(function (cards) {
          if(document.getElementById('autoarm0').checked){
 		Precal=true;
 		autounit(cards)
@@ -1669,7 +1681,7 @@ function calc_bestarm(){
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -1847,7 +1859,7 @@ function calc_bestarm(){
    <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
    <br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value=""> </option>
+		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 	（特典卡需选择觉醒）<br>

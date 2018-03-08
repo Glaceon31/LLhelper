@@ -53,7 +53,7 @@ def llloadex(formid, callback):
     for f in request.files[formid]:
         return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
 
-@app.route("/llloadnewsubmemberssis", methods=['GET', 'POST'])
+@app.route("/llloadnewsubmemberssis", methods=['GET', 'POST']) # DEPRECATED
 def llnewsubmembersload():
     print request.files
     for f in request.files['filesub']:
@@ -73,7 +73,7 @@ def llnewsubmembersload():
         return '<script>'+script+'</script>'
 
 
-@app.route("/llloadunit", methods=['GET', 'POST'])
+@app.route("/llloadunit", methods=['GET', 'POST']) # DEPRECATED
 def llunitload():
     print request.files
     for f in request.files['file']:
@@ -97,7 +97,7 @@ def llunitload():
         return '<script>' + script + '</script>'
 
 
-@app.route("/llloadnewunit-api", methods=['POST'])
+@app.route("/llloadnewunit-api", methods=['POST']) # DEPRECATED
 def llnewunitload_api():
     memberinfo = request.json
     script = ''
@@ -142,20 +142,20 @@ def genllunitloadscript(json_str, sis=False):
         script =script+'parent.autoarm();\n'
     return script
 
-@app.route("/llloadnewunit", methods=['GET', 'POST'])
+@app.route("/llloadnewunit", methods=['GET', 'POST']) # DEPRECATED
 def llnewunitload():
     print request.files
     for f in request.files['file']:
         return '<script>'+genllunitloadscript(f)+'</script>'
 
 
-@app.route("/llloadnewunitsis", methods=['GET', 'POST'])
+@app.route("/llloadnewunitsis", methods=['GET', 'POST']) # DEPRECATED
 def llnewunitloadsis():
     print request.files
     for f in request.files['file']:
         return '<script>'+genllunitloadscript(f, sis=True)+'</script>'
 
-@app.route("/llloadsis", methods=['GET', 'POST'])
+@app.route("/llloadsis", methods=['GET', 'POST']) # DEPRECATED
 def llnewsis():
     print("=====!==")
     print request.files

@@ -67,6 +67,7 @@
       llcard = new LLCard(cardData);
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
    }, LLUnit.defaultHandleFailedRequest);
 
    function changenaipan(){
@@ -193,9 +194,7 @@
       var need_scroll = (document.getElementById("result").style.display == 'none');
       var c = attcolor[llcard.cards[index].attribute]
       document.getElementById('cardchoice').style.color = c
-      document.getElementById('result_loading').style.display = '';
-      LLCardData.getDetailedData(index).then(function(curCard) {
-         document.getElementById('result_loading').style.display = 'none';
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function (curCard) {
          document.getElementById("result").style.display = ''
          var infolist2 = ["smile", "pure", "cool"]
 
@@ -566,9 +565,8 @@
    <input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>
    <br>
 	
-<div id="result_loading" style="display:none">
-<h3>载入中...</h3>
-</div>
+{% include 'components/loadingbox.html' %}
+
 <div id="result" style="display:none">
 <h3>基本信息</h3>
 <table border='1' style="text-align:center;width:100%">
