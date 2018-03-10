@@ -397,12 +397,6 @@
    	return c.attribute+cpostfix+'<br>'+ceffect
    }
    
-   function toMezame(){
-   	mezame = 1-mezame
-   	changecolor()
-   	changeavatarselect()
-   }
-   
    function init(){
       llcard.onCardSelectChange = changecolor;
       llcard.calcCardMaxStrength = getmaxstrength;
