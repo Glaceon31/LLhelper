@@ -2,6 +2,9 @@ from app import *
 from flask import make_response
 import json
 
+def unescapeJsonStr(json_str):
+    # TODO: prevent xss
+    return json_str.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']')
 
 @app.route("/llsaveunit/<content>", methods=['GET', 'POST'])
 def llunitsave(content):
@@ -45,13 +48,13 @@ def llsaveallmembers(content):
 def llload(callback):
     print request.files, callback
     for f in request.files['file']:
-        return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
+        return '<script>' + callback + '(' + unescapeJsonStr(f) + ');</script>'
 
 @app.route("/llloadex/<formid>/<callback>", methods=['POST'])
 def llloadex(formid, callback):
     print request.files, formid, callback
     for f in request.files[formid]:
-        return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
+        return '<script>' + callback + '(' + unescapeJsonStr(f) + ');</script>'
 
 @app.route("/llloadnewsubmemberssis", methods=['GET', 'POST']) # DEPRECATED
 def llnewsubmembersload():
@@ -388,32 +391,33 @@ def llunit():
 
     return render_template("llunit.html", data=result, cardsjson=cardsjson, songsjson=songsjson)
 
-
 @app.route("/llnewunit", methods=['GET', 'POST'])
 def llnewunit():
+    # passed by llunitimport
     argv = request.args.get("unit")
     addon = ""
     if argv:
         try:
-            addon = genllunitloadscript(argv)
+            # TODO: decouple with page
+            addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
     songsjson = open('newsongsjson.txt', 'rb').read()
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template("llnewunit.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunit.html", songsjson = songsjson, additional_script=addon)
 
 @app.route("/llnewunitsis", methods=['GET', 'POST'])
 def llnewunitsis():
+    # passed by pll (LLProxy)
     argv = request.args.get("unit")
     addon = ""
     if argv:
         try:
-            addon = genllunitloadscript(argv)
+            # TODO: decouple with page
+            addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
     songsjson = open('newsongsjson.txt', 'rb').read()
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunitsis.html", songsjson = songsjson, additional_script=addon)
 
 @app.route("/llnewautounit", methods=['GET', 'POST'])
 def llnewautounit():
