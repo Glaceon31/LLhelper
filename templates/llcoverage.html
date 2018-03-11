@@ -23,37 +23,22 @@
 
 {% block script %}
    <script>
-   var regS = new RegExp("&#34;", "g")
-   var regS2 = new RegExp("&#39;", "g")
-   var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songs, false); // songs defined in songsjson.js
-   var llcard = new LLCard(cards);
+   //var llcard = new LLCard(cards);
+   var llcard = 0;
 
-   var attcolor = new Array();
    var mezame = 0
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
 
-
-   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
-   
    var skilllevel = 0
+
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
+   }, defaultHandleFailedRequest);
 
    var diffspeed = {
       'easy': 2,
@@ -116,33 +101,25 @@
    function changeskilllevel(){
       document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
       var index = document.getElementById('cardchoice').value
-      var curCard = cards[index];
-      if (curCard && curCard.skill){
-         document.getElementById('require').innerHTML = curCard['skilldetail'][skilllevel].require
-         document.getElementById('possibility').innerHTML = curCard['skilldetail'][skilllevel].possibility
-         document.getElementById('score').innerHTML = curCard['skilldetail'][skilllevel].time
-
-         document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
+      if (index == "") {
+         document.getElementById('skillcontainer').style.display = 'none';
+         return;
       }
-   }
-
-   function changecolor(){
-      var index = document.getElementById('cardchoice').value
-      if (index != "") {
-         var curCard = cards[index];
-         var c = attcolor[curCard.attribute]
-         document.getElementById('cardchoice').style.color = c
-         if (curCard.skill){
-            //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-            document.getElementById('require').innerHTML = curCard['skilldetail'][skilllevel].require
-            document.getElementById('possibility').innerHTML = curCard['skilldetail'][skilllevel].possibility
-            document.getElementById('score').innerHTML = curCard['skilldetail'][skilllevel].time
-
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (curCard && curCard.skill){
             document.getElementById('skillcontainer').style.display = '';
             document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
          } else {
             document.getElementById('skillcontainer').style.display = 'none';
          }
+      }, defaultHandleFailedRequest);
+   }
+
+   function changecolor(){
+      var index = document.getElementById('cardchoice').value
+      var mezame = (document.getElementById("mezame").checked ? 1 : 0);
+      if (index != "") {
+         document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
    		if (mezame == 0){
    				document.getElementById("mezame").value = "未觉醒"
    		}
@@ -150,6 +127,7 @@
    				document.getElementById("mezame").value = "已觉醒"
    		}
       }
+      changeskilllevel();
       LLUnit.changeavatar('imageselect', index, mezame);
    }
     
@@ -178,23 +156,25 @@
       document.getElementById('avatar'+String(n)).style.display = "";
       document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
       var index = document.getElementById('cardchoice').value
-      var curCard = cards[index];
-      if (!curCard.skill) return;
-      if (curCard.triggertype == 3) {
-	 document.getElementById("member"+String(n))[1].selected = true;
-      } else if (curCard.triggertype == 1) {
-	 document.getElementById("member"+String(n))[2].selected = true;
-      } else if (curCard.triggertype == 4) {
-	 document.getElementById("member"+String(n))[3].selected = true;
-      } else {
-	 return;
-      }
-	document.getElementById("skilllevel"+String(n)).innerHTML = document.getElementById("skilllevel").innerHTML;
-	document.getElementById("require"+String(n)).value = document.getElementById('require').innerHTML;
-	document.getElementById("probability"+String(n)).value = document.getElementById('possibility').innerHTML;
-	document.getElementById("time"+String(n)).value = document.getElementById('score').innerHTML;
-   	document.getElementById("mezame"+String(n)).value = mezame;
-   	document.getElementById("cardid"+String(n)).value = index;
+      if (index == "") return;
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (!curCard.skill) return;
+         if (curCard.triggertype == 3) {
+            document.getElementById("member"+String(n))[1].selected = true;
+         } else if (curCard.triggertype == 1) {
+            document.getElementById("member"+String(n))[2].selected = true;
+         } else if (curCard.triggertype == 4) {
+            document.getElementById("member"+String(n))[3].selected = true;
+         } else {
+            document.getElementById("member"+String(n))[0].selected = true;
+         }
+         document.getElementById("skilllevel"+String(n)).innerHTML = String(skilllevel+1);
+         document.getElementById('require'+String(n)).value = curCard['skilldetail'][skilllevel].require
+         document.getElementById('probability'+String(n)).value = curCard['skilldetail'][skilllevel].possibility
+         document.getElementById('time'+String(n)).value = curCard['skilldetail'][skilllevel].time
+         document.getElementById("mezame"+String(n)).value = mezame;
+         document.getElementById("cardid"+String(n)).value = index;
+      }, defaultHandleFailedRequest);
    }
    
    function decopyTo(n){
@@ -300,7 +280,6 @@
    			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
    	}
       document.getElementById("mezame").checked = mezame
-   	//changeskilltext("")
       changeskilllevel()
    	for (i = 0; i < 9; i++){
 	    if (document.getElementById("member"+String(i)).value != 0){
@@ -318,7 +297,7 @@
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -493,8 +472,8 @@
       <option value="妖精の国編">妖精之国篇</option>
    </select>
    <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value=""> </option>
+卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0">
+		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 <br>
@@ -502,17 +481,11 @@
 <img id="imageselect">
 </div>
 <div style="clear:both">
-	<p id="skillcontainer" style="display:none">
+<p id="skillcontainer" style="display:none">
    技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
    </input></nobr><br>
-   技能效果 : <span id="skilltext"></span><br/>每<nobr id="require" name="require"></nobr>
-   <nobr id="requiretext"></nobr>
-   <nobr id="possibility" name="possibility"></nobr>%概率
-   <nobr id="effecttext"></nobr>
-   <nobr id="score" name="score"></nobr>
-   <nobr id="unittext"></nobr>
-   </nobr><br><br>
-	</p>
+   技能效果 : <span id="skilltext"></span><br/>
+</p>
 
 <h3>队伍配置</h3>
 <div style="float:left">

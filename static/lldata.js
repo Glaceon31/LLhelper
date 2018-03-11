@@ -336,7 +336,7 @@ var LLUnit = {
       }
       LoadingUtil.start(requests, LoadingUtil.cardDetailMerger).then(function (cards) {
          docalculate(cards);
-      }, LLUnit.defaultHandleFailedRequest);
+      }, defaultHandleFailedRequest);
    },
 
    changecenter: function () {

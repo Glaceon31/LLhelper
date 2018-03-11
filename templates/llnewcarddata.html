@@ -68,7 +68,7 @@
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
-   }, LLUnit.defaultHandleFailedRequest);
+   }, defaultHandleFailedRequest);
 
    function changenaipan(){
       if (!document.getElementById('naipan').checked)
@@ -326,7 +326,7 @@
       		//document.getElementById('strengthlevel2').style.color = attcolor[curCard.attribute]
          }
          if (need_scroll) document.getElementById('cardchoice').scrollIntoView(true);
-      }, LLUnit.defaultHandleFailedRequest);
+      }, defaultHandleFailedRequest);
    }
    
    function changeskilleffect(c){
