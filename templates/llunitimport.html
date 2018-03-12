@@ -29,9 +29,14 @@
    <li>用下面的按钮把截图提交</li>
 </ol>
 
-<p>注意：不识别N卡。图像识别由另一台服务器完成。数据不同步时，队伍强度查询等页面将无法读取最新的卡片。</p>
+<p><b>注意</b>
+<ol>
+  <li>不识别N卡。图像识别由另一台服务器完成，数据不同步时将无法读取最新的卡片。</li>
+  <li>日服【5.6】版本更新改变了长宽比，已更新识别功能增强对不同黑边和长宽比的支持。</li>
+  <li>【Beta测试】增加了等级识别功能，但卡片属性还是当前觉醒状态下的满绊最大值。若等级识别为-1则为识别错误。
+</ol>
 
-<p>该功能由 <b>liaocm</b> 提供</p>
+<p>该功能由 <b>liaocm</b> 提供.<br/>v2.0b1</p>
 {% endblock %}
 
 {% block main %}
@@ -125,7 +130,7 @@ function uploadDone(event) {
     var team = result.team;
     var names = result.names;
     var teamjson = JSON.stringify(team);
-    
+
     document.getElementById("scaled").src="http://api.sif.lcm.im/temp/"+handle+"/scaled.jpg";
     document.getElementById("dlunit").href="data:text/plain,"+teamjson;
     document.getElementById("sis").href="/llnewunitsis?unit="+teamjson;
@@ -134,7 +139,7 @@ function uploadDone(event) {
         var strI = i.toString();
         document.getElementById("img"+strI).src="http://api.sif.lcm.im/temp/"+handle+"/"+strI+".png";
         document.getElementById("name"+strI).title=names[i];
-        $("#name"+strI).html("["+team[i-1].cardid.toString()+"] "+names[i-1]);
+        $("#name"+strI).html("["+team[i-1].cardid.toString()+"] "+names[i-1] + " Lv. " + team[i-1].cardlevel.toString());
     }
     $("#restext").html("运行结果");
     document.getElementById("resline").style.display="block";
