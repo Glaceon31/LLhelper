@@ -73,6 +73,7 @@
       llcard = new LLCard(cardData);
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
    function threetonumber(three){
@@ -1769,7 +1770,7 @@ function calc_bestarm(){
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
-
+{% include 'components/loadingbox.html' %}
 
 <div id="result" style="display:none">
 <table border="1">

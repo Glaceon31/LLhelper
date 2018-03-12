@@ -64,6 +64,7 @@
       llcard = new LLCard(cardData);
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
    }, LLUnit.defaultHandleFailedRequest);
 
    function threetonumber(three){
@@ -128,8 +129,8 @@
             document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
             document.getElementById(at+String(i)).value = tmp
          }
-         changeavatar(pos)
-         changeavatar(i)
+         LLUnit.changeavatarn(pos)
+         LLUnit.changeavatarn(i)
          calslot(pos);
          calslot(i);
          pos = -1
@@ -169,16 +170,6 @@
       result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
-   }
-
-   function changeavatar(n){
-      var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-      if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-         document.getElementById('avatar'+String(n)).src = '/static/null.png'
-      else if (document.getElementById('mezame'+String(n)).value == 0)
-         document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',0)
-      else
-         document.getElementById('avatar'+String(n)).src = getimagepath(cardid,'avatar',1)
    }
 
    function changeLanguage(){
@@ -232,7 +223,7 @@
          if (member && member.cardid) {
             document.getElementById("main" + i).value = llcard.cards[member.cardid].attribute;
          }
-         changeavatar(i);
+         LLUnit.changeavatarn(i);
          calslot(i);
       }
       LLUnit.changecenter();
@@ -292,7 +283,7 @@
          //changeavatarselect()
          for (i = 0; i < 9; i++){
             //changeskilltext(i)
-            changeavatar(i)
+            LLUnit.changeavatarn(i)
             calslot(i)
          }
 
@@ -1464,6 +1455,7 @@
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
+{% include 'components/loadingbox.html' %}
 
 <div id="result" style="display:none">
 <table border="1">

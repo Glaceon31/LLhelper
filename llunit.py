@@ -2,6 +2,9 @@ from app import *
 from flask import make_response
 import json
 
+def unescapeJsonStr(json_str):
+    # TODO: prevent xss
+    return json_str.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']')
 
 @app.route("/llsaveunit/<content>", methods=['GET', 'POST'])
 def llunitsave(content):
@@ -45,9 +48,15 @@ def llsaveallmembers(content):
 def llload(callback):
     print request.files, callback
     for f in request.files['file']:
-        return '<script>' + callback + '(' + f.replace('%7B', '{').replace('%22', '"').replace('%7D', '}').replace('%5B', '[').replace('%5D', ']') + ');</script>'
+        return '<script>' + callback + '(' + unescapeJsonStr(f) + ');</script>'
 
-@app.route("/llloadnewsubmemberssis", methods=['GET', 'POST'])
+@app.route("/llloadex/<formid>/<callback>", methods=['POST'])
+def llloadex(formid, callback):
+    print request.files, formid, callback
+    for f in request.files[formid]:
+        return '<script>' + callback + '(' + unescapeJsonStr(f) + ');</script>'
+
+@app.route("/llloadnewsubmemberssis", methods=['GET', 'POST']) # DEPRECATED
 def llnewsubmembersload():
     print request.files
     for f in request.files['filesub']:
@@ -67,7 +76,7 @@ def llnewsubmembersload():
         return '<script>'+script+'</script>'
 
 
-@app.route("/llloadunit", methods=['GET', 'POST'])
+@app.route("/llloadunit", methods=['GET', 'POST']) # DEPRECATED
 def llunitload():
     print request.files
     for f in request.files['file']:
@@ -91,7 +100,7 @@ def llunitload():
         return '<script>' + script + '</script>'
 
 
-@app.route("/llloadnewunit-api", methods=['POST'])
+@app.route("/llloadnewunit-api", methods=['POST']) # DEPRECATED
 def llnewunitload_api():
     memberinfo = request.json
     script = ''
@@ -136,20 +145,20 @@ def genllunitloadscript(json_str, sis=False):
         script =script+'parent.autoarm();\n'
     return script
 
-@app.route("/llloadnewunit", methods=['GET', 'POST'])
+@app.route("/llloadnewunit", methods=['GET', 'POST']) # DEPRECATED
 def llnewunitload():
     print request.files
     for f in request.files['file']:
         return '<script>'+genllunitloadscript(f)+'</script>'
 
 
-@app.route("/llloadnewunitsis", methods=['GET', 'POST'])
+@app.route("/llloadnewunitsis", methods=['GET', 'POST']) # DEPRECATED
 def llnewunitloadsis():
     print request.files
     for f in request.files['file']:
         return '<script>'+genllunitloadscript(f, sis=True)+'</script>'
 
-@app.route("/llloadsis", methods=['GET', 'POST'])
+@app.route("/llloadsis", methods=['GET', 'POST']) # DEPRECATED
 def llnewsis():
     print("=====!==")
     print request.files
@@ -382,32 +391,33 @@ def llunit():
 
     return render_template("llunit.html", data=result, cardsjson=cardsjson, songsjson=songsjson)
 
-
 @app.route("/llnewunit", methods=['GET', 'POST'])
 def llnewunit():
+    # passed by llunitimport
     argv = request.args.get("unit")
     addon = ""
     if argv:
         try:
-            addon = genllunitloadscript(argv)
+            # TODO: decouple with page
+            addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
     songsjson = open('newsongsjson.txt', 'rb').read()
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template("llnewunit.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunit.html", songsjson = songsjson, additional_script=addon)
 
 @app.route("/llnewunitsis", methods=['GET', 'POST'])
 def llnewunitsis():
+    # passed by pll (LLProxy)
     argv = request.args.get("unit")
     addon = ""
     if argv:
         try:
-            addon = genllunitloadscript(argv)
+            # TODO: decouple with page
+            addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
     songsjson = open('newsongsjson.txt', 'rb').read()
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template("llnewunitsis.html", cardsjson = cardsjson, songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunitsis.html", songsjson = songsjson, additional_script=addon)
 
 @app.route("/llnewautounit", methods=['GET', 'POST'])
 def llnewautounit():
