@@ -277,7 +277,6 @@
          if (curCookie != "") selects[i].value = curCookie;
       }
       document.getElementById("mezame").checked = mezame
-      try {
          //changeskilltext("")
          changeskilllevel()
          for (i = 0; i < 9; i++){
@@ -290,26 +289,9 @@
          // above codes may select songs/cards/filters according to cookies, so refresh it...
          llsong.onSongFilterChange();
          llcard.onCardFilterChange();
-      } catch (err) {
-        console.log(err);
-      }
 
       {{additional_script|safe}}
    }
-
-   function sortstrength(){
-   	min = parseInt(document.getElementById("strength0").innerHTML)
-   	minnum = 0
-   	for (i = 1; i < 9; i++){
-   		tmp = parseInt(document.getElementById("strength"+String(i)).innerHTML)
-   		if (tmp < min){
-   			min = tmp
-   			minnum = i
-   		}
-   	}
-   	document.getElementById("strength"+String(minnum)).style.color = "red"
-   }
-
 
    function saveToCookie(){
    	var inputs = document.getElementsByTagName("input");
