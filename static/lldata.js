@@ -185,9 +185,26 @@ var LLUnit = {
       var level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1;
       if ((level < 0) || (level > 7)) return;
       LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
-         document.getElementById('require'+String(n)).value = card['skilldetail'][level].require;
-         document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
-         document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
+         //document.getElementById('require'+String(n)).value = card['skilldetail'][level].require;
+         //document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
+         //document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
+      }, defaultHandleFailedRequest);
+   },
+
+   changeskilllevel: function(skilllevel) {
+      document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
+      var index = document.getElementById('cardchoice').value
+      if (index == "") {
+         document.getElementById('skillcontainer').style.display = 'none';
+         return;
+      }
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (curCard && curCard.skill){
+            document.getElementById('skillcontainer').style.display = '';
+            document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
+         } else {
+            document.getElementById('skillcontainer').style.display = 'none';
+         }
       }, defaultHandleFailedRequest);
    },
 
@@ -268,7 +285,7 @@ var LLUnit = {
       }
    },
 
-   // kizuna from twintailos.js
+   // kizuna from twintailos.js, skilllevel from each page
    applycarddata: function () {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
@@ -280,9 +297,9 @@ var LLUnit = {
             //document.getElementById('skill').value = LLUnit.cardtoskilltype(card)
             if (card.skill){
                //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-               document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
-               document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
-               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].time
+               //document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
+               //document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
+               //document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].time
             }
             var infolist2 = ["smile", "pure", "cool"]
             if (!mezame){
@@ -301,6 +318,7 @@ var LLUnit = {
             //LLUnit.changeskilltext(card, "")
          }, defaultHandleFailedRequest);
       }
+      LLUnit.changeskilllevel(skilllevel);
       LLUnit.changeavatar('imageselect', index, mezame);
    },
 
