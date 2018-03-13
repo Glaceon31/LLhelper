@@ -65,7 +65,7 @@
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
-   }, LLUnit.defaultHandleFailedRequest);
+   }, defaultHandleFailedRequest);
 
    function threetonumber(three){
       var result = three
@@ -280,7 +280,6 @@
       try {
          //changeskilltext("")
          changeskilllevel()
-         //changeavatarselect()
          for (i = 0; i < 9; i++){
             //changeskilltext(i)
             LLUnit.changeavatarn(i)

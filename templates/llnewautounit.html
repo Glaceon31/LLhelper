@@ -61,7 +61,7 @@
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
-   }, LLUnit.defaultHandleFailedRequest);
+   }, defaultHandleFailedRequest);
 
    var skilllevel = 0
 	attr = new Array();//↓成员属性值*0
@@ -400,7 +400,6 @@
       document.getElementById("mezame").checked = mezame
    	//changeskilltext("")
       changeskilllevel()
-   	//changeavatarselect()
    	for (i = 0; i < 9; i++){
    		//changeskilltext(i)
    		LLUnit.changeavatarn(i)
@@ -485,7 +484,7 @@
       }
       LoadingUtil.start(requests).then(function () {
          refreshsubmemberlist();
-      }, LLUnit.defaultHandleFailedRequest);
+      }, defaultHandleFailedRequest);
    }
    function refreshsubmemberlist(){
 	//	submemberhtml="<h3>备选队员</h3>"
@@ -1062,7 +1061,7 @@ function calc_bestarm(){
          /////////////////////
          calculate(cards);
          document.getElementById("result").scrollIntoView()
-      }, LLUnit.defaultHandleFailedRequest);
+      }, defaultHandleFailedRequest);
       return true;
    }
    function autoarmforeveryunit(cards){

@@ -8,6 +8,7 @@
    <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
    <script src="https://app.lovelivewiki.com/Maps/songsjson.js"></script>
@@ -22,37 +23,22 @@
 
 {% block script %}
    <script>
-   var regS = new RegExp("&#34;", "g")
-   var regS2 = new RegExp("&#39;", "g")
-   var regSand = new RegExp("&amp;", "g")
-   var cardsjson = "{{cardsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var cards = eval("("+cardsjson+")")
    var llsong = new LLSong(songs, false); // songs defined in songsjson.js
-   var llcard = new LLCard(cards);
+   //var llcard = new LLCard(cards);
+   var llcard = 0;
 
-   var attcolor = new Array();
    var mezame = 0
    var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
 
-
-   var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
-   
    var skilllevel = 0
+
+   var defer_onload = $.Deferred();
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      llcard = new LLCard(cardData);
+      init();
+      document.getElementById('cardchoice').options[0].innerHTML = '';
+      document.getElementById('loadingbox').style.display = 'none';
+   }, defaultHandleFailedRequest);
 
    var diffspeed = {
       'easy': 2,
@@ -114,157 +100,43 @@
    
    function changeskilllevel(){
       document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
-      index = document.getElementById('cardchoice').value
-      if (cards[index] && cards[index].skill){
-         document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
-         document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
-         document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].time
+      var index = document.getElementById('cardchoice').value
+      if (index == "") {
+         document.getElementById('skillcontainer').style.display = 'none';
+         return;
       }
-   }
-
-   function cardtoskilltype(c){
-      if (!c) return 0;
-      if (!c.skill)
-         return 0
-      if ((c.skilleffect == 4) || (c.skilleffect == 5)){
-         if (c.triggertype == 1)
-            return 5
-         else if (c.triggertype == 3)
-            return 6
-         else if (c.triggertype == 4)
-            return 12
-      }
-      else if (c.skilleffect == 9){
-         if (c.triggertype == 1)
-            return 8
-         else if (c.triggertype == 3)
-            return 7
-         else if (c.triggertype == 4)
-            return 13
-         else if (c.triggertype == 6)
-            return 9
-      }
-      else if (c.skilleffect == 11){
-         if (c.triggertype == 1)
-            return 4
-         else if (c.triggertype == 3)
-            return 1
-         else if (c.triggertype == 4)
-            return 11
-         else if (c.triggertype == 5)
-            return 3
-         else if (c.triggertype == 6)
-            return 2
-         else if (c.triggertype == 12)
-            return 10
-      }
-   }
-
-   function changeavatar(n){
-   	cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0") || (cardid == NaN))
-   		document.getElementById('avatar'+String(n)).src = '/static/null.png'
-   	else if (document.getElementById('mezame'+String(n)).value == 0){
-        document.getElementById('avatar'+String(n)).style.display = ""
-		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',0)
-   	}
-	else {
-   		document.getElementById('avatar'+String(n)).style.display = ""
-		document.getElementById('avatar'+String(n)).src = getimagepath(cards[cardid]['id'],'avatar',1)
-    }
-   }
-   
-   function changecolor(){
-      var which = "cardchoice";
-   	index = document.getElementById(which).value
-   	if (index != "") {
-   		c = attcolor[cards[index].attribute]
-   		document.getElementById(which).style.color = c
-   		//document.getElementById("main").value = cards[index].attribute
-   		
-         //document.getElementById('skill').value = cardtoskilltype(cards[index])
-         if (cards[index].skill){
-            //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-            document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
-            document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
-            document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (curCard && curCard.skill){
+            document.getElementById('skillcontainer').style.display = '';
+            document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
+         } else {
+            document.getElementById('skillcontainer').style.display = 'none';
          }
-   		infolist2 = ["smile", "pure", "cool"]
+      }, defaultHandleFailedRequest);
+   }
+
+   function changecolor(){
+      var index = document.getElementById('cardchoice').value
+      var mezame = (document.getElementById("mezame").checked ? 1 : 0);
+      if (index != "") {
+         document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
    		if (mezame == 0){
-   			for (i in infolist2){
-   				//document.getElementById(infolist2[i]).value = cards[index][infolist2[i]]
    				document.getElementById("mezame").value = "未觉醒"
-   			}
    		}
    		else{
-   			for (i in infolist2){
-   				//document.getElementById(infolist2[i]).value = cards[index][infolist2[i]+"2"]
    				document.getElementById("mezame").value = "已觉醒"
-   			}
    		}
-   		//document.getElementById("kizuna").value = kizuna[cards[index].rarity][mezame]
-   		changeskilltext("")
-   	}
-   	changeavatarselect()
+      }
+      changeskilllevel();
+      LLUnit.changeavatar('imageselect', index, mezame);
    }
     
-   function changeavatarselect(){
-   	document.getElementById('imageselect').src = '/static/null.png'
-   	cardid = 0
-   	if (document.getElementById('cardchoice').value != '')
-   		cardid = cards[document.getElementById('cardchoice').value].id
-   	if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-   		document.getElementById('imageselect').src = '/static/null.png'
-   	else if (mezame == 0)
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',0)
-   	else
-   		document.getElementById('imageselect').src = getimagepath(cards[document.getElementById('cardchoice').value]['id'],'avatar',1)
-   }
-   
    function changeLanguage(){
       language = 1-language
       llsong.language = language;
       llsong.onSongFilterChange();
       llcard.language = language;
       llcard.onCardFilterChange();
-   }
-   
-   function changeskilltext(n){
-   	var postfix = ""
-   	if ((n != "") || (String(n) == "0")) 
-   		postfix = String(n)
-      var skilltype = cardtoskilltype(cards[document.getElementById("cardchoice").value])
-   	//var skilltype = document.getElementById("skill"+postfix).value
-   	//if (skilltype == 0)
-   	//	document.getElementById("skilltext"+postfix).style.display = "none"
-   	//else 
-   	//	document.getElementById("skilltext"+postfix).style.display = ""
-   	//require
-   	if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个图标"
-   	else if ((skilltype == 2) || (skilltype == 9))
-   		document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
-   	else if (skilltype == 3)
-   		document.getElementById("requiretext"+postfix).innerHTML = "分"
-   	else if (skilltype == 10)
-   		document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
-   	else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
-   		document.getElementById("requiretext"+postfix).innerHTML = "秒"
-   	else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
-   		document.getElementById("requiretext"+postfix).innerHTML = "combo"
-   	//effect
-   	if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增加"
-   		document.getElementById("unittext"+postfix).innerHTML = "分"
-   	}
-   	if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
-   		document.getElementById("unittext"+postfix).innerHTML = "秒"
-   	}
-   	if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
-   		document.getElementById("effecttext"+postfix).innerHTML = "回复"
-   		document.getElementById("unittext"+postfix).innerHTML = "点体力"
-   	}
    }
    
    function toMezame(){
@@ -281,30 +153,28 @@
    }
    
    function copyTo(n){
-    document.getElementById('avatar'+String(n)).style.display = "";
-	document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
-	if (document.getElementById("requiretext").innerHTML == "个图标")
-	{
-	    document.getElementById("member"+String(n))[1].selected = true;
-	}
-	else if (document.getElementById("requiretext").innerHTML == "秒")
-	{
-	    document.getElementById("member"+String(n))[2].selected = true;
-	}
-	else if (document.getElementById("requiretext").innerHTML == "combo")
-	{
-	    document.getElementById("member"+String(n))[3].selected = true;
-	}
-	else
-	{
-	    return;
-	}
-	document.getElementById("skilllevel"+String(n)).innerHTML = document.getElementById("skilllevel").innerHTML;
-	document.getElementById("require"+String(n)).value = document.getElementById('require').innerHTML;
-	document.getElementById("probability"+String(n)).value = document.getElementById('possibility').innerHTML;
-	document.getElementById("time"+String(n)).value = document.getElementById('score').innerHTML;
-   	document.getElementById("mezame"+String(n)).value = mezame;
-   	document.getElementById("cardid"+String(n)).value = cards[String(document.getElementById("cardchoice").value)].id;
+      document.getElementById('avatar'+String(n)).style.display = "";
+      document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
+      var index = document.getElementById('cardchoice').value
+      if (index == "") return;
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (!curCard.skill) return;
+         if (curCard.triggertype == 3) {
+            document.getElementById("member"+String(n))[1].selected = true;
+         } else if (curCard.triggertype == 1) {
+            document.getElementById("member"+String(n))[2].selected = true;
+         } else if (curCard.triggertype == 4) {
+            document.getElementById("member"+String(n))[3].selected = true;
+         } else {
+            document.getElementById("member"+String(n))[0].selected = true;
+         }
+         document.getElementById("skilllevel"+String(n)).innerHTML = String(skilllevel+1);
+         document.getElementById('require'+String(n)).value = curCard['skilldetail'][skilllevel].require
+         document.getElementById('probability'+String(n)).value = curCard['skilldetail'][skilllevel].possibility
+         document.getElementById('time'+String(n)).value = curCard['skilldetail'][skilllevel].time
+         document.getElementById("mezame"+String(n)).value = mezame;
+         document.getElementById("cardid"+String(n)).value = index;
+      }, defaultHandleFailedRequest);
    }
    
    function decopyTo(n){
@@ -410,13 +280,11 @@
    			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
    	}
       document.getElementById("mezame").checked = mezame
-   	changeskilltext("")
       changeskilllevel()
-   	changeavatarselect()
    	for (i = 0; i < 9; i++){
 	    if (document.getElementById("member"+String(i)).value != 0){
    		    //changeskilltext(i)
-   		    changeavatar(i)
+   		    LLUnit.changeavatarn(i)
 		}
    	}
       document.getElementById("songsearch").value = ""
@@ -429,7 +297,7 @@
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -604,8 +472,8 @@
       <option value="妖精の国編">妖精之国篇</option>
    </select>
    <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value=""> </option>
+卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0">
+		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 <br>
@@ -613,16 +481,11 @@
 <img id="imageselect">
 </div>
 <div style="clear:both">
+<p id="skillcontainer" style="display:none">
    技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
    </input></nobr><br>
-   技能效果 :每<nobr id="require" name="require"></nobr>
-   <nobr id="requiretext"></nobr>
-   <nobr id="possibility" name="possibility"></nobr>%概率
-   <nobr id="effecttext"></nobr>
-   <nobr id="score" name="score"></nobr>
-   <nobr id="unittext"></nobr>
-   </nobr><br><br>
-	</p>
+   技能效果 : <span id="skilltext"></span><br/>
+</p>
 
 <h3>队伍配置</h3>
 <div style="float:left">
@@ -821,6 +684,8 @@
 <input type="button" value="calculate" onclick="check()">
 <b>注意：4.1版本与之前的版本判定覆盖结果有所不同（当前计算版本：4.1）</b><a href="llcoverage40">to 4.0</a>
 </div>
+
+{% include 'components/loadingbox.html' %}
 
 </div>
 <div style="clear:both">

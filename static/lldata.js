@@ -282,7 +282,7 @@ var LLUnit = {
                //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
                document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
                document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
-               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].score
+               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].time
             }
             var infolist2 = ["smile", "pure", "cool"]
             if (!mezame){
@@ -336,7 +336,7 @@ var LLUnit = {
       }
       LoadingUtil.start(requests, LoadingUtil.cardDetailMerger).then(function (cards) {
          docalculate(cards);
-      }, LLUnit.defaultHandleFailedRequest);
+      }, defaultHandleFailedRequest);
    },
 
    changecenter: function () {
