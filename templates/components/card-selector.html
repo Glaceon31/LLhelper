@@ -113,7 +113,7 @@
    </select>
    <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
    <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0">
+卡片：<select id="cardchoice" name="cardchoice">
 		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
@@ -135,8 +135,8 @@
 </div>
 <div style="clear:both"></div>
 <p id="skillcontainer" style="display:none">
-   技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
-   </input></nobr><br>
+   技能等级 : <input type="button" id="skilllvup" style="height:20px;width:20px;padding:0" value="▲" /> Lv<nospan id="skilllevel">1</nospan> <input type="button" id="skilllvdown" style="height:20px;width:20px;padding:0" value="▼" />
+   <br>
    技能效果 : <span id="skilltext"></span><br/>
    <br/>
 </p>

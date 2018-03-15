@@ -56,14 +56,16 @@
 
    LLCardData.briefKeys.push('minslot');
    var defer_onload = $.Deferred();
+   var comp_skill = 0;
+
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
+      comp_skill = new LLSkillContainer();
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
-   var skilllevel = 0
 	attr = new Array();//↓成员属性值*0
 	HN = new Array();//每张卡的槽数//↓z0
 	grade = new Array();//↓每个成员的年级*
@@ -98,20 +100,6 @@
          result = result[1]
       }
       return result
-   }
-
-   function lvlup(){
-      skilllevel += 1
-      if (skilllevel == 8)
-         skilllevel = 0
-      LLUnit.changeskilllevel(skilllevel)
-   }
-
-   function lvldown(){
-      skilllevel -= 1
-      if (skilllevel == -1)
-         skilllevel = 7
-      LLUnit.changeskilllevel(skilllevel)
    }
 
    naipan = 480
@@ -357,7 +345,6 @@
    }
    function init(){
    	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
-      skilllevel = 0
    	mezame = getCookie("mezameunit")
    	language = getCookie("languageunit")
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
@@ -387,10 +374,7 @@
    			selects[i].value = getCookie(selects[i].name+"unit");
    	}
       document.getElementById("mezame").checked = mezame
-   	//changeskilltext("")
-      LLUnit.changeskilllevel(skilllevel)
    	for (i = 0; i < 9; i++){
-   		//changeskilltext(i)
    		LLUnit.changeavatarn(i)
          calslot(i)
    	}
@@ -426,7 +410,7 @@
 			subunit["pure"]=parseInt(document.getElementById("pure").value)
 			subunit["cool"]=parseInt(document.getElementById("cool").value)
 			subunit[subunit["main"]]+=parseInt(document.getElementById("kizuna").value)
-		subunit["skilllevel"]=1
+		subunit["skilllevel"]=comp_skill.skillLevel+1;
 		subunit["mezame"]=parseInt(mezame)
 		subunit["cardid"]=cardid;
 		subunit["maxcost"]=llcard.cards[cardid].minslot;

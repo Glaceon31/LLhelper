@@ -1,7 +1,6 @@
 *.pyc
+*.swp
 tips.txt
-cardsjson - ����.txt
-songsjson - ����.txt
 score.txt
 unit*.txt
 

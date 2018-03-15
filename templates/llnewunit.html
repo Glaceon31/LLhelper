@@ -57,11 +57,11 @@
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
 
-   var skilllevel = 0
-
    var defer_onload = $.Deferred();
+   var comp_skill = 0;
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
+      comp_skill = new LLSkillContainer();
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
@@ -79,20 +79,6 @@
          result = result[1]
       }
       return result
-   }
-
-   function lvlup(){
-      skilllevel += 1
-      if (skilllevel == 8)
-         skilllevel = 0
-      LLUnit.changeskilllevel(skilllevel)
-   }
-
-   function lvldown(){
-      skilllevel -= 1
-      if (skilllevel == -1)
-         skilllevel = 7
-      LLUnit.changeskilllevel(skilllevel)
    }
 
    naipan = 480
@@ -235,7 +221,6 @@
 
    function init(){
       //document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
-      skilllevel = 0
       mezame = getCookie("mezameunit")
       language = getCookie("languageunit")
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
@@ -266,10 +251,7 @@
          if (curCookie != "") selects[i].value = curCookie;
       }
       document.getElementById("mezame").checked = mezame
-         //changeskilltext("")
-         LLUnit.changeskilllevel(skilllevel)
          for (i = 0; i < 9; i++){
-            //changeskilltext(i)
             LLUnit.changeavatarn(i)
             calslot(i)
          }
