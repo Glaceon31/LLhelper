@@ -305,23 +305,6 @@ var LLUnit = {
       }, defaultHandleFailedRequest);
    },
 
-   changeskilllevel: function(skilllevel) {
-      document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
-      var index = document.getElementById('cardchoice').value
-      if (index == "") {
-         document.getElementById('skillcontainer').style.display = 'none';
-         return;
-      }
-      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
-         if (curCard && curCard.skill){
-            document.getElementById('skillcontainer').style.display = '';
-            document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
-         } else {
-            document.getElementById('skillcontainer').style.display = 'none';
-         }
-      }, defaultHandleFailedRequest);
-   },
-
    cardtoskilltype: function(c){
       if (!c)
          return 0
@@ -583,10 +566,12 @@ var LLSkillContainer = (function() {
       if (this.cardData === undefined) {
          if (cardData === undefined) return;
          this.cardData = cardData;
+         this.skillLevel = 0;
          if (!skipRender) this.render();
       } else {
          if (cardData === undefined || this.cardData.id != cardData.id) {
             this.cardData = cardData;
+            this.skillLevel = 0;
             if (!skipRender) this.render();
          }
       }
