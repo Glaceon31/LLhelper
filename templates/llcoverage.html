@@ -30,11 +30,11 @@
    var mezame = 0
    var language = 0
 
-   var skilllevel = 0
-
    var defer_onload = $.Deferred();
+   var comp_skill = 0;
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
+      comp_skill = new LLSkillContainer();
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
@@ -62,20 +62,6 @@
       return result
    }
    
-   function lvlup(){
-      skilllevel += 1
-      if (skilllevel == 8)
-         skilllevel = 0
-      changeskilllevel()
-   }
-
-   function lvldown(){
-      skilllevel -= 1
-      if (skilllevel == -1)
-         skilllevel = 7
-      changeskilllevel()
-   }
-
    function offsetup(){
     if (document.getElementById('offset').value < 50)
 	{
@@ -98,36 +84,23 @@
 	    document.getElementById('offset').value = 0;
    }
    
-   function changeskilllevel(){
-      document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
-      var index = document.getElementById('cardchoice').value
-      if (index == "") {
-         document.getElementById('skillcontainer').style.display = 'none';
-         return;
-      }
-      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
-         if (curCard && curCard.skill){
-            document.getElementById('skillcontainer').style.display = '';
-            document.getElementById('skilltext').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel);
-         } else {
-            document.getElementById('skillcontainer').style.display = 'none';
-         }
-      }, defaultHandleFailedRequest);
-   }
-
    function changecolor(){
       var index = document.getElementById('cardchoice').value
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
          document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
+         LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+            comp_skill.setCardData(curCard);
+         }, defaultHandleFailedRequest);
    		if (mezame == 0){
    				document.getElementById("mezame").value = "未觉醒"
    		}
    		else{
    				document.getElementById("mezame").value = "已觉醒"
    		}
+      } else {
+         comp_skill.setCardData();
       }
-      changeskilllevel();
       LLUnit.changeavatar('imageselect', index, mezame);
    }
     
@@ -168,6 +141,7 @@
          } else {
             document.getElementById("member"+String(n))[0].selected = true;
          }
+         var skilllevel = comp_skill.skillLevel;
          document.getElementById("skilllevel"+String(n)).innerHTML = String(skilllevel+1);
          document.getElementById('require'+String(n)).value = curCard['skilldetail'][skilllevel].require
          document.getElementById('probability'+String(n)).value = curCard['skilldetail'][skilllevel].possibility
@@ -246,7 +220,6 @@
    
    function init(){
    	//document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
-      skilllevel = 0
    	mezame = getCookie("mezameperfect")
    	language = getCookie("languageperfect")
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
@@ -280,7 +253,6 @@
    			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
    	}
       document.getElementById("mezame").checked = mezame
-      changeskilllevel()
    	for (i = 0; i < 9; i++){
 	    if (document.getElementById("member"+String(i)).value != 0){
    		    //changeskilltext(i)
@@ -472,7 +444,7 @@
       <option value="妖精の国編">妖精之国篇</option>
    </select>
    <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0">
+卡片：<select id="cardchoice" name="cardchoice">
 		<option value="">载入中...</option>
 	</select>
 	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
@@ -482,7 +454,7 @@
 </div>
 <div style="clear:both">
 <p id="skillcontainer" style="display:none">
-   技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
+   技能等级 : <input type="button" id="skilllvup" style="height:20px;width:20px;padding:0" value="▲" /> Lv<nospan id="skilllevel">1</nospan> <input type="button" id="skilllvdown" style="height:20px;width:20px;padding:0" value="▼" />
    </input></nobr><br>
    技能效果 : <span id="skilltext"></span><br/>
 </p>

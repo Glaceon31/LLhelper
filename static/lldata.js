@@ -4,6 +4,13 @@
  *   LLData
  *   LLUnit
  *
+ * components:
+ *   LLComponentBase
+ *     +- LLValuedComponent
+ *   LLComponentCollection
+ *     +- LLSkillContainer
+ *
+ * v0.3.0
  * By ben1222
  */
 
@@ -173,6 +180,113 @@ var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'jpseries', 'series', 'eponym', 'jpeponym']);
 
 /*
+ * base components:
+ *   LLComponentBase
+ *     +- LLValuedComponent
+ *   LLComponentCollection
+ */
+var LLComponentBase = (function () {
+   var cls = function (id, options) {
+      this.id = id;
+      this.exist = false;
+      this.visible = false;
+      if (this.id) {
+         this.element = document.getElementById(this.id);
+         if (this.element) {
+            this.exist = true;
+            if (this.element.style.display != 'none') {
+               this.visible = true;
+            }
+            if (options && options.listen) {
+               var listenList = Object.keys(options.listen);
+               for (var i = 0; i < listenList.length; i++) {
+                  var e = listenList[i];
+                  this.on(e, options.listen[e]);
+               }
+            }
+         }
+      }
+   };
+   var proto = cls.prototype;
+   proto.show = function () {
+      if (!this.exist) return;
+      if (this.visible) return;
+      this.element.style.display = '';
+      this.visible = true;
+   };
+   proto.hide = function () {
+      if (!this.exist) return;
+      if (!this.visible) return;
+      this.element.style.display = 'none';
+      this.visible = false;
+   };
+   proto.toggleVisible = function () {
+      if (!this.exist) return;
+      if (this.visible) {
+         this.hide();
+      } else {
+         this.show();
+      }
+   };
+   proto.serialize = function () {
+      if (!this.exist) return undefined;
+      return this.visible;
+   };
+   proto.deserialize = function (v) {
+      if (v) {
+         this.show();
+      } else {
+         this.hide();
+      }
+   };
+   proto.on = function (e, callback) {
+      if (!this.exist) return;
+      if ((!e) || (!callback)) return;
+      this.element.addEventListener(e, callback);
+   };
+   return cls;
+})();
+
+var LLValuedComponent = (function() {
+   var cls = function (id, options) {
+      LLComponentBase.call(this, id, options);
+      if (!this.exist) {
+         this.value = undefined;
+         return this;
+      }
+      var vk = (options && options.valueKey ? options.valueKey : (this.element.value ? 'value' : 'innerHTML'));
+      this.valueKey = vk;
+      this.value = this.element[vk];
+   };
+   cls.prototype = new LLComponentBase();
+   cls.prototype.constructor = cls;
+   var proto = cls.prototype;
+   proto.get = function () {
+      return this.value;
+   };
+   proto.set = function (v) {
+      if (!this.exist) return;
+      if (v == this.value) return;
+      this.element[this.valueKey] = v;
+      this.value = v;
+   };
+   //TODO: serialize, deserialize
+   return cls;
+})();
+
+var LLComponentCollection = (function() {
+   var cls = function () {
+      this.components = {};
+   };
+   var proto = cls.prototype;
+   proto.add = function (name, component) {
+      this.components[name] = component;
+   };
+   //TODO: serialize, deserialize
+   return cls;
+})();
+
+/*
  * LLUnit: utility functions for unit related operations, used in llnewunit, llnewunitsis, etc.
  */
 var defaultHandleFailedRequest = function() {
@@ -185,9 +299,9 @@ var LLUnit = {
       var level = parseInt(document.getElementById('skilllevel'+String(n)).value)-1;
       if ((level < 0) || (level > 7)) return;
       LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
-         document.getElementById('require'+String(n)).value = card['skilldetail'][level].require;
-         document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
-         document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
+         //document.getElementById('require'+String(n)).value = card['skilldetail'][level].require;
+         //document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
+         //document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
       }, defaultHandleFailedRequest);
    },
 
@@ -230,45 +344,7 @@ var LLUnit = {
       }
    },
 
-   changeskilltext: function(card, n) {
-      var postfix = "";
-      if ((n != "") || (String(n) == "0"))
-         postfix = String(n);
-      var skilltype = LLUnit.cardtoskilltype(card);
-      if (skilltype == 0) {
-         document.getElementById("skilltext"+postfix).style.display = "none";
-      } else {
-         document.getElementById("skilltext"+postfix).style.display = "";
-      }
-      //require
-      if ((skilltype == 1) || (skilltype == 6) || (skilltype == 7))
-         document.getElementById("requiretext"+postfix).innerHTML = "个图标"
-      else if ((skilltype == 2) || (skilltype == 9))
-         document.getElementById("requiretext"+postfix).innerHTML = "个perfect"
-      else if (skilltype == 3)
-         document.getElementById("requiretext"+postfix).innerHTML = "分"
-      else if (skilltype == 10)
-         document.getElementById("requiretext"+postfix).innerHTML = "星星perfect"
-      else if ((skilltype == 4) || (skilltype == 5) || (skilltype == 8))
-         document.getElementById("requiretext"+postfix).innerHTML = "秒"
-      else if ((skilltype == 11) || (skilltype == 12) || (skilltype == 13))
-         document.getElementById("requiretext"+postfix).innerHTML = "combo"
-      //effect
-      if ((skilltype == 1) || (skilltype == 2) || (skilltype == 3) || (skilltype == 4) || (skilltype == 10) || (skilltype == 11)){
-         document.getElementById("effecttext"+postfix).innerHTML = "增加"
-         document.getElementById("unittext"+postfix).innerHTML = "分"
-      }
-      if ((skilltype == 5) || (skilltype == 6) || (skilltype == 12)){
-         document.getElementById("effecttext"+postfix).innerHTML = "增强判定"
-         document.getElementById("unittext"+postfix).innerHTML = "秒"
-      }
-      if ((skilltype == 7) || (skilltype == 8) || (skilltype == 9) || (skilltype == 13)){
-         document.getElementById("effecttext"+postfix).innerHTML = "回复"
-         document.getElementById("unittext"+postfix).innerHTML = "点体力"
-      }
-   },
-
-   // kizuna from twintailos.js
+   // kizuna from twintailos.js, skilllevel from each page
    applycarddata: function () {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
@@ -276,14 +352,8 @@ var LLUnit = {
          document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
          LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
+            comp_skill.setCardData(card);
 
-            //document.getElementById('skill').value = LLUnit.cardtoskilltype(card)
-            if (card.skill){
-               //skilllevel = parseInt(document.getElementById('skilllevel').innerHTML)
-               document.getElementById('require').innerHTML = card['skilldetail'][skilllevel].require
-               document.getElementById('possibility').innerHTML = card['skilldetail'][skilllevel].possibility
-               document.getElementById('score').innerHTML = card['skilldetail'][skilllevel].time
-            }
             var infolist2 = ["smile", "pure", "cool"]
             if (!mezame){
                for (var i in infolist2){
@@ -298,13 +368,14 @@ var LLUnit = {
                document.getElementById("mezame").value = "已觉醒"
             }
             document.getElementById("kizuna").value = kizuna[card.rarity][mezame]
-            //LLUnit.changeskilltext(card, "")
          }, defaultHandleFailedRequest);
+      } else {
+         comp_skill.setCardData();
       }
       LLUnit.changeavatar('imageselect', index, mezame);
    },
 
-   // getimagepath require twintailos.js
+   // getimagepath require twintailosu.js
    changeavatar: function (elementid, cardid, mezame) {
       var path;
       if ((!cardid) || cardid == "0")
@@ -372,7 +443,6 @@ var LLUnit = {
             document.getElementById("maxcost"+String(n)).value = card.minslot;
          }, defaultHandleFailedRequest);
       }
-      //changeskilltext(n)
       if (n == 4){
          LLUnit.changecenter()
       }
@@ -446,5 +516,76 @@ var LLUnit = {
       return true;
    }
 };
+
+/*
+ * componsed components
+ *   LLSkillContainer (require LLUnit)
+ */
+var LLSkillContainer = (function() {
+   var cls = function (options) {
+      LLComponentCollection.call(this);
+      this.skillLevel = 0; // base 0, range 0-7
+      this.cardData = undefined;
+      options = options || {
+         container: 'skillcontainer',
+         lvup: 'skilllvup',
+         lvdown: 'skilllvdown',
+         level: 'skilllevel',
+         text: 'skilltext'
+      };
+      var me = this;
+      this.add('container', new LLComponentBase(options.container));
+      this.add('lvup', new LLComponentBase(options.lvup));
+      this.components.lvup.on('click', function (e) {
+         me.setSkillLevel(me.skillLevel+1);
+      });
+      this.add('lvdown', new LLComponentBase(options.lvdown));
+      this.components.lvdown.on('click', function (e) {
+         me.setSkillLevel(me.skillLevel-1);
+      });
+      this.add('level', new LLValuedComponent(options.level));
+      this.add('text', new LLValuedComponent(options.text));
+      this.setCardData(options.cardData, true);
+      this.render();
+   };
+   cls.prototype = new LLComponentCollection();
+   cls.prototype.constructor = cls;
+   var proto = cls.prototype;
+   proto.setSkillLevel = function (lv) {
+      if (lv == this.skillLevel) return;
+      if (lv > 7) {
+         this.skillLevel = 0;
+      } else if (lv < 0) {
+         this.skillLevel = 7;
+      } else {
+         this.skillLevel = lv;
+      }
+      this.render();
+   };
+   proto.setCardData = function (cardData, skipRender) {
+      if (this.cardData === undefined) {
+         if (cardData === undefined) return;
+         this.cardData = cardData;
+         this.skillLevel = 0;
+         if (!skipRender) this.render();
+      } else {
+         if (cardData === undefined || this.cardData.id != cardData.id) {
+            this.cardData = cardData;
+            this.skillLevel = 0;
+            if (!skipRender) this.render();
+         }
+      }
+   };
+   proto.render = function () {
+      if ((!this.cardData) || this.cardData.skill == 0) {
+         this.components.container.hide();
+      } else {
+         this.components.container.show();
+         this.components.text.set(LLUnit.getCardSkillText(this.cardData, this.skillLevel));
+         this.components.level.set(this.skillLevel+1);
+      }
+   };
+   return cls;
+})();
 
 
