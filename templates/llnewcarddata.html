@@ -25,7 +25,6 @@
 
    var attcolor = new Array();
    var language = 0
-   var skilllevel = 0
    var cslot = 0
    var maxslot = 0
    var minslot = 0
@@ -62,9 +61,28 @@
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var defer_onload = $.Deferred();
+   var comp_skill = 0;
+   var comp_skill2 = 0;
    LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
+      comp_skill = new LLSkillContainer();
+      comp_skill2 = new LLSkillContainer({
+         container: 'skillcontainer2',
+         lvup: 'skilllvup2',
+         lvdown: 'skilllvdown2',
+         level: 'skilllevel2',
+         text: 'skilltext2'
+      });
+      var origSetSkillLevel = comp_skill.setSkillLevel;
+      var newSetSkillLevel = function (lv) {
+         if (this.skillLevel == lv) return;
+         origSetSkillLevel.call(comp_skill, lv);
+         origSetSkillLevel.call(comp_skill2, lv);
+         changecolor();
+      };
+      comp_skill.setSkillLevel = newSetSkillLevel;
+      comp_skill2.setSkillLevel = newSetSkillLevel;
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
@@ -75,20 +93,6 @@
          naipan = 26667
       else
          naipan = 15000
-      changecolor()
-   }
-
-   function lvlup(){
-      skilllevel += 1
-      if (skilllevel == 8)
-         skilllevel = 0
-      changecolor()
-   }
-
-   function lvldown(){
-      skilllevel -= 1
-      if (skilllevel == -1)
-         skilllevel = 7
       changecolor()
    }
 
@@ -189,6 +193,8 @@
       var index = document.getElementById('cardchoice').value
       if (index == "") {
          document.getElementById("result").style.display = 'none'
+         comp_skill.setCardData();
+         comp_skill2.setCardData();
          return;
       }
       var need_scroll = (document.getElementById("result").style.display == 'none');
@@ -224,19 +230,16 @@
          if (cslot == -1)
             cslot = minslot
          document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
-   		if (cnname == jpname){
-   			if (!cnname)
-   				document.getElementById('skill').innerHTML = LLUnit.getCardSkillText(curCard, skilllevel)
-   			else
-   				document.getElementById('skill').innerHTML = '【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(curCard, skilllevel)
-   		}
-   		else
-   			document.getElementById('skill').innerHTML = '【'+cnname+'】<br>【'+jpname+'】<br><input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv: '+String(skilllevel+1)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input><br>'+LLUnit.getCardSkillText(curCard, skilllevel)
-   		document.getElementById('skill2').innerHTML = document.getElementById('skill').innerHTML
+         var skillname = (cnname == jpname ? (cnname ? '【'+jpname+'】' : '无') : '【'+cnname+'】<br>【'+jpname+'】');
+         document.getElementById('skillname').innerHTML = skillname;
+         document.getElementById('skillname2').innerHTML = skillname;
+         comp_skill.setCardData(curCard);
+         comp_skill2.setCardData(curCard);
+         var skilllevel = comp_skill.skillLevel;
          document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
    		document.getElementById('centerskill').innerHTML = cskilltext(curCard)
    		document.getElementById('centerskill2').innerHTML = cskilltext(curCard)
-   		changeskilleffect(curCard)
+   		changeskilleffect(curCard, skilllevel)
    		for (i in infolist2){
    			document.getElementById(infolist2[i]+'1').innerHTML = curCard[infolist2[i]]
    			document.getElementById(infolist2[i]+'1').style.color = attcolor[infolist2[i]]
@@ -329,7 +332,7 @@
       }, defaultHandleFailedRequest);
    }
    
-   function changeskilleffect(c){
+   function changeskilleffect(c, skilllevel){
    	document.getElementById('skilleffecttitle').style.display = ''
    	document.getElementById('skilleffect').style.display = ''
    	if ((!c.skill) || (c.support == 1) || !LLUnit.isStrengthSupported(c)){
@@ -548,7 +551,7 @@
       <option value="小悪魔編">小恶魔篇</option>
    </select><br>
 高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" style="width:50px"><br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1;skilllevel=0">
+卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1">
 		<option value="">载入中...</option>
 	</select>
 	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
@@ -592,7 +595,14 @@
 	<td id="pure1"></td>
 	<td id="cool1"></td>
 	<td id="kizuna1"></td>
-	<td id="skill" rowspan="2"></td>
+   <td id="skill" rowspan="2">
+      <div id="skillname"></div>
+      <div id="skillcontainer" style="display:none">
+         <input type="button" id="skilllvup" style="height:20px;width:20px;padding:0" value="▲" /> Lv: <nospan id="skilllevel">1</nospan> <input type="button" id="skilllvdown" style="height:20px;width:20px;padding:0" value="▼" />
+         <br/>
+         <span id="skilltext"></span>
+      </div>
+   </td>
 	<td id='skilleffect' rowspan="2"></td>
    <td id="skillslot" rowspan="2"></td>
 	<td id="centerskill" rowspan="2"></td>
@@ -609,7 +619,14 @@
 	<td id="pure2"></td>
 	<td id="cool2"></td>
 	<td id="kizuna2"></td>
-	<td id="skill2" style="display:none"></td>
+   <td id="skill2" style="display:none">
+      <div id="skillname2"></div>
+      <div id="skillcontainer2" style="display:none">
+         <input type="button" id="skilllvup2" style="height:20px;width:20px;padding:0" value="▲" /> Lv: <nospan id="skilllevel2">1</nospan> <input type="button" id="skilllvdown2" style="height:20px;width:20px;padding:0" value="▼" />
+         <br/>
+         <span id="skilltext2"></span>
+      </div>
+   </td>
 	<td id="skilleffect2" style="display:none"></td>
    <td id="skillslot2" style="display:none"></td>
 	<td id="centerskill2" style="display:none"></td>
