@@ -57,15 +57,15 @@
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
 
-   var skilllevel = 0
-
    var defer_onload = $.Deferred();
+   var comp_skill = 0;
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       llcard = new LLCard(cardData);
+      comp_skill = new LLSkillContainer();
       init();
       document.getElementById('cardchoice').options[0].innerHTML = '';
       document.getElementById('loadingbox').style.display = 'none';
-   }, LLUnit.defaultHandleFailedRequest);
+   }, defaultHandleFailedRequest);
 
    function threetonumber(three){
       var result = three
@@ -79,31 +79,6 @@
          result = result[1]
       }
       return result
-   }
-
-   function lvlup(){
-      skilllevel += 1
-      if (skilllevel == 8)
-         skilllevel = 0
-      changeskilllevel()
-   }
-
-   function lvldown(){
-      skilllevel -= 1
-      if (skilllevel == -1)
-         skilllevel = 7
-      changeskilllevel()
-   }
-
-   function changeskilllevel(){
-      document.getElementById('skilllevel').innerHTML = String(skilllevel+1)
-      index = document.getElementById('cardchoice').value
-      /*
-      if (cards[index].skill){
-         document.getElementById('require').innerHTML = cards[index]['skilldetail'][skilllevel].require
-         document.getElementById('possibility').innerHTML = cards[index]['skilldetail'][skilllevel].possibility
-         document.getElementById('score').innerHTML = cards[index]['skilldetail'][skilllevel].score
-      }*/
    }
 
    naipan = 480
@@ -246,7 +221,6 @@
 
    function init(){
       //document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
-      skilllevel = 0
       mezame = getCookie("mezameunit")
       language = getCookie("languageunit")
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
@@ -277,12 +251,7 @@
          if (curCookie != "") selects[i].value = curCookie;
       }
       document.getElementById("mezame").checked = mezame
-      try {
-         //changeskilltext("")
-         changeskilllevel()
-         //changeavatarselect()
          for (i = 0; i < 9; i++){
-            //changeskilltext(i)
             LLUnit.changeavatarn(i)
             calslot(i)
          }
@@ -291,26 +260,9 @@
          // above codes may select songs/cards/filters according to cookies, so refresh it...
          llsong.onSongFilterChange();
          llcard.onCardFilterChange();
-      } catch (err) {
-        console.log(err);
-      }
 
       {{additional_script|safe}}
    }
-
-   function sortstrength(){
-   	min = parseInt(document.getElementById("strength0").innerHTML)
-   	minnum = 0
-   	for (i = 1; i < 9; i++){
-   		tmp = parseInt(document.getElementById("strength"+String(i)).innerHTML)
-   		if (tmp < min){
-   			min = tmp
-   			minnum = i
-   		}
-   	}
-   	document.getElementById("strength"+String(minnum)).style.color = "red"
-   }
-
 
    function saveToCookie(){
    	var inputs = document.getElementsByTagName("input");
@@ -994,174 +946,10 @@
 	时间:<input type="number" step="any" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>
 	星星perfect数:<input type="number" id="starperfect" name="starperfect" value="47" autocomplete="off" style="width:50px">（只有星星系加分需要填写）<br>
 <br>
-<h3>卡片库</h3>
-筛选：<select id="rarity" name="rarity">
-      <option value="">稀有度</option>
-      <option value="N">N</option>
-      <option value="R">R</option>
-      <option value="SR">SR</option>
-      <option value="SSR">SSR</option>
-      <option value="UR">UR</option>
-   </select>
-   <select id="chr" name="chr">
-      <option value="">角色</option>
-      <option value="高坂穗乃果">高坂穗乃果</option>
-      <option value="绚濑绘里">绚濑绘里</option>
-      <option value="南小鸟">南小鸟</option>
-      <option value="园田海未">园田海未</option>
-      <option value="星空凛">星空凛</option>
-      <option value="西木野真姬">西木野真姬</option>
-      <option value="东条希">东条希</option>
-      <option value="小泉花阳">小泉花阳</option>
-      <option value="矢泽妮可">矢泽妮可</option>
-      <option value="高海千歌">高海千歌</option>
-      <option value="樱内梨子">樱内梨子</option>
-      <option value="松浦果南">松浦果南</option>
-      <option value="黑泽黛雅">黑泽黛雅</option>
-      <option value="渡边曜">渡边曜</option>
-      <option value="津岛善子">津岛善子</option>
-      <option value="国木田花丸">国木田花丸</option>
-      <option value="小原鞠莉">小原鞠莉</option>
-      <option value="黑泽露比">黑泽露比</option>
-   </select>
-   <select id="unitgrade" name="unitgrade">
-      <option value="">年级小队</option>
-      <option value="4">μ's</option>
-      <option value="5">Aqours</option>
-      <option value="1">一年级</option>
-      <option value="2">二年级</option>
-      <option value="3">三年级</option>
-      <option value="6">Printemps</option>
-      <option value="7">lilywhite</option>
-      <option value="8">BiBi</option>
-      <option value="9">CYaRon!</option>
-      <option value="10">AZALEA</option>
-      <option value="11">Guilty Kiss</option>
-   </select>
-   <select id="att" name="att">
-      <option value="">属性</option>
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
-   </select>
-   <select id="triggertype" name="triggertype">
-      <option value="">触发类型</option>
-      <option value="1">时间</option>
-      <option value="3">图标</option>
-      <option value="4">combo</option>
-      <option value="5">分数</option>
-      <option value="6">perfect</option>
-      <option value="12">星星perfect</option>
-   </select>
-   <select id="skilltype" name="skilltype">
-      <option value="">技能类型</option>
-      <option value="4">小判定</option>
-      <option value="5">大判定</option>
-      <option value="9">回血</option>
-      <option value="11">加分</option>
-   </select>
-   <select id="cardtype" name="cardtype">
-      <option value="">卡片类型</option>
-      <option value="活动卡">活动卡</option>
-      <option value="登录奖励">登录奖励</option>
-   </select>
-   <select id="special" name="special">
-      <option value="">是否特典卡</option>
-      <option value=0>不是特典</option>
-      <option value=1>是特典</option>
-   </select>
-   <select id="setname" name="setname">
-      <option value="">套卡名</option>
-      <option value="初期">初期</option>
-      <option value="職業編">职业篇</option>
-      <option value="動物編">动物篇</option>
-      <option value="8月編">8月篇</option>
-      <option value="9月編">9月篇</option>
-      <option value="10月編">10月篇</option>
-      <option value="11月編">11月篇</option>
-      <option value="12月編">12月篇</option>
-      <option value="1月編">1月篇</option>
-      <option value="2月編">2月篇</option>
-      <option value="3月編">3月篇</option>
-      <option value="4月編">4月篇</option>
-      <option value="5月編">5月篇</option>
-      <option value="6月編">6月篇</option>
-      <option value="7月編">7月篇</option>
-      <option value="チャイナドレス編">旗袍篇</option>
-      <option value="カフェメイド編">女仆篇</option>
-      <option value="ハロウィン編">万圣篇</option>
-      <option value="星座編">星座篇</option>
-      <option value="雪山編">雪山篇</option>
-      <option value="七福神編">七福神篇</option>
-      <option value="バレンタイン編">情人节篇</option>
-      <option value="ホワイトデー編">白色情人节篇</option>
-      <option value="職業編(Part2">职业篇2</option>
-      <option value="サイバー編">电玩篇</option>
-      <option value="手品師編">魔术师篇</option>
-      <option value="マリン編">海兵篇</option>
-      <option value="プール編">泳池篇</option>
-      <option value="くのいち編">忍者篇</option>
-      <option value="動物編(Part2)">动物篇2</option>
-      <option value="舞踏会編">舞踏会篇</option>
-      <option value="クリスマス編">圣诞篇</option>
-      <option value="サーカス編">马戏团篇</option>
-      <option value="妖精の国編">妖精之国篇</option>
-   </select>
-   <input type="checkbox" id="showncard" name="showncard">显示N卡</input>
-   <br>
-卡片：<select id="cardchoice" name="cardchoice" onchange="skilllevel = 0;changeskilllevel()">
-		<option value="">载入中...</option>
-	</select>
-	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-	（特典卡需选择觉醒）<br>
-<div style="float:left">
-	裸smile :<input type="number" id="smile" name="smile" value="0" autocomplete="off" style="color:red"></input><br>
-	裸pure :<input type="number" id="pure" name="pure" value="0" autocomplete="off" style="color:green"><br>
-	裸cool :<input type="number" id="cool" name="cool" value="0" autocomplete="off" style="color:blue"><br>
-	主属性 :<select id="main" name="main">
-		<option value="smile" style="color:red">smile</option>
-		<option value="pure" style="color:green">pure</option>
-		<option value="cool" style="color:blue">cool</option>
-	</select><br>
-	绊:<input type="number" id="kizuna" name="kizuna" value="0" autocomplete="off" ><br>
-   </div>
 
-   <div style="float:left">
-<img id="imageselect">
-</div>
-<div style="clear:both">
-   <!--
-	技能 :<select id="skill" name="skill">
-		<option value=0>无</option>
-		<option value=1>图标系加分</option>
-		<option value=2>perfect系加分</option>
-		<option value=3>分数系加分</option>
-		<option value=4>时间系加分</option>
-		<option value=5>时间系判定</option>
-		<option value=6>图标系判定</option>
-		<option value=7>图标系回血</option>
-		<option value=8>时间系回血</option>
-		<option value=9>perfect系回血</option>
-		<option value=10>星星perfect系加分</option>
-		<option value=11>combo系加分</option>
-		<option value=12>combo系判定</option>
-		<option value=13>combo系回血</option>
-	</select><br><nobr>-->
+{% include 'components/card-selector.html' %}
 
-	<p id="skilltext" style="display:none">
-
-   技能等级 : <input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="lvlup()"></input> Lv<nospan id="skilllevel">1</nospan> <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="lvldown()"></input></nobr>
-   </input></nobr><br>
-   技能效果 :每<nobr id="require" name="require"></nobr>
-   <nobr id="requiretext"></nobr>
-   <nobr id="possibility" name="possibility"></nobr>%概率
-   <nobr id="effecttext"></nobr>
-   <nobr id="score" name="score"></nobr>
-   <nobr id="unittext"></nobr>
-   </nobr><br><br>
-	</p>
-<br><br>
-
+<div style="clear:both"></div>
 <h3>队伍属性</h3>
 <div>
 <div style="float:left">
@@ -1358,7 +1146,6 @@
   </div>
 </div>
 
-</div>
 </div>
 <div style="clear:both">
 </div>
