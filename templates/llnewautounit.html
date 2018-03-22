@@ -429,11 +429,12 @@
                requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
                   if (!cur.maxcost) cur.maxcost = card.minslot;
                   if (!cur.main) {
+                     var intMezame = parseInt(cur.mezame);
                      cur.main = card.attribute;
-                     cur.smile = card.smile2;
-                     cur.pure = card.pure2;
-                     cur.cool = card.cool2;
-                     cur[cur.main] += kizuna[card.rarity][cur.mezame];
+                     cur.smile = (intMezame ? card.smile2 : card.smile);
+                     cur.pure = (intMezame ? card.pure2 : card.pure);
+                     cur.cool = (intMezame ? card.cool2 : card.cool);
+                     cur[cur.main] += kizuna[card.rarity][intMezame];
                   }
                   submember[index] = cur;
                }));

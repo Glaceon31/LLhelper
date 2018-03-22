@@ -577,7 +577,7 @@ var LLSkillContainer = (function() {
       }
    };
    proto.render = function () {
-      if ((!this.cardData) || this.cardData.skill == 0) {
+      if ((!this.cardData) || this.cardData.skill == 0 || this.cardData.skill == null) {
          this.components.container.hide();
       } else {
          this.components.container.show();
