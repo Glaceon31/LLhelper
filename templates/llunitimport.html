@@ -131,13 +131,13 @@ function uploadDone(event) {
     var names = result.names;
     var teamjson = JSON.stringify(team);
 
-    document.getElementById("scaled").src="http://api.sif.lcm.im/temp/"+handle+"/scaled.jpg";
+    document.getElementById("scaled").src="https://api.sif.lcm.im/temp/"+handle+"/scaled.jpg";
     document.getElementById("dlunit").href="data:text/plain,"+teamjson;
     document.getElementById("sis").href="/llnewunitsis?unit="+teamjson;
     document.getElementById("unitstrength").href="/llnewunit?unit="+teamjson;
     for(var i=1; i<10; i++) {
         var strI = i.toString();
-        document.getElementById("img"+strI).src="http://api.sif.lcm.im/temp/"+handle+"/"+strI+".png";
+        document.getElementById("img"+strI).src="https://api.sif.lcm.im/temp/"+handle+"/"+strI+".png";
         document.getElementById("name"+strI).title=names[i];
         $("#name"+strI).html("["+team[i-1].cardid.toString()+"] "+names[i-1] + " Lv. " + team[i-1].cardlevel.toString());
     }
@@ -160,7 +160,7 @@ function process_error(msg) {
 
 function imgUpload() {
     var fd = document.getElementById("file-upload").files[0];
-    var url = "http://api.sif.lcm.im/teamview";
+    var url = "https://api.sif.lcm.im/teamview";
     var form = new FormData();
     form.append("file", fd);
     var xhr = new XMLHttpRequest();
@@ -189,7 +189,7 @@ function changeImg() {
 //server_status
 function check_server_status() {
     var xhr = new XMLHttpRequest();
-    xhr.open("get", "http://api.sif.lcm.im/status", true);
+    xhr.open("get", "https://api.sif.lcm.im/status", true);
     xhr.onload = function (event) {
         $("#server_status").html("OK");
         $("#server_status").css("color", "#00cc00");
