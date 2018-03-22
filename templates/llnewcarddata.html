@@ -6,7 +6,6 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.12"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -20,8 +19,6 @@
    var regS = new RegExp("&#34;", "g")
    var regS2 = new RegExp("&#39;", "g")
    var regSand = new RegExp("&amp;", "g")
-   //var llcard = new LLCard(cardsjson);
-   var llcard = 0;
 
    var attcolor = new Array();
    var language = 0
@@ -44,28 +41,18 @@
    cskill['smile'] = "公主"
    cskill['pure'] = "天使"
    cskill['cool'] = "皇后"
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
-
 
    var member = ['','1年生','2年生','3年生',"μ's",'Aqours','Printemps','lilywhite','BiBi','CYaRon!','AZALEA','Guilty Kiss']
    
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_skill2 = 0;
+   var comp_cardselector = 0;
+
+   // TODO: need load skill data for lowbound filter to work on skill calculation...
    LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
-      llcard = new LLCard(cardData);
+      // init 2 skill containers
       comp_skill = new LLSkillContainer();
       comp_skill2 = new LLSkillContainer({
          container: 'skillcontainer2',
@@ -83,8 +70,15 @@
       };
       comp_skill.setSkillLevel = newSetSkillLevel;
       comp_skill2.setSkillLevel = newSetSkillLevel;
-      init();
-      document.getElementById('cardchoice').options[0].innerHTML = '';
+
+      // init card selector, with lowbound filter
+      comp_cardselector = new LLCardSelector(cardData);
+      comp_cardselector.addComponentAsFilter('lowbound', new LLValuedComponent('lowbound'), function (card, v) {
+         return (v == '' || isNaN(v) || getmaxstrength(card) >= parseInt(v));
+      });
+      comp_cardselector.onCardChange = changecolor;
+
+      // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
@@ -198,8 +192,6 @@
          return;
       }
       var need_scroll = (document.getElementById("result").style.display == 'none');
-      var c = attcolor[llcard.cards[index].attribute]
-      document.getElementById('cardchoice').style.color = c
       LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function (curCard) {
          document.getElementById("result").style.display = ''
          var infolist2 = ["smile", "pure", "cool"]
@@ -230,21 +222,19 @@
          if (cslot == -1)
             cslot = minslot
          document.getElementById('skillslot').innerHTML = '<input type="button" style="height:20px;width:20px;padding:0" value="▲" onclick="slotup()"></input>'+String(cslot)+' <input type="button" style="height:20px;width:20px;padding:0" value="▼" onclick="slotdown()"></input>'
+         document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
          var skillname = (cnname == jpname ? (cnname ? '【'+jpname+'】' : '无') : '【'+cnname+'】<br>【'+jpname+'】');
          document.getElementById('skillname').innerHTML = skillname;
          document.getElementById('skillname2').innerHTML = skillname;
          comp_skill.setCardData(curCard);
          comp_skill2.setCardData(curCard);
          var skilllevel = comp_skill.skillLevel;
-         document.getElementById('skillslot2').innerHTML = document.getElementById('skillslot').innerHTML
    		document.getElementById('centerskill').innerHTML = cskilltext(curCard)
    		document.getElementById('centerskill2').innerHTML = cskilltext(curCard)
    		changeskilleffect(curCard, skilllevel)
    		for (i in infolist2){
    			document.getElementById(infolist2[i]+'1').innerHTML = curCard[infolist2[i]]
-   			document.getElementById(infolist2[i]+'1').style.color = attcolor[infolist2[i]]
    			document.getElementById(infolist2[i]+'2').innerHTML = curCard[infolist2[i]+'2']
-   			document.getElementById(infolist2[i]+'2').style.color = attcolor[infolist2[i]]
    		}
          colors = ['smile','pure','cool']
          for (i in colors){
@@ -285,7 +275,6 @@
                   document.getElementById(atttype+'strength1').innerHTML = ''
                   //document.getElementById('3pstrength1').innerHTML = ''
                }
-      			document.getElementById(atttype+'strength1').style.color = attcolor[atttype]
                //document.getElementById('3pstrength1').style.color = attcolor[curCard.attribute]
       			//document.getElementById('strengthlevel1').innerHTML = strengthlevel(strength(curCard, 0, skilllevel, 0, 1))
       			//document.getElementById('strengthlevel1').style.color = attcolor[curCard.attribute]
@@ -323,7 +312,6 @@
                //document.getElementById('3pstrength2').innerHTML = parseInt(0.03*att*(1+0.052*(cslot))*1.15)
             }
       		//document.getElementById('strength2').innerHTML = strength(curCard, 1, skilllevel, 0, 1)
-      		document.getElementById(atttype+'strength2').style.color = attcolor[atttype]
             //document.getElementById('3pstrength2').style.color = attcolor[curCard.attribute]
       		//document.getElementById('strengthlevel2').innerHTML = strengthlevel(strength(curCard, 1, skilllevel, 0, 1))
       		//document.getElementById('strengthlevel2').style.color = attcolor[curCard.attribute]
@@ -363,8 +351,7 @@
    
    function changeLanguage(){
       language = 1-language
-      llcard.language = language;
-      llcard.onCardFilterChange();
+      comp_cardselector.setLanguage(language);
    }
    
    
@@ -400,13 +387,6 @@
    	return c.attribute+cpostfix+'<br>'+ceffect
    }
    
-   function init(){
-      llcard.onCardSelectChange = changecolor;
-      llcard.calcCardMaxStrength = getmaxstrength;
-      llcard.initListeners();
-      llcard.onCardFilterChange();
-   }
-   
    </script>
 {% endblock %}
 
@@ -437,24 +417,24 @@
 	</select>
 	<select id="chr" name="chr">
 		<option value="">角色</option>
-		<option value="高坂穗乃果">高坂穗乃果</option>
-		<option value="绚濑绘里">绚濑绘里</option>
-		<option value="南小鸟">南小鸟</option>
-		<option value="园田海未">园田海未</option>
+		<option value="高坂穂乃果">高坂穗乃果</option>
+		<option value="絢瀬絵里">绚濑绘里</option>
+		<option value="南ことり">南小鸟</option>
+		<option value="園田海未">园田海未</option>
 		<option value="星空凛">星空凛</option>
-		<option value="西木野真姬">西木野真姬</option>
-		<option value="东条希">东条希</option>
-		<option value="小泉花阳">小泉花阳</option>
-		<option value="矢泽妮可">矢泽妮可</option>
+		<option value="西木野真姫">西木野真姬</option>
+		<option value="東條希">东条希</option>
+		<option value="小泉花陽">小泉花阳</option>
+		<option value="矢澤にこ">矢泽妮可</option>
       <option value="高海千歌">高海千歌</option>
-      <option value="樱内梨子">樱内梨子</option>
+      <option value="桜内梨子">樱内梨子</option>
       <option value="松浦果南">松浦果南</option>
-      <option value="黑泽黛雅">黑泽黛雅</option>
-      <option value="渡边曜">渡边曜</option>
-      <option value="津岛善子">津岛善子</option>
+      <option value="黒澤ダイヤ">黑泽黛雅</option>
+      <option value="渡辺曜">渡边曜</option>
+      <option value="津島善子">津岛善子</option>
       <option value="国木田花丸">国木田花丸</option>
       <option value="小原鞠莉">小原鞠莉</option>
-      <option value="黑泽露比">黑泽露比</option>  
+      <option value="黒澤ルビィ">黑泽露比</option>  
 	</select>
    <select id="unitgrade" name="unitgrade">
       <option value="">年级小队</option>
@@ -591,9 +571,9 @@
 <tr id="notmezame">
 	<td><img id="avatar1" height="75px" width="75px"></img></td>
 	<td id="hp1"></td>
-	<td id="smile1"></td>
-	<td id="pure1"></td>
-	<td id="cool1"></td>
+	<td id="smile1" style="color:red"></td>
+	<td id="pure1" style="color:green"></td>
+	<td id="cool1" style="color:blue"></td>
 	<td id="kizuna1"></td>
    <td id="skill" rowspan="2">
       <div id="skillname"></div>
@@ -607,17 +587,17 @@
    <td id="skillslot" rowspan="2"></td>
 	<td id="centerskill" rowspan="2"></td>
    <td id="3pstrength1" style="display:none"></td>
-	<td id="smilestrength1"></td>
-   <td id="purestrength1"></td>
-   <td id="coolstrength1"></td>
+   <td id="smilestrength1" style="color:red"></td>
+   <td id="purestrength1" style="color:green"></td>
+   <td id="coolstrength1" style="color:blue"></td>
 	<td id="strengthlevel1" style="display:none"></td>
 </tr>
 <tr>
 	<td><img id="avatar2" height="75px" width="75px"></img></td>
 	<td id="hp2"></td>
-	<td id="smile2"></td>
-	<td id="pure2"></td>
-	<td id="cool2"></td>
+	<td id="smile2" style="color:red"></td>
+	<td id="pure2" style="color:green"></td>
+	<td id="cool2" style="color:blue"></td>
 	<td id="kizuna2"></td>
    <td id="skill2" style="display:none">
       <div id="skillname2"></div>
@@ -631,9 +611,9 @@
    <td id="skillslot2" style="display:none"></td>
 	<td id="centerskill2" style="display:none"></td>
    <td id="3pstrength2" style="display:none"></td>
-	<td id="smilestrength2"></td>
-   <td id="purestrength2"></td>
-   <td id="coolstrength2"></td>
+   <td id="smilestrength2" style="color:red"></td>
+   <td id="purestrength2" style="color:green"></td>
+   <td id="coolstrength2" style="color:blue"></td>
 	<td id="strengthlevel2" style="display:none"></td>
 </tr>
 </table>
