@@ -745,6 +745,7 @@ var LLCardSelector = (function() {
       // build card options for both language
       var cardOptionsCN = [{'value': '', 'text': ''}];
       var cardOptionsJP = [{'value': '', 'text': ''}];
+      var setnameSet = {};
       var cardKeys = Object.keys(cards).sort(function(a,b){return parseInt(a) - parseInt(b);});
       for (var i = 0; i < cardKeys.length; i++) {
          var index = cardKeys[i];
@@ -760,9 +761,28 @@ var LLCardSelector = (function() {
          var color = this.attcolor[curCard.attribute];
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
+         if (curCard.jpseries && !setnameSet[curCard.jpseries]) {
+            setnameSet[curCard.jpseries] = index;
+         }
       }
       this.cardOptions = [cardOptionsCN, cardOptionsJP];
       this.components.cardchoice.setOptions(this.cardOptions[this.language]);
+
+      // build setname options
+      var setnameOptions = this.components.setname.options;
+      if (setnameOptions) {
+         for (var i = 0; i < setnameOptions.length; i++) {
+            delete setnameSet[setnameOptions[i].value];
+         }
+         var setnameMissingList = Object.keys(setnameSet).sort(function(a,b){return parseInt(setnameSet[a]) - parseInt(setnameSet[b]);});
+         for (var i = 0; i < setnameMissingList.length; i++) {
+            setnameOptions.push({
+               value: setnameMissingList[i],
+               text: setnameMissingList[i]
+            });
+         }
+         this.components.setname.setOptions(setnameOptions);
+      }
 
       // at last, unfreeze the card filter and refresh filter
       this.freezeCardFilter = 0;
