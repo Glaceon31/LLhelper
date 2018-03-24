@@ -402,6 +402,9 @@ var LLComponentCollection = (function() {
     *    getComponent(name)
     *    serialize()
     *    deserialize(v)
+    *    saveCookie(key) (require setCookie)
+    *    loadCookie(key) (require getCookie)
+    *    deleteCookie(key) (require setCookie)
     */
    var cls = function () {
       this.components = {};
@@ -431,6 +434,22 @@ var LLComponentCollection = (function() {
             this.components[i].deserialize(val);
          }
       }
+   };
+   proto.saveCookie = function (key) {
+      setCookie(key, JSON.stringify(this.serialize()), 1);
+   };
+   proto.loadCookie = function (key) {
+      var data = getCookie(key);
+      if (data && data != 'undefined') {
+         try {
+            this.deserialize(JSON.parse(data));
+         } catch (e) {
+            console.error(e);
+         }
+      }
+   };
+   proto.deleteCookie = function (key) {
+      setCookie(key, '', -1);
    };
    return cls;
 })();

@@ -65,14 +65,7 @@
       init();
 
       // load cookie
-      var llnewunit_cardselector = getCookie('llnewunit_cardselector');
-      if (llnewunit_cardselector && llnewunit_cardselector != 'undefined') {
-         try {
-            comp_cardselector.deserialize(JSON.parse(llnewunit_cardselector));
-         } catch (e) {
-            console.error(e);
-         }
-      }
+      comp_cardselector.loadCookie('llnewunit_cardselector');
 
       // addition script
       {{additional_script|safe}}
@@ -183,7 +176,7 @@
          setCookie(selects[i].name+"unit", selects[i].value, -1);
       }
       setCookie("mezame"+"unit", mezame, -1)
-      setCookie('llnewunit_cardselector', '', -1);
+      comp_cardselector.deleteCookie('llnewunit_cardselector');
       window.location.href="/llnewunit"
    }
 
@@ -279,7 +272,7 @@
    	}
    	setCookie("mezame"+"unit", mezame, 1)
    	setCookie("language"+"unit", language, 1)
-      setCookie("llnewunit_cardselector", JSON.stringify(comp_cardselector.serialize()), 1);
+      comp_cardselector.saveCookie('llnewunit_cardselector');
    }
 
    function check(){
