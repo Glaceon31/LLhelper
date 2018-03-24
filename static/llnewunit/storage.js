@@ -4,31 +4,8 @@
 
   function loadUnitFromJSON(json) {
     console.log(json);
-    var member = JSON.parse(json);
-    var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
-    for (var i = 0; i < 9; i++) {
-      for (var j in attlist) {
-        var att = attlist[j];
-        document.getElementById(att + i).value = member[i][att];
-      }
-      document.getElementById('main' + i).value = llcard.cards[member[i]['cardid']].attribute;
-      LLUnit.changeavatarn(i);
-      calslot(i);
-    }
-    LLUnit.changecenter();
-    /*
-    $.ajax({
-      url: '/llloadnewunit-api',
-      type: 'POST',
-      data: json,
-      success: function (data) {
-        var scripts = document.createElement('script');
-        scripts.innerHTML = data;
-        document.body.appendChild(scripts);
-      },
-      contentType: 'application/json',
-    });
-    */
+    var unit = JSON.parse(json);
+    handleLoadUnit(unit);
   }
 
   function readUnitJSON(name) {
