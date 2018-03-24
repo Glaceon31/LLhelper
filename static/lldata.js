@@ -517,7 +517,6 @@ var LLUnit = {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
-         //document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
          LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
             comp_skill.setCardData(card);
