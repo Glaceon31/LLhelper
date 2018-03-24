@@ -189,6 +189,19 @@ var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
  *   LLComponentCollection
  */
 var LLComponentBase = (function () {
+   /* Properties:
+    *    id
+    *    exist
+    *    visible
+    *    element
+    * Methods:
+    *    show
+    *    hide
+    *    toggleVisible
+    *    serialize
+    *    deserialize
+    *    on
+    */
    var cls = function (id, options) {
       this.id = id;
       this.exist = false;
@@ -251,6 +264,15 @@ var LLComponentBase = (function () {
 })();
 
 var LLValuedComponent = (function() {
+   /* Properties:
+    *    value (serialize)
+    *    valueKey
+    * Methods:
+    *    get
+    *    set
+    *    serialize (override)
+    *    deserialize (override)
+    */
    var cls = function (id, options) {
       LLComponentBase.call(this, id, options);
       if (!this.exist) {
@@ -292,11 +314,24 @@ var LLValuedComponent = (function() {
       this.value = v;
       if (this.onValueChange) this.onValueChange(v);
    };
-   //TODO: serialize, deserialize
+   proto.serialize = function () {
+      return this.get();
+   };
+   proto.deserialize = function (v) {
+      this.set(v);
+   };
    return cls;
 })();
 
 var LLSelectComponent = (function() {
+   /* Properties:
+    *    options
+    *    filter
+    * Methods:
+    *    set (override)
+    *    setOptions
+    *    filterOptions
+    */
    var cls = function (id, options) {
       LLValuedComponent.call(this, id, options);
       if (!this.exist) {
@@ -360,6 +395,14 @@ var LLSelectComponent = (function() {
 })();
 
 var LLComponentCollection = (function() {
+   /* Properties:
+    *    components (serialize)
+    * Methods:
+    *    add(name, component)
+    *    getComponent(name)
+    *    serialize()
+    *    deserialize(v)
+    */
    var cls = function () {
       this.components = {};
    };
@@ -367,7 +410,28 @@ var LLComponentCollection = (function() {
    proto.add = function (name, component) {
       this.components[name] = component;
    };
-   //TODO: serialize, deserialize
+   proto.getComponent = function (name) {
+      return this.components[name];
+   };
+   proto.serialize = function () {
+      var ret = {};
+      for (var i in this.components) {
+         var val = this.components[i].serialize();
+         if (val !== undefined) {
+            ret[i] = val;
+         }
+      }
+      return ret;
+   };
+   proto.deserialize = function (v) {
+      if (!v) return;
+      for (var i in this.components) {
+         var val = v[i];
+         if (val !== undefined) {
+            this.components[i].deserialize(val);
+         }
+      }
+   };
    return cls;
 })();
 
@@ -434,7 +498,7 @@ var LLUnit = {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
-         document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
+         //document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
          LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
             comp_skill.setCardData(card);
@@ -622,11 +686,11 @@ var LLSkillContainer = (function() {
       var me = this;
       this.add('container', new LLComponentBase(options.container));
       this.add('lvup', new LLComponentBase(options.lvup));
-      this.components.lvup.on('click', function (e) {
+      this.getComponent('lvup').on('click', function (e) {
          me.setSkillLevel(me.skillLevel+1);
       });
       this.add('lvdown', new LLComponentBase(options.lvdown));
-      this.components.lvdown.on('click', function (e) {
+      this.getComponent('lvdown').on('click', function (e) {
          me.setSkillLevel(me.skillLevel-1);
       });
       this.add('level', new LLValuedComponent(options.level));
@@ -664,17 +728,34 @@ var LLSkillContainer = (function() {
    };
    proto.render = function () {
       if ((!this.cardData) || this.cardData.skill == 0 || this.cardData.skill == null) {
-         this.components.container.hide();
+         this.getComponent('container').hide();
       } else {
-         this.components.container.show();
-         this.components.text.set(LLUnit.getCardSkillText(this.cardData, this.skillLevel));
-         this.components.level.set(this.skillLevel+1);
+         this.getComponent('container').show();
+         this.getComponent('text').set(LLUnit.getCardSkillText(this.cardData, this.skillLevel));
+         this.getComponent('level').set(this.skillLevel+1);
       }
    };
    return cls;
 })();
 
 var LLCardSelector = (function() {
+   /* Properties:
+    *    cards
+    *    language (serialize)
+    *    filters
+    *    freezeCardFilter
+    *    attcolor (const)
+    *    unitgradechr (const)
+    *    cardOptions
+    * Methods:
+    *    handleCardFilter()
+    *    setLanguage(language)
+    *    getCardId()
+    *    isInUnitGroup(unitgrade, character)
+    *    addComponentAsFilter(name, component, filterfunction)
+    *    serialize() (override)
+    *    deserialize(v) (override)
+    */
    var const_attcolor = {
       'smile': 'red',
       'pure': 'green',
@@ -728,7 +809,7 @@ var LLCardSelector = (function() {
          me.addComponentAsFilter(name, comp, f);
       };
       this.add('cardchoice', new LLSelectComponent(options.cardchoice));
-      this.components.cardchoice.onValueChange = function (v) {
+      this.getComponent('cardchoice').onValueChange = function (v) {
          if (me.onCardChange) me.onCardChange(v);
       };
       addSelect('rarity', function (card, v) { return (v == '' || card.rarity == v); });
@@ -761,15 +842,15 @@ var LLCardSelector = (function() {
          var color = this.attcolor[curCard.attribute];
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
-         if (curCard.jpseries && !setnameSet[curCard.jpseries]) {
+         if (curCard.jpseries && curCard.jpseries.indexOf('編') > 0 && !setnameSet[curCard.jpseries]) {
             setnameSet[curCard.jpseries] = index;
          }
       }
       this.cardOptions = [cardOptionsCN, cardOptionsJP];
-      this.components.cardchoice.setOptions(this.cardOptions[this.language]);
+      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
 
       // build setname options
-      var setnameOptions = this.components.setname.options;
+      var setnameOptions = this.getComponent('setname').options;
       if (setnameOptions) {
          for (var i = 0; i < setnameOptions.length; i++) {
             delete setnameSet[setnameOptions[i].value];
@@ -781,7 +862,7 @@ var LLCardSelector = (function() {
                text: setnameMissingList[i]
             });
          }
-         this.components.setname.setOptions(setnameOptions);
+         this.getComponent('setname').setOptions(setnameOptions);
       }
 
       // at last, unfreeze the card filter and refresh filter
@@ -805,14 +886,17 @@ var LLCardSelector = (function() {
    var proto = cls.prototype;
    proto.handleCardFilter = function () {
       var me = this;
-      this.components.cardchoice.filterOptions(function (option) {
+      this.getComponent('cardchoice').filterOptions(function (option) {
          return doFilter(me, option);
       });
    };
    proto.setLanguage = function (language) {
       if (this.language == language) return;
       this.language = language;
-      this.components.cardchoice.setOptions(this.cardOptions[this.language]);
+      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
+   };
+   proto.getCardId = function () {
+      return this.getComponent('cardchoice').get() || '';
    };
    proto.isInUnitGroup = function (unitgrade, character) {
       if (!unitgrade) return true;
@@ -834,6 +918,25 @@ var LLCardSelector = (function() {
          if (!me.freezeCardFilter) me.handleCardFilter();
       };
       comp.onValueChange(comp.get());
+   };
+   var super_serialize = proto.serialize;
+   var super_deserialize = proto.deserialize;
+   proto.serialize = function () {
+      return {
+         language: this.language,
+         components: super_serialize.call(this)
+      };
+   };
+   proto.deserialize = function (v) {
+      if (!v) return;
+      this.freezeCardFilter = 1;
+      if (v.language !== undefined) {
+         this.setLanguage(v.language);
+      }
+      super_deserialize.call(this, v.components);
+      this.freezeCardFilter = 0;
+      this.handleCardFilter();
+      if (this.onCardChange) this.onCardChange(this.getCardId());
    };
    return cls;
 })();

@@ -7,7 +7,6 @@
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='llcard.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -32,8 +31,6 @@
    var regSand = new RegExp("&amp;", "g")
    var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
    var llsong = new LLSong(songsjson);
-   var llcard = 0;
-   //var llcard = new LLCard(cardsjson);
 
    var mezame = 0
    var language = 0
@@ -59,11 +56,28 @@
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
+   var comp_cardselector = 0;
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
-      llcard = new LLCard(cardData);
+      // init components
       comp_skill = new LLSkillContainer();
+      comp_cardselector = new LLCardSelector(cardData);
+      comp_cardselector.onCardChange = LLUnit.applycarddata;
       init();
-      document.getElementById('cardchoice').options[0].innerHTML = '';
+
+      // load cookie
+      var llnewunit_cardselector = getCookie('llnewunit_cardselector');
+      if (llnewunit_cardselector && llnewunit_cardselector != 'undefined') {
+         try {
+            comp_cardselector.deserialize(JSON.parse(llnewunit_cardselector));
+         } catch (e) {
+            console.error(e);
+         }
+      }
+
+      // addition script
+      {{additional_script|safe}}
+
+      // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
@@ -151,8 +165,7 @@
       language = 1-language
       llsong.language = language;
       llsong.onSongFilterChange();
-      llcard.language = language;
-      llcard.onCardFilterChange();
+      comp_cardselector.setLanguage(language);
    }
 
    function toMezame(){
@@ -170,7 +183,8 @@
          setCookie(selects[i].name+"unit", selects[i].value, -1);
       }
       setCookie("mezame"+"unit", mezame, -1)
-   	window.location.href="/llnewunit"
+      setCookie('llnewunit_cardselector', '', -1);
+      window.location.href="/llnewunit"
    }
 
    function saveunit(){
@@ -196,7 +210,7 @@
             document.getElementById(att + i).value = value;
          }
          if (member && member.cardid) {
-            document.getElementById("main" + i).value = llcard.cards[member.cardid].attribute;
+            document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
          }
          LLUnit.changeavatarn(i);
          calslot(i);
@@ -205,22 +219,17 @@
       precalcu();
    }
 
-   var tmponsubmit
    function loadunit(){
       document.getElementById("unitform").action = '/llload/parent.handleLoadUnit'
-      tmponsubmit = document.getElementById("unitform").onsubmit
-      document.getElementById("unitform").onsubmit = ''
       document.getElementById("unitform").target = 'if'
    }
 
    function precalcu(){
    	document.getElementById("unitform").action = ''
-   	document.getElementById("unitform").onsubmit = tmponsubmit
    	document.getElementById("unitform").target = ''
    }
 
    function init(){
-      //document.getElementById('avatar0').src = 'http://i2.tietuku.com/8baa9a87cc083022.jpg'
       mezame = getCookie("mezameunit")
       language = getCookie("languageunit")
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
@@ -233,11 +242,6 @@
       llsong.initListeners();
       llsong.initAttrSelectColor('map');
 
-      llcard.language = language;
-      llcard.onCardSelectChange = LLUnit.applycarddata;
-      llcard.showAllCards();
-      llcard.initListeners();
-
       var inputs = document.getElementsByTagName("input");
       var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++) {
@@ -247,6 +251,7 @@
          }
       }
       for (var i=0; i<selects.length; i++) {
+         if (comp_cardselector.getComponent(selects[i].id)) continue;
          var curCookie = getCookie(selects[i].name+"unit");
          if (curCookie != "") selects[i].value = curCookie;
       }
@@ -259,9 +264,7 @@
          document.getElementById("songsearch").value = ""
          // above codes may select songs/cards/filters according to cookies, so refresh it...
          llsong.onSongFilterChange();
-         llcard.onCardFilterChange();
 
-      {{additional_script|safe}}
    }
 
    function saveToCookie(){
@@ -276,6 +279,7 @@
    	}
    	setCookie("mezame"+"unit", mezame, 1)
    	setCookie("language"+"unit", language, 1)
+      setCookie("llnewunit_cardselector", JSON.stringify(comp_cardselector.serialize()), 1);
    }
 
    function check(){
@@ -495,7 +499,7 @@
       }
       //副c技能
       for (var i = 0; i < 9; i++) {
-         if (llcard.isInUnitGroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
+         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
             result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
             if (mapcenter['secondbase'] == mainatt) {
                attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
@@ -520,7 +524,7 @@
       }
       //好友副c技能
       for (var i = 0; i < 9; i++) {
-         if (llcard.isInUnitGroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
+         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
             result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
             if (mapcenter['secondbase2'] == mainatt) {
                attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
@@ -882,9 +886,6 @@
       document.getElementById("result").scrollIntoView()
    }
 
-   function callback(){
-   	alert('4')
-   }
    </script>
 {% endblock %}
 
@@ -908,8 +909,7 @@
 
 {% block main %}
 <input type="submit" name="clear" value="清空输入" onclick="clearall()"><br>
-<form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
-<!--<form action="/llloadunit"  onsubmit=""  target="if">-->
+<form action="" id="unitform" name="unitform" method="POST" enctype=multipart/form-data>
 <h3>歌曲信息</h3>
 搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
 筛选：
