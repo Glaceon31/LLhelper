@@ -84,24 +84,45 @@
    	document.getElementById("combo").value = -1
    }
    
+   function showCheckWarning(message, inputid) {
+      var checkwarning = document.getElementById('checkwarning');
+      checkwarning.innerHTML = message;
+      checkwarning.style.display = '';
+      checkwarning.href = 'javascript:document.getElementById("' + inputid + '").scrollIntoView();';
+   }
+   function hideCheckWarning() {
+      var checkwarning = document.getElementById('checkwarning');
+      checkwarning.style.display = 'none';
+   }
    function check(){
-   	var inputs = document.getElementsByTagName("input");
-   	for (var i in inputs){
-   		if (inputs[i].type != "text")
-   			continue
-   		if (!isNotNegative(inputs[i].value)){
-   			alert(inputlist[inputs[i].id] + "请输入非负数");
-   			return false;
-   		}
-   	}
-   	if (parseInt(document.getElementById("target").value) > 8000000){
-   		alert("不可能达到8百万点以上")
-   		return false;
-   	}
-   	if (parseInt(document.getElementById("lpwaste").value) > 240){
-   		alert("一天几小时来着？")
-   		return false;
-   	}
+      var inputs = document.getElementsByTagName("input");
+      var hasError = false;
+      for (var i in inputs){
+         if (inputs[i].type != "text")
+            continue
+         var value = inputs[i].value;
+         var inputid = inputs[i].id;
+         var message = '';
+         if (!isNotNegative(value)) {
+            message = inputlist[inputid] + "请输入非负数";
+         } else if (inputid == 'target' && parseInt(value) > 8000000) {
+            message = "不可能达到8百万点以上";
+         } else if (inputid == 'lpwaste' && parseInt(value) > 240) {
+            message = "一天几小时来着？";
+         }
+         if (message != '') {
+            inputs[i].style.backgroundColor = '#fee';
+            if (!hasError) {
+               showCheckWarning(message, inputid);
+               hasError = true;
+            }
+         } else {
+            inputs[i].style.backgroundColor = '';
+         }
+      }
+      if (hasError) return false;
+      hideCheckWarning();
+
    	saveToCookie();
    	calcu();
 	document.getElementById("result").scrollIntoView() 
@@ -134,8 +155,8 @@
          this.item = v.item || 0;
          this.pt = v.pt || 0;
 
-         this.halfexp100 = v.halfexp100 || 1;
-         this.pttable_id = v.pttable_id || 1;
+         this.halfexp100 = (v.halfexp100 === undefined ? 1 : v.halfexp100);
+         this.pttable_id = (v.pttable_id === undefined ? 1 : v.pttable_id);
       };
       var proto = cls.prototype;
       proto.gainExp = function (gain) {
@@ -220,7 +241,7 @@
       inputdata.level = inputdata.lvl;
       inputdata.item = inputdata.items;
       inputdata.pt = inputdata.current;
-      inputdata.halfexp100 = inputdata.expf;
+      inputdata.halfexp100 = parseInt(inputdata.expf);
       inputdata.pttable_id = inputdata.afteraquors;
 
       var safelp = 2;
@@ -388,7 +409,7 @@
 						</select>
 					</div>
 				</div>
-				<div class="form-group">
+				<div class="form-group" style="margin-bottom:0px">
 					<label class="col-xs-4 control-label">活动图平均pt</label>
 					<div class="col-xs-8">
 						<input class="form-control" type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
