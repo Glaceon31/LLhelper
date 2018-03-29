@@ -7,10 +7,12 @@
  * components:
  *   LLComponentBase
  *     +- LLValuedComponent
+ *       +- LLSelectComponent
  *   LLComponentCollection
  *     +- LLSkillContainer
+ *     +- LLCardSelector
  *
- * v0.3.0
+ * v0.4.0
  * By ben1222
  */
 
@@ -183,9 +185,23 @@ var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
  * base components:
  *   LLComponentBase
  *     +- LLValuedComponent
+ *       +- LLSelectComponent
  *   LLComponentCollection
  */
 var LLComponentBase = (function () {
+   /* Properties:
+    *    id
+    *    exist
+    *    visible
+    *    element
+    * Methods:
+    *    show
+    *    hide
+    *    toggleVisible
+    *    serialize
+    *    deserialize
+    *    on
+    */
    var cls = function (id, options) {
       this.id = id;
       this.exist = false;
@@ -248,15 +264,42 @@ var LLComponentBase = (function () {
 })();
 
 var LLValuedComponent = (function() {
+   /* Properties:
+    *    value (serialize)
+    *    valueKey
+    * Methods:
+    *    get
+    *    set
+    *    serialize (override)
+    *    deserialize (override)
+    */
    var cls = function (id, options) {
       LLComponentBase.call(this, id, options);
       if (!this.exist) {
          this.value = undefined;
          return this;
       }
-      var vk = (options && options.valueKey ? options.valueKey : (this.element.value ? 'value' : 'innerHTML'));
+      var vk = (options && options.valueKey ? options.valueKey : '');
+      if (!vk) {
+         var tag = this.element.tagName.toUpperCase();
+         if (tag == 'INPUT') {
+            if (this.element.type.toUpperCase() == 'CHECKBOX') {
+               vk = 'checked';
+            } else {
+               vk = 'value';
+            }
+         } else if (tag == 'SELECT' ) {
+            vk = 'value';
+         } else {
+            vk = 'innerHTML';
+         }
+      }
       this.valueKey = vk;
       this.value = this.element[vk];
+      var me = this;
+      this.on('change', function (e) {
+         me.set(me.element[me.valueKey]);
+      });
    };
    cls.prototype = new LLComponentBase();
    cls.prototype.constructor = cls;
@@ -269,12 +312,100 @@ var LLValuedComponent = (function() {
       if (v == this.value) return;
       this.element[this.valueKey] = v;
       this.value = v;
+      if (this.onValueChange) this.onValueChange(v);
    };
-   //TODO: serialize, deserialize
+   proto.serialize = function () {
+      return this.get();
+   };
+   proto.deserialize = function (v) {
+      this.set(v);
+   };
+   return cls;
+})();
+
+var LLSelectComponent = (function() {
+   /* Properties:
+    *    options
+    *    filter
+    * Methods:
+    *    set (override)
+    *    setOptions
+    *    filterOptions
+    */
+   var cls = function (id, options) {
+      LLValuedComponent.call(this, id, options);
+      if (!this.exist) {
+         this.options = undefined;
+         return this;
+      }
+      var me = this;
+      var opts = [];
+      var orig_opts = this.element.options;
+      for (var i = 0; i < orig_opts.length; i++) {
+         opts.push({
+            value: orig_opts[i].value,
+            text: orig_opts[i].text
+         });
+      }
+      this.options = opts;
+   };
+   cls.prototype = new LLValuedComponent();
+   cls.prototype.constructor = cls;
+   var proto = cls.prototype;
+   proto.set = function (v) {
+      if (!this.exist) return;
+      if (v != this.element[this.valueKey]) {
+         this.element[this.valueKey] = v;
+      }
+      if (this.element.selectedIndex >= 0) {
+         this.element.style.color = this.element.options[this.element.selectedIndex].style.color;
+      }
+      if (v != this.value) {
+         this.value = v;
+         if (this.onValueChange) this.onValueChange(v);
+      }
+   };
+   proto.setOptions = function (options, filter) {
+      if (!this.exist) return;
+      this.options = options || [];
+      this.filterOptions(filter);
+   };
+   proto.filterOptions = function (filter) {
+      if (!this.exist) return;
+      if (!filter) filter = this.filter;
+      var oldValue = this.get();
+      var foundOldValue = false;
+      this.element.options.length = 0;
+      for (var i in this.options) {
+         var option = this.options[i];
+         if (filter && !filter(option)) continue;
+         var newOption = new Option(option.text, option.value);
+         newOption.style.color = option.color || '';
+         this.element.options.add(newOption);
+         if (oldValue == option.value) foundOldValue = true;
+      }
+      if (foundOldValue) {
+         this.set(oldValue);
+      } else {
+         this.set(this.element.value);
+      }
+      this.filter = filter;
+   };
    return cls;
 })();
 
 var LLComponentCollection = (function() {
+   /* Properties:
+    *    components (serialize)
+    * Methods:
+    *    add(name, component)
+    *    getComponent(name)
+    *    serialize()
+    *    deserialize(v)
+    *    saveCookie(key) (require setCookie)
+    *    loadCookie(key) (require getCookie)
+    *    deleteCookie(key) (require setCookie)
+    */
    var cls = function () {
       this.components = {};
    };
@@ -282,7 +413,44 @@ var LLComponentCollection = (function() {
    proto.add = function (name, component) {
       this.components[name] = component;
    };
-   //TODO: serialize, deserialize
+   proto.getComponent = function (name) {
+      return this.components[name];
+   };
+   proto.serialize = function () {
+      var ret = {};
+      for (var i in this.components) {
+         var val = this.components[i].serialize();
+         if (val !== undefined) {
+            ret[i] = val;
+         }
+      }
+      return ret;
+   };
+   proto.deserialize = function (v) {
+      if (!v) return;
+      for (var i in this.components) {
+         var val = v[i];
+         if (val !== undefined) {
+            this.components[i].deserialize(val);
+         }
+      }
+   };
+   proto.saveCookie = function (key) {
+      setCookie(key, JSON.stringify(this.serialize()), 1);
+   };
+   proto.loadCookie = function (key) {
+      var data = getCookie(key);
+      if (data && data != 'undefined') {
+         try {
+            this.deserialize(JSON.parse(data));
+         } catch (e) {
+            console.error(e);
+         }
+      }
+   };
+   proto.deleteCookie = function (key) {
+      setCookie(key, '', -1);
+   };
    return cls;
 })();
 
@@ -349,7 +517,6 @@ var LLUnit = {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
-         document.getElementById('cardchoice').style.color = llcard.attcolor[llcard.cards[index].attribute];
          LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
             comp_skill.setCardData(card);
@@ -520,6 +687,7 @@ var LLUnit = {
 /*
  * componsed components
  *   LLSkillContainer (require LLUnit)
+ *   LLCardSelector
  */
 var LLSkillContainer = (function() {
    var cls = function (options) {
@@ -536,11 +704,11 @@ var LLSkillContainer = (function() {
       var me = this;
       this.add('container', new LLComponentBase(options.container));
       this.add('lvup', new LLComponentBase(options.lvup));
-      this.components.lvup.on('click', function (e) {
+      this.getComponent('lvup').on('click', function (e) {
          me.setSkillLevel(me.skillLevel+1);
       });
       this.add('lvdown', new LLComponentBase(options.lvdown));
-      this.components.lvdown.on('click', function (e) {
+      this.getComponent('lvdown').on('click', function (e) {
          me.setSkillLevel(me.skillLevel-1);
       });
       this.add('level', new LLValuedComponent(options.level));
@@ -577,13 +745,216 @@ var LLSkillContainer = (function() {
       }
    };
    proto.render = function () {
-      if ((!this.cardData) || this.cardData.skill == 0) {
-         this.components.container.hide();
+      if ((!this.cardData) || this.cardData.skill == 0 || this.cardData.skill == null) {
+         this.getComponent('container').hide();
       } else {
-         this.components.container.show();
-         this.components.text.set(LLUnit.getCardSkillText(this.cardData, this.skillLevel));
-         this.components.level.set(this.skillLevel+1);
+         this.getComponent('container').show();
+         this.getComponent('text').set(LLUnit.getCardSkillText(this.cardData, this.skillLevel));
+         this.getComponent('level').set(this.skillLevel+1);
       }
+   };
+   return cls;
+})();
+
+var LLCardSelector = (function() {
+   /* Properties:
+    *    cards
+    *    language (serialize)
+    *    filters
+    *    freezeCardFilter
+    *    attcolor (const)
+    *    unitgradechr (const)
+    *    cardOptions
+    * Methods:
+    *    handleCardFilter()
+    *    setLanguage(language)
+    *    getCardId()
+    *    isInUnitGroup(unitgrade, character)
+    *    addComponentAsFilter(name, component, filterfunction)
+    *    serialize() (override)
+    *    deserialize(v) (override)
+    */
+   var const_attcolor = {
+      'smile': 'red',
+      'pure': 'green',
+      'cool': 'blue'
+   };
+   var const_unitgradechr = [
+      [],
+      ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
+      ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
+      ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
+      ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
+      ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
+      ["高坂穂乃果","南ことり","小泉花陽"],
+      ["園田海未","星空凛","東條希"],
+      ["絢瀬絵里","西木野真姫","矢澤にこ"],
+      ["高海千歌","渡辺曜","黒澤ルビィ"],
+      ["松浦果南","黒澤ダイヤ","国木田花丸"],
+      ["桜内梨子","津島善子","小原鞠莉"]
+   ];
+   var cls = function (cards, options) {
+      LLComponentCollection.call(this);
+
+      // init variables
+      if (typeof(cards) == "string") {
+         cards = eval("("+cards+")");
+      }
+      this.cards = cards;
+      this.language = 0;
+      this.filters = {};
+      this.freezeCardFilter = 1;
+      this.attcolor = const_attcolor;
+      this.unitgradechr = const_unitgradechr;
+
+      // init components
+      options = options || {
+         cardchoice: 'cardchoice',
+         rarity: 'rarity',
+         chr: 'chr',
+         att: 'att',
+         special: 'special',
+         cardtype: 'cardtype',
+         skilltype: 'skilltype',
+         triggertype: 'triggertype',
+         setname: 'setname',
+         unitgrade: 'unitgrade',
+         showncard: 'showncard'
+      };
+      var me = this;
+      var addSelect = function (name, f) {
+         var comp = new LLSelectComponent(options[name]);
+         me.addComponentAsFilter(name, comp, f);
+      };
+      this.add('cardchoice', new LLSelectComponent(options.cardchoice));
+      this.getComponent('cardchoice').onValueChange = function (v) {
+         if (me.onCardChange) me.onCardChange(v);
+      };
+      addSelect('rarity', function (card, v) { return (v == '' || card.rarity == v); });
+      addSelect('chr', function (card, v) { return (v == '' || card.jpname == v); });
+      addSelect('att', function (card, v) { return (v == '' || card.attribute == v); });
+      addSelect('special', function (card, v) { return (v == '' || parseInt(card.special) == parseInt(v)); });
+      addSelect('cardtype', function (card, v) { return (v == '' || card.type.indexOf(v) >= 0); });
+      addSelect('skilltype', function (card, v) { return (v == '' || card.skilleffect == v); });
+      addSelect('triggertype', function (card, v) { return (v == '' || card.triggertype == v); });
+      addSelect('setname', function (card, v) { return (v == '' || card.jpseries == v); });
+      addSelect('unitgrade', function (card, v) { return (v == '' || me.isInUnitGroup(v, card.jpname)); });
+      me.addComponentAsFilter('showncard', new LLValuedComponent(options.showncard), function (card, v) { return (v == true || card.rarity != 'N'); });
+
+      // build card options for both language
+      var cardOptionsCN = [{'value': '', 'text': ''}];
+      var cardOptionsJP = [{'value': '', 'text': ''}];
+      var setnameSet = {};
+      var cardKeys = Object.keys(cards).sort(function(a,b){return parseInt(a) - parseInt(b);});
+      for (var i = 0; i < cardKeys.length; i++) {
+         var index = cardKeys[i];
+         if (index == "0") continue;
+         var curCard = this.cards[index];
+         if (curCard.support == 1) continue;
+
+         var fullname = String(curCard.id);
+         while (fullname.length < 3) fullname = '0' + fullname;
+         fullname += ' ' + curCard.rarity + ' ';
+         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + curCard.name + ' ' + (curCard.series ? "("+curCard.series+")" : '');
+         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + curCard.jpname + ' ' + (curCard.jpseries ? "("+curCard.jpseries+")" : '');
+         var color = this.attcolor[curCard.attribute];
+         cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
+         cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
+         if (curCard.jpseries && curCard.jpseries.indexOf('編') > 0 && !setnameSet[curCard.jpseries]) {
+            setnameSet[curCard.jpseries] = index;
+         }
+      }
+      this.cardOptions = [cardOptionsCN, cardOptionsJP];
+      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
+
+      // build setname options
+      var setnameOptions = this.getComponent('setname').options;
+      if (setnameOptions) {
+         for (var i = 0; i < setnameOptions.length; i++) {
+            delete setnameSet[setnameOptions[i].value];
+         }
+         var setnameMissingList = Object.keys(setnameSet).sort(function(a,b){return parseInt(setnameSet[a]) - parseInt(setnameSet[b]);});
+         for (var i = 0; i < setnameMissingList.length; i++) {
+            setnameOptions.push({
+               value: setnameMissingList[i],
+               text: setnameMissingList[i]
+            });
+         }
+         this.getComponent('setname').setOptions(setnameOptions);
+      }
+
+      // at last, unfreeze the card filter and refresh filter
+      this.freezeCardFilter = 0;
+      this.handleCardFilter();
+   };
+   cls.prototype = new LLComponentCollection();
+   cls.prototype.constructor = cls;
+   var doFilter = function (me, option) {
+      var index = option.value;
+      if (!index) return true;
+      var card = me.cards[index];
+      if (!card) return true;
+      var filters = me.filters;
+      if (!filters) return true;
+      for (var i in filters) {
+         if (!filters[i](card)) return false;
+      }
+      return true;
+   };
+   var proto = cls.prototype;
+   proto.handleCardFilter = function () {
+      var me = this;
+      this.getComponent('cardchoice').filterOptions(function (option) {
+         return doFilter(me, option);
+      });
+   };
+   proto.setLanguage = function (language) {
+      if (this.language == language) return;
+      this.language = language;
+      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
+   };
+   proto.getCardId = function () {
+      return this.getComponent('cardchoice').get() || '';
+   };
+   proto.isInUnitGroup = function (unitgrade, character) {
+      if (!unitgrade) return true;
+      var chrs = const_unitgradechr[parseInt(unitgrade)];
+      if (!chrs) {
+         console.error("Not found unit " + unitgrade + ", character " + character);
+         return true;
+      }
+      for (var i = 0; i < chrs.length; i++) {
+         if (chrs[i] == character) return true;
+      }
+      return false;
+   };
+   proto.addComponentAsFilter = function (name, comp, f) {
+      var me = this;
+      me.add(name, comp);
+      comp.onValueChange = function (v) {
+         me.filters[name] = function (card) { return f(card, v); };
+         if (!me.freezeCardFilter) me.handleCardFilter();
+      };
+      comp.onValueChange(comp.get());
+   };
+   var super_serialize = proto.serialize;
+   var super_deserialize = proto.deserialize;
+   proto.serialize = function () {
+      return {
+         language: this.language,
+         components: super_serialize.call(this)
+      };
+   };
+   proto.deserialize = function (v) {
+      if (!v) return;
+      this.freezeCardFilter = 1;
+      if (v.language !== undefined) {
+         this.setLanguage(v.language);
+      }
+      super_deserialize.call(this, v.components);
+      this.freezeCardFilter = 0;
+      this.handleCardFilter();
+      if (this.onCardChange) this.onCardChange(this.getCardId());
    };
    return cls;
 })();

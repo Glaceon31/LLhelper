@@ -28,11 +28,27 @@
    newpttable[3] = [[403,413,421,446,459],[426,435,444,470,484],[448,458,467,495,509],[475,485,495,525,540],[498,508,518,549,565]]
    pttable[0] = oldpttable
    pttable[1] = newpttable
-   itemcost = [15, 30, 45, 75, 60, 120, 180, 300]
-   itemexp = [12, 26, 46, 83, 12, 26, 46, 83]
+   itemcost = [15, 30, 45, 75]
+   itemexp = [12, 26, 46, 83]
    expperlp = [2.4, 2.6, 3.1, 3.3]
-   var miao = 0
-   
+   var inputlist = {
+      'timeleft': '剩余时间',
+      'lpwaste': '每天浪费LP',
+      'lpnormal': '普通图',
+      'normalmultiple': '普通图倍数',
+      'diff': '活动图',
+      'eventmultiple': '活动图倍数',
+      'averagept': '活动图平均pt',
+      'target': '目标点数',
+      'current': '已有点数',
+      'items': '剩余道具数',
+      'lp': '当前剩余LP',
+      'lvl': '当前等级',
+      'exp': '当前EXP',
+      'expf': '经验公式',
+      'afteraquors': '版本'
+   };
+
    function init(){
    	//alert(document.cookie)
    	var inputs = document.getElementsByTagName("input");
@@ -50,41 +66,63 @@
    }
    
    function getpt(){
-      afteraquors = document.getElementById("afteraquors").value
-   	diff = document.getElementById("diff").value
-   	rank = document.getElementById("rank").value
-   	combo = document.getElementById("combo").value
-   	if ((rank != -1) && (combo != -1)){
-   		if (diff >= 4)
-   			document.getElementById("averagept").value = pttable[afteraquors][diff-4][rank][combo]*4
-   		else
-   			document.getElementById("averagept").value = pttable[afteraquors][diff][rank][combo]
-   	} 
+      var afteraquors = document.getElementById("afteraquors").value
+      var diff = document.getElementById("diff").value
+      var rank = document.getElementById("rank").value
+      var combo = document.getElementById("combo").value
+      var eventmultiple = document.getElementById('eventmultiple').value;
+      if ((rank != -1) && (combo != -1)){
+         if (eventmultiple == 5)
+            document.getElementById("averagept").value = pttable[afteraquors][diff][rank][combo]*4; // old *4
+         else
+            document.getElementById("averagept").value = pttable[afteraquors][diff][rank][combo]*eventmultiple;
+      }
    }
-   
+
    function clearchoice(){
    	document.getElementById("rank").value = -1
    	document.getElementById("combo").value = -1
    }
    
+   function showCheckWarning(message, inputid) {
+      var checkwarning = document.getElementById('checkwarning');
+      checkwarning.innerHTML = message;
+      checkwarning.style.display = '';
+      checkwarning.href = 'javascript:document.getElementById("' + inputid + '").scrollIntoView();';
+   }
+   function hideCheckWarning() {
+      var checkwarning = document.getElementById('checkwarning');
+      checkwarning.style.display = 'none';
+   }
    function check(){
-   	var inputs = document.getElementsByTagName("input");
-   	for (i in inputs){
-   		if (inputs[i].type != "text")
-   			continue
-   		if (!isNotNegative(inputs[i].value)){
-   			alert("请输入非负数");
-   			return false;
-   		}
-   	}
-   	if (parseInt(document.getElementById("target").value) > 2000000){
-   		alert("不可能达到2百万点以上")
-   		return false;
-   	}
-   	if (parseInt(document.getElementById("lpwaste").value) > 240){
-   		alert("一天几小时来着？")
-   		return false;
-   	}
+      var inputs = document.getElementsByTagName("input");
+      var hasError = false;
+      for (var i in inputs){
+         if (inputs[i].type != "text")
+            continue
+         var value = inputs[i].value;
+         var inputid = inputs[i].id;
+         var message = '';
+         if (!isNotNegative(value)) {
+            message = inputlist[inputid] + "请输入非负数";
+         } else if (inputid == 'target' && parseInt(value) > 8000000) {
+            message = "不可能达到8百万点以上";
+         } else if (inputid == 'lpwaste' && parseInt(value) > 240) {
+            message = "一天几小时来着？";
+         }
+         if (message != '') {
+            inputs[i].style.backgroundColor = '#fee';
+            if (!hasError) {
+               showCheckWarning(message, inputid);
+               hasError = true;
+            }
+         } else {
+            inputs[i].style.backgroundColor = '';
+         }
+      }
+      if (hasError) return false;
+      hideCheckWarning();
+
    	saveToCookie();
    	calcu();
 	document.getElementById("result").scrollIntoView() 
@@ -102,140 +140,159 @@
    	}
    	window.location.href="/llactivity"
    }
-   
-   function calcu(){
-   	infolist = ['timeleft','lpwaste','lpnormal','diff','averagept','target','current','items','lp','lvl','exp','expf']
-   	remlist = ['current','items','lp','lvl','exp','acplaytime','extraplaytime','extraacplaytime']
-   	for (i in infolist)
-   		eval(infolist[i]+' = parseFloat(document.getElementById(infolist[i]).value)')
-   	playtime = 0
-   	extraplaytime = 0
-   	acplaytime = 0
-   	extraacplaytime = 0
-   	loveca = 0
-   	lvlupwarning = 0
-   	safelp = 2
-   	lp += parseInt(timeleft*10)-lpwaste*parseInt((timeleft-14)/24+1)-safelp
-   	while ((current < target) || (lp >= 4) || (items >= 15) || (exp >= expbylvl(lvl, expf))){
-   		while ((lp >= lpnormal) || (items >= itemcost[diff]) || (exp >= expbylvl(lvl, expf))){
-   			//can play chosen normal map
-   			if (lp >= lpnormal){
-   				play = parseInt(lp/lpnormal)
-   				playtime += play
-   				lp -= play*lpnormal
-   				exp += expbylpmin(lpnormal)*play
-   				items += itembylp(lpnormal)*play
-   				current += itembylp(lpnormal)*play
-   			}
-   			//clear items
-   			if (items >= itemcost[diff]){
-   				acplay = parseInt(items/itemcost[diff])
-   				acplaytime += acplay
-   				exp += itemexp[diff]*acplay
-   				items -= itemcost[diff]*acplay
-   				current += averagept*acplay
-   			}
-   			//lvl up
-   			while (exp >= expbylvl(lvl, expf)){
-   				//if (lvlupwarning == 1)
-   				//	lvlupwarning = 2
-   				exp -= expbylvl(lvl, expf)
-   				lvl += 1
-   				lp += lpbylvl(lvl)
-   			}
-   		}
-   		//deal with remainings
-   		for (i in remlist)
-   			eval('tmp'+remlist[i]+' = '+remlist[i])
-         while ((lp >= 4) || (items >= 15) || (exp >= expbylvl(lvl, expf))){
-         while ((lp >= lpnormal) || (items >= itemcost[diff]) || (exp >= expbylvl(lvl, expf))){
-            //can play chosen normal map
-            if (lp >= lpnormal){
-               play = parseInt(lp/lpnormal)
-               playtime += play
-               lp -= play*lpnormal
-               exp += expbylpmin(lpnormal)*play
-               items += itembylp(lpnormal)*play
-               current += itembylp(lpnormal)*play
-            }
-            //clear items
-            if (items >= itemcost[diff]){
-               acplay = parseInt(items/itemcost[diff])
-               acplaytime += acplay
-               exp += itemexp[diff]*acplay
-               items -= itemcost[diff]*acplay
-               current += averagept*acplay
-            }
-            //lvl up
-            while (exp >= expbylvl(lvl, expf)){
-               //if (lvlupwarning == 1)
-               // lvlupwarning = 2
-               exp -= expbylvl(lvl, expf)
-               lvl += 1
-               lp += lpbylvl(lvl)
+
+   var LLEventMarathon = (function() {
+      var cls = function (v) {
+         v = v || {};
+         this.level = v.level || 1;
+         this.exp = v.exp || 0;
+         this.lp = v.lp || 0;
+         this.loveca = v.loveca || 0;
+         this.playtime = v.playtime || 0;
+         this.playtime_extra = v.playtime_extra || 0;
+         this.playtime_event = v.playtime_event || 0;
+         this.playtime_event_extra = v.playtime_event_extra || 0;
+         this.item = v.item || 0;
+         this.pt = v.pt || 0;
+
+         this.halfexp100 = (v.halfexp100 === undefined ? 1 : v.halfexp100);
+         this.pttable_id = (v.pttable_id === undefined ? 1 : v.pttable_id);
+      };
+      var proto = cls.prototype;
+      proto.gainExp = function (gain) {
+         this.exp += gain;
+         var needed = expbylvl(this.level, this.halfexp100);
+         while (this.exp > needed) {
+            this.exp -= needed;
+            this.level += 1;
+            this.lp += lpbylvl(this.level);
+            needed = expbylvl(this.level, this.halfexp100);
+         }
+      };
+      proto.playNormal = function (cost, multiple, count_extra) {
+         var times = parseInt(this.lp / (cost * multiple));
+         if (times == 0) return 0;
+         if (count_extra) {
+            this.playtime_extra += times;
+         } else {
+            this.playtime += times;
+         }
+         this.lp -= times * cost * multiple;
+         this.gainExp(expbylpmin(cost) * times * multiple);
+
+         var item = itembylp(cost) * times * multiple
+         this.item += item;
+         this.pt += item;
+         return times;
+      };
+      proto.playNormalRemaining = function (max_multiple) {
+         // we only have 5, 10, 15, 25 lp map after version...?
+         // and have multiple for normal map after version...?
+         var costs = [5, 10, 15, 25];
+         var ret = 0;
+         for (var i = 3; i >= 0; i--) {
+            for (var j = max_multiple; j >= 1; j--) {
+               ret = this.playNormal(costs[i], j, true);
+               if (ret) return ret;
             }
          }
-   		if (lp >= 4){
-   			exp += expbylpmax(lp)
-   			items += itembylp(lp) 
-   			current += itembylp(lp)
-   			if (lp > 15)
-   				extraplaytime += 2
-   			else
-   				extraplaytime += 1
-   			lp = 0
-   		}
-         
-   		if (exp >= expbylvl(lvl, expf)){
-   			continue
-   		}
-   		if (items>= itemcost[diff]){
-   			acplay = parseInt(items/itemcost[diff])
-   			acplaytime += acplay
-   			exp += itemexp[diff]*acplay
-   			items -= itemcost[diff]*acplay
-   			current += averagept*acplay
-   		}
-   		if (items >= 15){
-   			for (i = 3; i >= 0; i--){
-   				if (items >= itemcost[i]){
-   					extraacplaytime += 1
-   					exp += itemexp[i]
-   					items -= itemcost[i]
-   					current += pttable[document.getElementById('afteraquors').value][i][4][4]
-   					i++
-   				}
-   			}
-   		}
-   		if (exp >= expbylvl(lvl, expf)){
-   			continue
-   		}
+         return ret;
+      };
+      proto.playEvent = function (diff, multiple, averagept, count_extra) {
+         var m_itemcost = itemcost[diff]*(multiple == 5 ? 4 : multiple);
+         var m_itemexp = itemexp[diff]*(multiple == 5 ? 1 : multiple);
+         var times = parseInt(this.item / m_itemcost);
+         if (times == 0) return 0;
+         if (count_extra) {
+            this.playtime_event_extra += times;
+         } else {
+            this.playtime_event += times;
+         }
+         this.item -= m_itemcost * times;
+         this.gainExp(m_itemexp * times);
+
+         this.pt += averagept * times;
+         return times;
+      };
+      proto.playEventRemaining = function (max_multiple) {
+         // we have 1-4 multiple for event map after version...?
+         var ret = 0;
+         for (var i = 3; i >= 0; i--) {
+            for (var j = max_multiple; j >= 1; j--) {
+               ret = this.playEvent(i, j, pttable[this.pttable_id][i][4][4]*j, true);
+               if (ret) return ret;
+            }
+         }
+         return ret;
+      };
+      proto.useLoveca = function () {
+         this.loveca += 1;
+         this.lp += lpbylvl(this.level);
+      };
+      return cls;
+   })();
+
+   function calcu(){
+      var inputdata = {};
+      for (var id in inputlist) {
+         var value = document.getElementById(id).value;
+         inputdata[id] = parseFloat(value);
+      }
+      inputdata.level = inputdata.lvl;
+      inputdata.item = inputdata.items;
+      inputdata.pt = inputdata.current;
+      inputdata.halfexp100 = parseInt(inputdata.expf);
+      inputdata.pttable_id = inputdata.afteraquors;
+
+      var safelp = 2;
+      var currentState = new LLEventMarathon(inputdata);
+      currentState.lp += parseInt(inputdata.timeleft*10)-inputdata.lpwaste*parseInt((inputdata.timeleft-14)/24+1)-safelp;
+      //powered by Glaceon
+      // refactor by ben1222
+      while (currentState.pt < inputdata.target) {
+         while (currentState.playNormal(inputdata.lpnormal, inputdata.normalmultiple) ||
+            currentState.playEvent(inputdata.diff, inputdata.eventmultiple, inputdata.averagept));
+         // try remaining
+         var remState = new LLEventMarathon(currentState);
+         while (1) {
+            while (remState.playNormal(inputdata.lpnormal, inputdata.normalmultiple) ||
+               remState.playEvent(inputdata.diff, inputdata.eventmultiple, inputdata.averagept));
+            if (remState.playNormalRemaining(inputdata.normalmultiple)) continue;
+            if (remState.playEventRemaining(inputdata.eventmultiple == 5 ? 1 : inputdata.eventmultiple)) continue;
+            break;
+         }
+         if (remState.pt >= inputdata.target) {
+            currentState = remState;
+            break;
+         } else {
+            currentState.useLoveca();
+         }
       }
 
-   		//if not enough
-   		if (current < target){
-   			for (i in remlist)
-   				eval(remlist[i]+' = tmp'+remlist[i])
-   			loveca += 1
-   			lp += lpbylvl(lvl)
-   			lvlupwarning = 0
-   		}
-   	}
-      //powered by Glaceon
-   	expneed = expbylvl(lvl, expf)
-   	returnlist = ['loveca','playtime','extraplaytime','acplaytime','extraacplaytime','lvl','exp','expneed','current','totalhour','totalminute','extrahour','extraminute','warning']
-   	totalhour = parseInt((playtime+acplaytime)*2.5/60)
-   	totalminute = parseInt((playtime+acplaytime)*2.5)-60*totalhour
-   	extrahour = parseInt((extraplaytime+extraacplaytime)*2.5/60)
-   	extraminute = parseInt((extraplaytime+extraacplaytime)*2.5)-60*extrahour
-   	warning = ""
-   	if (exp-4.5*lpbylvl(lvl) < 50)
-   		warning = "最后一次升级的时间离活动结束时间较近，请提前规划好时间"
-   	for (i in returnlist)
-   		eval('document.getElementById("r"+returnlist[i]).innerHTML = '+returnlist[i])
-   	document.getElementById("result").style.display = ""
+      var minutes = parseInt((currentState.playtime+currentState.playtime_event)*2.5);
+      var minutes_extra = parseInt((currentState.playtime_extra+currentState.playtime_event_extra)*2.5);
+      var outputdata = {
+         'loveca': currentState.loveca,
+         'playtime': currentState.playtime,
+         'extraplaytime': currentState.playtime_extra,
+         'acplaytime': currentState.playtime_event,
+         'extraacplaytime': currentState.playtime_event_extra,
+         'lvl': currentState.level,
+         'exp': currentState.exp,
+         'expneed': expbylvl(currentState.level, currentState.halfexp100),
+         'current': currentState.pt,
+         'totalhour': parseInt(minutes/60),
+         'totalminute': minutes%60,
+         'extrahour': parseInt(minutes_extra/60),
+         'extraminute': minutes_extra%60,
+         'warning': ((currentState.exp - 4.5*lpbylvl(currentState.level) < 50) ? "最后一次升级的时间离活动结束时间较近，请提前规划好时间" : '')
+      };
+      for (var id in outputdata) {
+         document.getElementById('r' + id).innerHTML = outputdata[id];
+      }
+      document.getElementById("result").style.display = ""
    }
-   
+
    function saveToCookie(){
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
@@ -279,60 +336,85 @@
 	<div class="panel panel-default">
         <div class="panel-heading">活动数据</div>
 		<div class="panel-body">
-			<div class="form-group">
-				<label class="control-label">普通图选择</label>
-				<select class="form-control" id="lpnormal" name="lpnormal">
-						<option value=5>5 LP</option>
-						<option value=10>10 LP</option>
-						<option value=15>15 LP</option>
-						<option value=25 SELECTED>25 LP</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label class="control-label">活动图难度</label>
-				<select class="form-control" id="diff" name="diff" onchange="getpt()">
-					<option value=0>Easy</option>
-					<option value=1>Normal</option>
-					<option value=2>Hard</option>
-					<option value=3 SELECTED>Expert</option>
-					<option value=4>4 倍 Easy</option>
-					<option value=5>4 倍 Normal</option>
-					<option value=6>4 倍 Hard</option>
-					<option value=7>4 倍 Expert</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label class="control-label">活动</label>
-				<select class="form-control" id="afteraquors" name="afteraquors" onchange="getpt()">
-					<option value=0>旧 pt（SS 404）</option>
-					<option value=1 SELECTED>新 pt（SS 565）</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label class="control-label">活动曲rank（可选）</label>
-				<select class="form-control" id="rank" name="rank" onchange="getpt()">
-					<option value=-1></option>
-					<option value=0>-</option>
-					<option value=1>C</option>
-					<option value=2>B</option>
-					<option value=3>A</option>
-					<option value=4 SELECTED>S</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label class="control-label">活动曲combo（可选）</label>
-				<select class="form-control" id="combo" name="rank" onchange="getpt()">
-					<option value=-1></option>
-					<option value=0>-</option>
-					<option value=1>C</option>
-					<option value=2>B</option>
-					<option value=3 SELECTED>A</option>
-					<option value=4>S</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label class="control-label">活动图平均pt</label>
-				<input class="form-control" type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
+			<div class="form-horizontal">
+				<div class="form-group">
+					<label class="col-xs-2 control-label">普通图</label>
+					<div class="col-xs-5">
+						<select class="form-control" id="lpnormal" name="lpnormal">
+								<option value=5>5 LP</option>
+								<option value=10>10 LP</option>
+								<option value=15>15 LP</option>
+								<option value=25 SELECTED>25 LP</option>
+						</select>
+					</div>
+					<div class="col-xs-5">
+						<select class="form-control" id="normalmultiple" name="normalmultiple">
+								<option value=1>1 倍</option>
+								<option value=2>2 倍</option>
+								<option value=3>3 倍</option>
+								<option value=4 SELECTED>4 倍</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-xs-2 control-label">活动图</label>
+					<div class="col-xs-5">
+						<select class="form-control" id="diff" name="diff" onchange="getpt()">
+							<option value=0>Easy</option>
+							<option value=1>Normal</option>
+							<option value=2>Hard</option>
+							<option value=3 SELECTED>Expert</option>
+						</select>
+					</div>
+					<div class="col-xs-5">
+						<select class="form-control" id="eventmultiple" name="eventmultiple" onchange="getpt()">
+							<option value=1>1 倍</option>
+							<option value=2>2 倍</option>
+							<option value=3>3 倍</option>
+							<option value=4 SELECTED>4 倍</option>
+							<option value=5>旧 4 倍</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-xs-2 control-label">版本</label>
+					<div class="col-xs-10">
+						<select class="form-control" id="afteraquors" name="afteraquors" onchange="getpt()">
+							<option value=0>旧 pt（SS 404）</option>
+							<option value=1 SELECTED>新 pt（SS 565）</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="col-xs-4 control-label">活动曲rank（可选）</label>
+					<div class="col-xs-2">
+						<select class="form-control" id="rank" name="rank" onchange="getpt()">
+							<option value=-1></option>
+							<option value=0>-</option>
+							<option value=1>C</option>
+							<option value=2>B</option>
+							<option value=3>A</option>
+							<option value=4 SELECTED>S</option>
+						</select>
+					</div>
+					<label class="col-xs-4 control-label">活动曲combo（可选）</label>
+					<div class="col-xs-2">
+						<select class="form-control" id="combo" name="combo" onchange="getpt()">
+							<option value=-1></option>
+							<option value=0>-</option>
+							<option value=1>C</option>
+							<option value=2>B</option>
+							<option value=3 SELECTED>A</option>
+							<option value=4>S</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group" style="margin-bottom:0px">
+					<label class="col-xs-4 control-label">活动图平均pt</label>
+					<div class="col-xs-8">
+						<input class="form-control" type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -352,5 +434,6 @@
 <ol>
 	<li>加号后面的次数/时间为因为活动途中方便升级和活动结束前清理最后剩下的LP/道具而打的与指定的难度不同的图的次数，可能会因为玩家游戏策略的不同而震荡，在活动接近结束的时候会收敛，仅供参考</li>
 	<li>如果最终点数和目标点数过于接近，请考虑多磕一心。</li>
+	<li>目前不能很好的处理LP最大值小于普通图多倍消耗的情况，如果选了超过LP最大值的倍数，计算结果可能不准确（如：50级最大LP为50，那么如果普通图选择了25LP的3倍或4倍，计算结果可能不准确，建议选择1倍或2倍）。</li>
 </ol>
 {% endblock %}
