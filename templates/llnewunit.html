@@ -421,7 +421,6 @@
       }
 
       mainatt = mapcenter['map']
-      rawmainatt = result['baseatt'][mainatt]
 
       rawmember = [0,0,0,0,0,0,0,0,0]
       attst = [0,0,0,0,0,0,0,0,0]
@@ -945,7 +944,7 @@
 <div style="clear:both"></div>
 <h3>队伍属性</h3>
 <div>
-<div style="float:left">
+<div class="col-xs-12 col-md-9" style="overflow-x:auto">
 <table class="calculate-table" border='1'>
    <tr>
       <td>权重</td>
@@ -1120,7 +1119,7 @@
    </tr>
 </table>
 </div>
-<div class="col-sm-3">
+<div class="col-xs-12 col-md-3">
 
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
