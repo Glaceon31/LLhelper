@@ -928,6 +928,7 @@ var LLCardSelector = (function() {
       }
       return false;
    };
+   cls.isInUnitGroup = proto.isInUnitGroup;
    proto.addComponentAsFilter = function (name, comp, f) {
       var me = this;
       me.add(name, comp);
@@ -956,6 +957,186 @@ var LLCardSelector = (function() {
       this.handleCardFilter();
       if (this.onCardChange) this.onCardChange(this.getCardId());
    };
+   return cls;
+})();
+
+/*
+ * strength calculation helper
+ *   LLMember
+ *   LLTeam
+ */
+var LLMember = (function() {
+   var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
+   var float_attr = ['gemsinglepercent','gemallpercent'];
+   var cls = function (v) {
+      v = v || {};
+      var i;
+      for (i = 0; i < int_attr.length; i++) {
+         var attr = int_attr[i];
+         if (v[attr] === undefined) {
+            console.error('missing attribute ' + attr);
+            this[attr] = 0;
+         } else {
+            this[attr] = parseInt(v[attr]);
+         }
+      }
+      for (i = 0; i < float_attr.length; i++) {
+         var attr = float_attr[i];
+         if (v[attr] === undefined) {
+            console.error('missing attribute ' + attr);
+            this[attr] = 0;
+         } else {
+            this[attr] = parseFloat(v[attr]);
+         }
+      }
+      if (v.card === undefined) {
+         console.error('missing card detail');
+      } else {
+         this.card = v.card;
+      }
+   };
+   var isInUnitGroup = LLCardSelector.isInUnitGroup;
+   var proto = cls.prototype;
+   proto.calcDisplayAttr = function (mapcolor) {
+      //显示属性=(基本属性+绊)*单体百分比宝石加成+数值宝石加成
+      var curAttr = this[mapcolor];
+      var ret = curAttr + this.gemnum;
+      if (this.gemsinglepercent > 0.2) {
+         ret += Math.ceil(0.1*curAttr) + Math.ceil(0.16*curAttr);
+      } else {
+         ret += Math.ceil(this.gemsinglepercent * curAttr)
+      }
+      this.displayAttr = ret;
+      return ret;
+   };
+   proto.calcAttrWithGem = function (mapcolor, teamgem) {
+      if (!this.displayAttr) throw "Need calcDisplayAttr first";
+      if (!(teamgem && teamgem.length == 9)) throw "Expect teamgem length 9";
+      //全体宝石累计加成(下标i表示0..i-1位队员所带的全体宝石给该队员带来的总加成, [0]=0)
+      //注意全体宝石是在(基本属性值+绊)基础上计算的, 不是在显示属性上计算的
+      var cumulativeTeamGemBonus = [0];
+      var sum = 0;
+      for (var i = 0; i < 9; i++) {
+         if (teamgem[i] > 0.04) {
+            sum += Math.ceil(0.018*this[mapcolor]) + Math.ceil(0.024*this[mapcolor]);
+         } else {
+            sum += Math.ceil(teamgem[i] * this[mapcolor]);
+         }
+         cumulativeTeamGemBonus.push(sum);
+      }
+      this.cumulativeTeamGemBonus = cumulativeTeamGemBonus;
+      this.attrWithGem = this.displayAttr + sum;
+      return this.attrWithGem;
+   };
+   proto.calcAttrWithCSkill = function (mapcolor, cskills) {
+      if (!this.attrWithGem) throw "Need calcAttrWithGem first";
+      //主唱技能加成(下标i表示只考虑前i-1个队员的全体宝石时, 主唱技能的加成值, 下标0表示不考虑全体宝石)
+      var cumulativeCSkillBonus = [];
+      //属性强度(下标i表示只考虑前i-1个队员的全体宝石时的属性强度)
+      var cumulativeAttrStrength = [];
+      var baseAttr = {'smile':this.smile, 'pure':this.pure, 'cool':this.cool};
+      for (var i = 0; i <= 9; i++) {
+         baseAttr[mapcolor] = this.displayAttr + this.cumulativeTeamGemBonus[i];
+         var bonusAttr = {'smile':0, 'pure':0, 'cool':0};
+         for (var j = 0; j < cskills.length; j++) {
+            var cskill = cskills[j];
+            //主c技能
+            if (cskill.Cskillpercentage) {
+               bonusAttr[cskill.attribute] += Math.ceil(baseAttr[cskill.Cskillattribute]*cskill.Cskillpercentage/100);
+            }
+            //副c技能
+            if (cskill.Csecondskillattribute) {
+               if (isInUnitGroup(cskill.Csecondskilllimit, this.card.jpname)) {
+                  bonusAttr[cskill.attribute] += Math.ceil(baseAttr[cskill.attribute]*cskill.Csecondskillattribute/100);
+               }
+            }
+         }
+         cumulativeCSkillBonus.push(bonusAttr[mapcolor]);
+         cumulativeAttrStrength.push(baseAttr[mapcolor] + bonusAttr[mapcolor]);
+         if (i == 9) {
+            this.bonusAttr = bonusAttr;
+            this.finalAttr = {
+               'smile': baseAttr.smile + bonusAttr.smile,
+               'pure': baseAttr.pure + bonusAttr.pure,
+               'cool': baseAttr.cool + bonusAttr.cool
+            };
+            this.attrStrength = this.finalAttr[mapcolor];
+         }
+      }
+      this.cumulativeCSkillBonus = cumulativeCSkillBonus;
+      this.cumulativeAttrStrength = cumulativeAttrStrength;
+      return this.finalAttr[mapcolor];
+   };
+   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
+      if (!this.finalAttr) throw "Need calcAttrWithCSkill first";
+      var debuff = 1;
+      if (this.card.attribute != mapcolor) debuff *= 1.1;
+      if (!isInUnitGroup(mapunit, this.card.jpname)) debuff *= 1.1;
+      debuff = 1-1/debuff;
+      debuff = Math.round(teamattr*(weight/totalweight)*debuff);
+      this.attrDebuff = debuff;
+      return debuff;
+   };
+   return cls;
+})();
+
+var LLTeam = (function() {
+   var cls = function (members) {
+      if (members === undefined) throw("Missing members");
+      if (members.length != 9) throw("Expect 9 members");
+      this.members = members;
+   };
+   var proto = cls.prototype;
+   proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
+      //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
+      var teamgem = [];
+      var totalWeight = 0;
+      var i, j;
+      //数值和单体百分比宝石
+      for (i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         curMember.calcDisplayAttr(mapcolor);
+         teamgem.push(curMember.gemallpercent);
+         totalWeight += weights[i];
+      }
+      //全体宝石和主唱技能加成
+      var cskills = [this.members[4].card];
+      if (friendcskill) cskills.push(friendcskill);
+      for (i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         curMember.calcAttrWithGem(mapcolor, teamgem);
+         curMember.calcAttrWithCSkill(mapcolor, cskills);
+      }
+      //全体宝石的提升统合到携带全体宝石的队员的属性强度上
+      var attrStrength = [];
+      var finalAttr = {'smile':0, 'pure':0, 'cool':0};
+      var bonusAttr = {'smile':0, 'pure':0, 'cool':0};
+      for (i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         var curAttrStrength = curMember.cumulativeAttrStrength[0];
+         for (j = 0; j < 9; j++) {
+            var jMember = this.members[j];
+            curAttrStrength += jMember.cumulativeAttrStrength[i+1] - jMember.cumulativeAttrStrength[i];
+         }
+         attrStrength.push(curAttrStrength);
+         for (j in finalAttr) {
+            finalAttr[j] += curMember.finalAttr[j];
+            bonusAttr[j] += curMember.bonusAttr[j];
+         }
+      }
+      //debuff
+      var attrDebuff = [];
+      for (i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         curMember.calcAttrDebuff(mapcolor, mapunit, weights[i], totalWeight, finalAttr[mapcolor]);
+         attrDebuff.push(curMember.attrDebuff);
+      }
+      this.attrStrength = attrStrength;
+      this.attrDebuff = attrDebuff;
+      this.finalAttr = finalAttr;
+      this.bonusAttr = bonusAttr;
+   };
+   // TODO:判定宝石
    return cls;
 })();
 
