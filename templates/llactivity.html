@@ -10,6 +10,7 @@
    <script src="http://lovelive.oss-cn-beijing.aliyuncs.com/Js/ReadPredCN.js"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='twintailtime.js') }}?v=1.02"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
 {% endblock %}
 
@@ -46,8 +47,11 @@
       'lvl': '当前等级',
       'exp': '当前EXP',
       'expf': '经验公式',
-      'afteraquors': '版本'
+      'afteraquors': '版本',
+      'specialevent': '限时活动'
    };
+   var comp_specialevent;
+   var comp_lpnormal;
 
    function init(){
    	//alert(document.cookie)
@@ -63,6 +67,26 @@
    			selects[i].value = getCookie(selects[i].name+"ac");
    	}
    	document.getElementById('timeleft').style.backgroundColor = '#FFFF80'
+      var lpnormal_options = [
+         [
+            {'text': '5 LP', 'value': 5},
+            {'text': '10 LP', 'value': 10},
+            {'text': '15 LP', 'value': 15},
+            {'text': '25 LP', 'value': 25}
+         ],
+         [
+            {'text': '3 LP', 'value': 5},
+            {'text': '7 LP', 'value': 10},
+            {'text': '12 LP', 'value': 15},
+            {'text': '20 LP', 'value': 25}
+         ],
+      ];
+      comp_specialevent = new LLSelectComponent('specialevent');
+      comp_lpnormal = new LLSelectComponent('lpnormal');
+      comp_specialevent.onValueChange = function (v) {
+         comp_lpnormal.setOptions(lpnormal_options[v]);
+      };
+      comp_specialevent.onValueChange(comp_specialevent.get());
    }
    
    function getpt(){
@@ -142,6 +166,12 @@
    }
 
    var LLEventMarathon = (function() {
+      var EVENT_LP_DISCOUNT = []
+      // 日服限时活动(2018.4.20-4.30): easy=3 lp, normal=7 lp, hard=12 lp, expert/master=20 lp
+      EVENT_LP_DISCOUNT[5] = 3;
+      EVENT_LP_DISCOUNT[10] = 7;
+      EVENT_LP_DISCOUNT[15] = 12;
+      EVENT_LP_DISCOUNT[25] = 20;
       var cls = function (v) {
          v = v || {};
          this.level = v.level || 1;
@@ -169,15 +199,16 @@
             needed = expbylvl(this.level, this.halfexp100);
          }
       };
-      proto.playNormal = function (cost, multiple, count_extra) {
-         var times = parseInt(this.lp / (cost * multiple));
+      proto.playNormal = function (cost, multiple, specialevent, count_extra) {
+         var real_cost = (specialevent == 1 ? EVENT_LP_DISCOUNT[cost] : cost);
+         var times = parseInt(this.lp / (real_cost * multiple));
          if (times == 0) return 0;
          if (count_extra) {
             this.playtime_extra += times;
          } else {
             this.playtime += times;
          }
-         this.lp -= times * cost * multiple;
+         this.lp -= times * real_cost * multiple;
          this.gainExp(expbylpmin(cost) * times * multiple);
 
          var item = itembylp(cost) * times * multiple
@@ -185,14 +216,14 @@
          this.pt += item;
          return times;
       };
-      proto.playNormalRemaining = function (max_multiple) {
+      proto.playNormalRemaining = function (max_multiple, specialevent) {
          // we only have 5, 10, 15, 25 lp map after version...?
          // and have multiple for normal map after version...?
          var costs = [5, 10, 15, 25];
          var ret = 0;
          for (var i = 3; i >= 0; i--) {
             for (var j = max_multiple; j >= 1; j--) {
-               ret = this.playNormal(costs[i], j, true);
+               ret = this.playNormal(costs[i], j, specialevent, true);
                if (ret) return ret;
             }
          }
@@ -250,14 +281,14 @@
       //powered by Glaceon
       // refactor by ben1222
       while (currentState.pt < inputdata.target) {
-         while (currentState.playNormal(inputdata.lpnormal, inputdata.normalmultiple) ||
+         while (currentState.playNormal(inputdata.lpnormal, inputdata.normalmultiple, inputdata.specialevent) ||
             currentState.playEvent(inputdata.diff, inputdata.eventmultiple, inputdata.averagept));
          // try remaining
          var remState = new LLEventMarathon(currentState);
          while (1) {
-            while (remState.playNormal(inputdata.lpnormal, inputdata.normalmultiple) ||
+            while (remState.playNormal(inputdata.lpnormal, inputdata.normalmultiple, inputdata.specialevent) ||
                remState.playEvent(inputdata.diff, inputdata.eventmultiple, inputdata.averagept));
-            if (remState.playNormalRemaining(inputdata.normalmultiple)) continue;
+            if (remState.playNormalRemaining(inputdata.normalmultiple, inputdata.specialevent)) continue;
             if (remState.playEventRemaining(inputdata.eventmultiple == 5 ? 1 : inputdata.eventmultiple)) continue;
             break;
          }
@@ -357,6 +388,15 @@
 					</div>
 				</div>
 				<div class="form-group">
+					<label class="col-xs-2 control-label" style="padding-right:0px">限时活动</label>
+					<div class="col-xs-10">
+						<select class="form-control" id="specialevent" name="specialevent">
+								<option value=0 SELECTED>无</option>
+								<option value=1>限时活动LP消耗降低</option>
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
 					<label class="col-xs-2 control-label">活动图</label>
 					<div class="col-xs-5">
 						<select class="form-control" id="diff" name="diff" onchange="getpt()">
@@ -386,8 +426,8 @@
 					</div>
 				</div>
 				<div class="form-group">
-					<label class="col-xs-4 control-label">活动曲rank（可选）</label>
-					<div class="col-xs-2">
+					<label class="col-xs-6 col-sm-4 col-md-6 col-lg-4 control-label">活动曲rank（可选）</label>
+					<div class="col-xs-6 col-sm-8 col-md-6 col-lg-8">
 						<select class="form-control" id="rank" name="rank" onchange="getpt()">
 							<option value=-1></option>
 							<option value=0>-</option>
@@ -397,8 +437,10 @@
 							<option value=4 SELECTED>S</option>
 						</select>
 					</div>
-					<label class="col-xs-4 control-label">活动曲combo（可选）</label>
-					<div class="col-xs-2">
+				</div>
+				<div class="form-group">
+					<label class="col-xs-6 col-sm-4 col-md-6 col-lg-4 control-label">活动曲combo（可选）</label>
+					<div class="col-xs-6 col-sm-8 col-md-6 col-lg-8">
 						<select class="form-control" id="combo" name="combo" onchange="getpt()">
 							<option value=-1></option>
 							<option value=0>-</option>
@@ -410,8 +452,8 @@
 					</div>
 				</div>
 				<div class="form-group" style="margin-bottom:0px">
-					<label class="col-xs-4 control-label">活动图平均pt</label>
-					<div class="col-xs-8">
+					<label class="col-xs-6 col-sm-4 col-md-6 col-lg-4 control-label">活动图平均pt</label>
+					<div class="col-xs-6 col-sm-8 col-md-6 col-lg-8">
 						<input class="form-control" type="text" id="averagept" name="averagept" value="549" autocomplete="off" onchange="clearchoice()"> 
 					</div>
 				</div>
