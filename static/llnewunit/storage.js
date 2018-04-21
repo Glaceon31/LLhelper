@@ -85,6 +85,7 @@
   function clickListener(e) {
     e.preventDefault();
     loadUnitFromJSON(readUnitJSON(e.target.dataset.name));
+    $nameInput.val(e.target.dataset.name);
   }
 
   function deleteListener(e) {
