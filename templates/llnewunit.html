@@ -379,14 +379,9 @@
       var atts = ['smile', 'pure', 'cool'];
       var member = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var mapcenter = {};
-      result['baseatt'] = {};
-      result['bonusatt'] = {};
-      mapcenter['secondbase'] = document.getElementById('map').value
-      mapcenter['secondbase2'] = document.getElementById('map').value
-      for (var i = 0; i < atts.length; i++) {
-         result['baseatt'][atts[i]] = 0;
-         result['bonusatt'][atts[i]] = 0;
-      }
+      var llmembers = [];
+      var weights = [];
+
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
       }
@@ -403,11 +398,11 @@
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
-         member[i]["main"] = document.getElementById("main" + i.toString()).value;
          member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
-         member[i]["require"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].require
-         member[i]["possibility"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].possibility
-         member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].score
+         var cur_skilldetail = cards[member[i]["cardid"]]['skilldetail'];
+         member[i]["require"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].require : 1);
+         member[i]["possibility"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].possibility : 0);
+         member[i]["score"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].score : 0);
          sk = member[i]["skill"]
          if ((sk == 1) || (sk == 2) || (sk == 3) || (sk == 4) || (sk == 11)|| (sk == 10)){
             member[i]["score"] *= (1+1.5*parseInt(member[i]['gemskill']))
@@ -415,148 +410,48 @@
          } else if ((sk == 5) || (sk == 6) || (sk == 12)) {
             member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].time
          }
-         for (var j = 0; j < atts.length; j++) {
-            result['baseatt'][atts[j]] += member[i][atts[j]];
-         }
+         member[i]['card'] = cards[member[i]['cardid']];
+         llmembers.push(new LLMember(member[i]));
+         weights.push(member[i].weight);
       }
 
-      mainatt = mapcenter['map']
+      var mainatt = mapcenter['map']
 
-      rawmember = [0,0,0,0,0,0,0,0,0]
-      attst = [0,0,0,0,0,0,0,0,0]
-      for (var i = 0; i < 9; i++) {
-         tmp = new Array()
-         tmp['smile'] = member[i]['smile']
-         tmp['pure'] = member[i]['pure']
-         tmp['cool'] = member[i]['cool']
-         rawmember[i] = tmp
-         attst[i] = member[i][mainatt]
+      var llteam = new LLTeam(llmembers);
+      var friendcskill = {
+        "Csecondskillattribute": parseInt(mapcenter.secondpercentage2),
+        "Csecondskilllimit": parseInt(mapcenter.secondlimit2),
+        "Cskillattribute": mapcenter.base2,
+        "Cskillpercentage": parseInt(mapcenter.percentage2),
+        "attribute": mapcenter.bonus2
+      };
+      var song = llsong.songs[document.getElementById('songchoice').value];
+      var songunit = 0;
+      if (song.muse) {
+         songunit = 4;
+      } else if (song.aqours) {
+         songunit = 5;
       }
-      totalall = 0
-      //数值和单体百分比宝石
-      for (var i = 0; i < 9; i++) {
-         origin = member[i][mainatt]
-         member[i][mainatt] += member[i]["gemnum"]
-         attst[i] += member[i]["gemnum"]
-         if (member[i]["gemsinglepercent"] > 0.2){
-            member[i][mainatt] += Math.ceil(0.1*origin)+Math.ceil(0.16*origin)
-            attst[i] += Math.ceil(0.1*origin)+Math.ceil(0.16*origin)
-         }
-         else {
-            member[i][mainatt] += Math.ceil(member[i]["gemsinglepercent"]*origin)
-            attst[i] += Math.ceil(member[i]["gemsinglepercent"]*origin)
-         }
+      llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
 
-      }
-      //i带全体宝石，给j加
-      teamgem = new Array()
-      for (var i = 0; i < 9; i++) {
-         teamgem[i] = [0,0,0,0,0,0,0,0,0]
-         for (var j = 0;j < 9;j ++){
-            if (member[i]["gemallpercent"] > 0.04){
-               member[j][mainatt] += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               totalall += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               teamgem[i][j] = Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               attst[j] += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-            }
-            else{
-               member[j][mainatt] += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               totalall += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               teamgem[i][j] = Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               attst[j] += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-            }
-         }
-      }
-
-      rawattst = attst.concat()
-      rawteamgem= new Array()
-
-      result['baseatt'][mainatt] = 0
-      for (var i = 0; i < 9; i++) {
-         rawteamgem[i] = teamgem[i].concat()
-         result['baseatt'][mainatt] += member[i][mainatt];
-      }
-      //主c技能
-      for (var i = 0; i < 9; i++) {
-         result['bonusatt'][mapcenter['bonus']] += Math.ceil(mapcenter['percentage']*member[i][mapcenter['base']]/100);
-         if (mapcenter['bonus'] == mainatt) {
-            if (mapcenter['base'] == mainatt){
-               attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage']/100)
-               for (var j = 0; j < 9; j++)
-                  teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['percentage']/100)
-            }
-            else
-               attst[i] += Math.ceil(member[i][mapcenter['base']]*mapcenter['percentage']/100)
-         }
-      }
-      //副c技能
-      for (var i = 0; i < 9; i++) {
-         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
-            result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
-            if (mapcenter['secondbase'] == mainatt) {
-               attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
-               for (var j = 0; j < 9; j++)
-                  teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage']/100)
-            }
-         }
-
-      }
-      //好友主c技能
-      for (var i = 0; i < 9; i++) {
-         result['bonusatt'][mapcenter['bonus2']] += Math.ceil(mapcenter['percentage2']*member[i][mapcenter['base2']]/100);
-         if (mapcenter['bonus2'] == mainatt) {
-            if (mapcenter['base2'] == mainatt){
-               attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage2']/100)
-               for (var j = 0; j < 9; j++)
-                  teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['percentage2']/100)
-            }
-            else
-               attst[i] += Math.ceil(member[i][mapcenter['base2']]*mapcenter['percentage2']/100)
-         }
-      }
-      //好友副c技能
-      for (var i = 0; i < 9; i++) {
-         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
-            result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
-            if (mapcenter['secondbase2'] == mainatt) {
-               attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
-               for (var j = 0; j < 9; j++)
-                  teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage2']/100)
-            }
-         }
-      }
-
-      document.getElementById('resultsmile').innerHTML = (result.baseatt.smile+result.bonusatt.smile).toString()+" (+"+result.bonusatt.smile.toString()+")"
-      document.getElementById('resultpure').innerHTML = (result.baseatt.pure+result.bonusatt.pure).toString()+" (+"+result.bonusatt.pure.toString()+")"
-      document.getElementById('resultcool').innerHTML = (result.baseatt.cool+result.bonusatt.cool).toString()+" (+"+result.bonusatt.cool.toString()+")"
+      document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
+      document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
+      document.getElementById('resultcool').innerHTML = llteam.finalAttr.cool + ' (+' + llteam.bonusAttr.cool + ')';
 
 
-      var showatt = result['bonusatt'][mapcenter['map']]+result['baseatt'][mapcenter['map']];
+      var showatt = llteam.finalAttr[mainatt];
       var combomulti = cbmulti(mapcenter['combo']);
       var accmulti = 0.88+0.12*(mapcenter['perfect']/mapcenter['combo']);
-      var trueatt = showatt
 
-      totalattst = 0
-      totalweight = 0
+      var totalweight = 0
       for (var i = 0; i < 9; i++) {
          totalweight += member[i]['weight']
-         for (var j = 0; j < 9; j++){
-            attst[i] += teamgem[i][j]
-            attst[j] -= teamgem[i][j]
-         }
       }
-      rawattst = attst.concat()
-      totalrawst = 0
+      var totalattst = 0
       for (var i = 0; i < 9; i++) {
-         totalrawst += rawattst[i]
-         groupbonus = samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]])
-         colorbonus = (mapcenter['map'] == member[i]['main'])
-         if (!groupbonus && !colorbonus)
-            attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.21/1.21)
-         else if (!groupbonus || !colorbonus)
-            attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.1/1.1)
-         document.getElementById('attstrength'+String(i)).innerHTML = attst[i].toString()
-         totalattst += attst[i]
+         totalattst += llteam.attrStrength[i] - llteam.attrDebuff[i];
+         document.getElementById('attstrength'+String(i)).innerHTML = llteam.attrStrength[i];
+         document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
       }
 
       result['accuracy'] = 0;
@@ -592,10 +487,6 @@
          }
       }
       */
-      result['minscore'] = 0;
-      for (var i = 0; i < 9; i++) {
-         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]]) ? 1.1 : 1));
-      }
       result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
 
       result['maxscore'] = result['minscore'];
@@ -794,10 +685,7 @@
       document.getElementById('averageheal').innerHTML = result.averageheal
       console.debug(scores);
 
-      ttweight = 0
       ttstrength = 0
-      for (i=0;i<9;i++)
-         ttweight += member[i]['weight']
       skillst = [0,0,0,0,0,0,0,0,0]
       for (i=0;i<9;i++){
          leader = 0
@@ -805,11 +693,11 @@
          skillst[i] = parseInt(Math.round(averageskillscore[i]/result.minscore*totalattst/(1+mapcenter['skillup']/100)*(1+mapcenter['tapup']/100)).toFixed(0))
       }
       for (i=0;i<9;i++){
-         document.getElementById('cardstrength'+String(i)).innerHTML = (rawattst[i]+skillst[i]).toString()
-         document.getElementById('strength'+String(i)).innerHTML = (attst[i]+skillst[i]).toString()
+         document.getElementById('cardstrength'+String(i)).innerHTML = (llteam.attrStrength[i]+skillst[i]).toString()
+         document.getElementById('strength'+String(i)).innerHTML = (llteam.attrStrength[i]-llteam.attrDebuff[i]+skillst[i]).toString()
          document.getElementById('skillstrength'+String(i)).innerHTML = skillst[i].toString()
          document.getElementById('heal'+String(i)).innerHTML = averageheal[i].toString()
-         ttstrength += (attst[i]+skillst[i])
+         ttstrength += (llteam.attrStrength[i]-llteam.attrDebuff[i]+skillst[i])
       }
       document.getElementById('resultstrength').innerHTML = ttstrength.toFixed(0).toString()+' (属性 '+totalattst.toString()+' + 技能 '+(ttstrength-totalattst).toString()+')'
       minstrength = 100000000
@@ -1095,6 +983,12 @@
       <td>卡强度</td>
       {% for i in range(0,9) %}
       <td id="cardstrength{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td>异色异团惩罚</td>
+      {% for i in range(0,9) %}
+      <td id="cardstrengthdebuff{{i}}"></td>
       {% endfor %}
    </tr>
    <tr>
