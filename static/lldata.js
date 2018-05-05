@@ -473,6 +473,31 @@ var LLUnit = {
       }, defaultHandleFailedRequest);
    },
 
+   comboMulti: function (cb) {
+      if (cb <= 50) {
+         return 1;
+      } else if (cb <= 100) {
+         return 1.1 - 5 / cb;
+      } else if (cb <= 200) {
+         return 1.15 - 10 / cb;
+      } else if (cb <= 400) {
+         return 1.2 - 20 / cb;
+      } else if (cb <= 600) {
+         return 1.25 - 40 / cb;
+      } else if (cb <= 800) {
+         return 1.3 - 70 / cb;
+      } else {
+         return 1.35 - 110 / cb;
+      }
+   },
+
+   healNumberToString: function (n) {
+      var ret = n.toFixed(2);
+      while (ret[ret.length-1] == '0') ret = ret.substring(0, ret.length-1);
+      if (ret[ret.length-1] == '.') ret = ret.substring(0, ret.length-1);
+      return ret;
+   },
+
    cardtoskilltype: function(c){
       if (!c)
          return 0
@@ -962,9 +987,142 @@ var LLCardSelector = (function() {
 
 /*
  * strength calculation helper
+ *   LLSkill
  *   LLMember
  *   LLTeam
  */
+var LLSkill = (function () {
+   var cls = function (card, level, buff) {
+      this.card = card;
+      this.level = level;
+      var skilldetails = card.skilldetail || [];
+      var skilldetail = skilldetails[level]  || {};
+      this.hasSkill = (card.skilldetail && skilldetail.possibility);
+      this.require = skilldetail.require || 1;
+      this.possibility = skilldetail.possibility || 0;
+      this.score = skilldetail.score || 0;
+      this.time = skilldetail.time || 0;
+
+      this.triggerType = card.triggertype;
+      this.effectType = card.skilleffect;
+      this.triggerTarget = card.triggertarget;
+      this.effectTarget = card.effecttarget;
+
+      this.reset();
+
+      buff = buff || {};
+      this.setScoreGem(buff.gemskill);
+      this.setSkillPossibilityUp(buff.skillup);
+   };
+   var eTriggerType = {
+      'TIME': 1,
+      'NOTE': 3,
+      'COMBO': 4,
+      'SCORE': 5,
+      'PERFECT': 6,
+      'STAR_PERFECT': 12,
+      'MEMBERS': 100
+   };
+   var eEffectType = {
+      'ACCURACY_SMALL': 4,
+      'ACCURACY_NORMAL': 5,
+      'HEAL': 9,
+      'SCORE': 11,
+      'SKILL_POSSIBILITY_UP': 2000,
+      'REPEAT': 2100,
+      'PERFECT_SCORE_UP': 2201,
+      'SYNC': 2400,
+      'ATTRIBUTE_UP': 2600
+   };
+   var proto = cls.prototype;
+   proto.setScoreGem = function (has) {
+      this.actualScore = 0;
+      if (parseInt(has || 0)) {
+         if (this.effectType == eEffectType.HEAL) {
+            // 日服4.1版本前是270, 4.1版本后是480; 国服没有270
+            this.actualScore = this.score * 480;
+         } else if (this.effectType == eEffectType.SCORE) {
+            this.actualScore = Math.ceil(this.score * 2.5);
+         }
+      } else {
+         if (this.effectType == eEffectType.SCORE) {
+            this.actualScore = this.score;
+         }
+      }
+   };
+   proto.setSkillPossibilityUp = function (rate) {
+      this.actualPossibility = this.possibility * (1+parseInt(rate || 0)/100);
+   };
+   proto.reset = function () {
+      this.skillChance = 0;
+      this.averageScore = 0;
+      this.maxScore = 0;
+      this.averageHeal = 0;
+      this.maxHeal = 0;
+      this.simpleCoverage = 0;
+   };
+   // 技能发动最大判定次数
+   // 如果比上次计算的次数更多, 返回true, 否则返回false
+   // env: {time, combo, score, perfect, starperfect}
+   proto.calcSkillChance = function (env) {
+      if (!this.hasSkill) return false;
+      var chance = 0;
+      var simpleCoverage = 0;
+      var total = 0;
+      if (this.triggerType == eTriggerType.TIME) {
+         total = env.time;
+      } else if (this.triggerType == eTriggerType.NOTE || this.triggerType == eTriggerType.COMBO) {
+         total = env.combo;
+      } else if (this.triggerType == eTriggerType.SCORE) {
+         total = env.score;
+      } else if (this.triggerType == eTriggerType.PERFECT) {
+         // TODO: combo*perfect_rate?
+         total = env.perfect;
+      } else if (this.triggerType == eTriggerType.STAR_PERFECT) {
+         // TODO: star*perfect_rate?
+         total = env.starperfect;
+      }
+      chance = Math.floor(total/this.require);
+      if (chance > this.skillChance) {
+         this.skillChance = chance;
+         return true;
+      } else {
+         return false;
+      }
+   };
+   proto.calcSkillEffect = function (env) {
+      if (!this.hasSkill) return false;
+      this.maxScore = this.skillChance * this.actualScore;
+      if (this.effectType == eEffectType.HEAL) {
+         this.maxHeal = this.skillChance * this.score;
+      } else {
+         this.maxHeal = 0;
+      }
+      this.averageScore = this.maxScore * this.actualPossibility/100;
+      this.averageHeal = this.maxHeal * this.actualPossibility/100;
+      // 对于buff型技能, 计算简易覆盖率
+      if (this.time > 0) {
+         // 令: 判定次数*每次发动需要秒数+判定次数*发动率*发动秒数 <= 总时间
+         // 则: 判定次数<=总时间/(每次发动需要秒数+发动率*发动秒数)
+         // 简易覆盖率: 发动率*发动秒数/(每次发动需要秒数+发动率*发动秒数)
+         // 实际覆盖率受多种因素影响(临近结尾发动的判定, note分布不均匀等), 到llcoverge页面计算实际覆盖率
+         // 非时间系的转换成平均多少秒能满足发动条件
+         var timeRequire = env.time/this.skillChance;
+         this.simpleCoverage = this.actualPossibility*this.time/(timeRequire+this.actualPossibility*this.time);
+      } else {
+         this.simpleCoverage = 0;
+      }
+   };
+   proto.calcSkillStrength = function (scorePerStrength) {
+      if (!this.maxScore) {
+         this.strength = 0;
+      } else {
+         this.strength = Math.round(this.maxScore * this.possibility/100 /scorePerStrength);
+      }
+   };
+   return cls;
+})();
+
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
    var float_attr = ['gemsinglepercent','gemallpercent'];
@@ -1126,15 +1284,86 @@ var LLTeam = (function() {
       }
       //debuff
       var attrDebuff = [];
+      var totalAttrStrength = 0;
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          curMember.calcAttrDebuff(mapcolor, mapunit, weights[i], totalWeight, finalAttr[mapcolor]);
          attrDebuff.push(curMember.attrDebuff);
+         totalAttrStrength += attrStrength[i] - attrDebuff[i];
       }
       this.attrStrength = attrStrength;
       this.attrDebuff = attrDebuff;
       this.finalAttr = finalAttr;
       this.bonusAttr = bonusAttr;
+      // total
+      this.totalWeight = totalWeight;
+      this.totalAttrStrength = totalAttrStrength;
+   };
+   var calcTeamSkills = function (llskills, env, isAvg) {
+      var finish = false;
+      var scoreAttr = (isAvg ? 'averageScore' : 'maxScore');
+      var healAttr = (isAvg ? 'averageHeal' : 'maxHeal');
+      while (!finish) {
+         finish = true;
+         if (env[scoreAttr] > 10000000) {
+            env[scoreAttr] = '1000w+';
+            break;
+         }
+         var sumScore = env.minscore;
+         var sumHeal = 0;
+         for (var i = 0; i < 9; i++) {
+            if (llskills[i].calcSkillChance(env)) {
+               finish = false;
+               llskills[i].calcSkillEffect(env);
+            }
+            sumScore += llskills[i][scoreAttr];
+            sumHeal += llskills[i][healAttr];
+         }
+         sumScore = Math.round(sumScore);
+         env[scoreAttr] = sumScore;
+         env[healAttr] = sumHeal;
+         env.score = sumScore;
+      }
+   };
+   proto.calculateSkillStrength = function (maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup) {
+      var comboMulti = LLUnit.comboMulti(mapcombo);
+      var accuracyMulti = 0.88+0.12*(mapperfect/mapcombo);
+      var scorePerStrength = 1.21/80*this.totalWeight*comboMulti*accuracyMulti;
+      var minScore = this.totalAttrStrength * scorePerStrength * (1+parseFloat(tapup)/100);
+
+      var avgSkills = [];
+      var maxSkills = [];
+      for (var i = 0; i < 9 ; i++) {
+         var curMember = this.members[i]
+         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
+         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
+      }
+
+      var env = {
+         'time': maptime,
+         'combo': mapcombo,
+         'score': minScore,
+         'perfect': mapperfect,
+         'starperfect': mapstarperfect,
+         'minscore': minScore
+      };
+      calcTeamSkills(avgSkills, env, true);
+      calcTeamSkills(maxSkills, env, false);
+      var totalSkillStrength = 0;
+      for (var i = 0; i < 9; i++) {
+         avgSkills[i].calcSkillStrength(scorePerStrength);
+         totalSkillStrength += avgSkills[i].strength;
+      }
+      this.avgSkills = avgSkills;
+      this.maxSkills = maxSkills;
+      this.minScore = minScore;
+      this.averageScore = env.averageScore;
+      this.maxScore = env.maxScore;
+      this.averageHeal = env.averageHeal;
+      this.maxHeal = env.maxHeal;
+      // total
+      this.totalSkillStrength = totalSkillStrength;
+      this.totalStrength = this.totalAttrStrength + this.totalSkillStrength;
    };
    // TODO:判定宝石
    return cls;

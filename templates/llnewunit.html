@@ -433,6 +433,7 @@
          songunit = 5;
       }
       llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
+      llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
 
       document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
@@ -447,9 +448,7 @@
       for (var i = 0; i < 9; i++) {
          totalweight += member[i]['weight']
       }
-      var totalattst = 0
       for (var i = 0; i < 9; i++) {
-         totalattst += llteam.attrStrength[i] - llteam.attrDebuff[i];
          document.getElementById('attstrength'+String(i)).innerHTML = llteam.attrStrength[i];
          document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
       }
@@ -487,120 +486,39 @@
          }
       }
       */
-      result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
-
-      result['maxscore'] = result['minscore'];
-      result['averagescore'] = result['minscore'];
-      result['averageheal'] = 0;
-      result['maxheal'] = 0;
+      result['minscore'] = llteam.minScore;
 
       var skillchance = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var averageskillscore = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var averageheal = [0,0,0,0,0,0,0,0,0]
-
 
       for (var i = 0; i < 9; i++) {
          var skill = member[i]['skill'];
          member[i]['possibility'] *= (1+mapcenter['skillup']/100)
          if (skill == 1 || skill == 11) {
             skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
          } else if (skill == 2) {
             skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
          } else if (skill == 4) {
             skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
          } else if (skill == 7 || skill == 13) {
             skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             if (member[i]['gemskill'] == '1'){
                member[i]["skill"] = 1
                member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             }
          } else if (skill == 8) {
             skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             if (member[i]['gemskill'] == '1'){
                member[i]["skill"] = 4
                member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             }
          } else if (skill == 9) {
             skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             if (member[i]['gemskill'] == '1'){
                member[i]["skill"] = 2
                member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
             }
          } else if (skill == 10) {
             skillchance[i] = Math.floor(mapcenter['starperfect']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-         }
-      }
-
-      var finish = false;
-      var infinite = false;
-      var averagescoringtimes = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var maxscoringtimes = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      while (!finish) {
-         finish = true;
-         if (result['averagescore'] > 10000000) {
-            result['averagescore'] = '1000w+';
-            infinite = true;
-            break;
-         }
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3 && averagescoringtimes[i] < Math.floor(result['averagescore']/member[i]['require'])) {
-               remaintimes = Math.floor(result['averagescore']/member[i]['require'])-averagescoringtimes[i];
-               averagescoringtimes[i] += remaintimes;
-               averageskillscore[i] += remaintimes*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += remaintimes*member[i]['possibility']*member[i]['score']/100;
-               finish = false;
-            }
-         }
-      }
-      if (!infinite) {
-         result['averagescore'] = Math.round(result['averagescore']);
-      }
-      finish = false;
-      infinite = false;
-      while (!finish) {
-         finish = true;
-         if (result['maxscore'] > 10000000) {
-            result['maxscore'] = '1000w+';
-            infinite = true;
-            break
-         }
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3 && maxscoringtimes[i] < Math.floor(result['maxscore']/member[i]['require'])) {
-               remaintimes = Math.floor(result['maxscore']/member[i]['require'])-maxscoringtimes[i];
-               maxscoringtimes[i] += remaintimes;
-               result['maxscore'] += remaintimes*member[i]['score'];
-               finish = false;
-            }
          }
       }
 
@@ -670,36 +588,27 @@
          for (var i = 0; i < dist.length; i++) {
             meanscore += dist[i][0] * dist[i][1];
          }
-         document.getElementById('averagescore').innerHTML = meanscore.toFixed(0).toString()
+         document.getElementById('averagescore').innerHTML = meanscore.toFixed(0).toString();
          console.debug('Mean score: ' + meanscore.toString());
 
          console.debug(result);
          for (i in scores){
             document.getElementById('simresult'+(100-percentiles[i]*100).toString()).innerHTML = scores[i].toFixed(0).toString()
          }
+         console.debug(scores);
       }
       else
-         document.getElementById('averagescore').innerHTML = result['averagescore'].toString()
+         document.getElementById('averagescore').innerHTML = llteam.averageScore;
 
-      document.getElementById('resultstrength').innerHTML = (result.averagescore/result.minscore*totalattst).toFixed(0).toString()
-      document.getElementById('averageheal').innerHTML = result.averageheal
-      console.debug(scores);
+      document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
 
-      ttstrength = 0
-      skillst = [0,0,0,0,0,0,0,0,0]
       for (i=0;i<9;i++){
-         leader = 0
-
-         skillst[i] = parseInt(Math.round(averageskillscore[i]/result.minscore*totalattst/(1+mapcenter['skillup']/100)*(1+mapcenter['tapup']/100)).toFixed(0))
+         document.getElementById('cardstrength'+String(i)).innerHTML = (llteam.attrStrength[i]+llteam.avgSkills[i].strength).toString();
+         document.getElementById('strength'+String(i)).innerHTML = (llteam.attrStrength[i]-llteam.attrDebuff[i]+llteam.avgSkills[i].strength).toString()
+         document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength;
+         document.getElementById('heal'+String(i)).innerHTML = LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal);
       }
-      for (i=0;i<9;i++){
-         document.getElementById('cardstrength'+String(i)).innerHTML = (llteam.attrStrength[i]+skillst[i]).toString()
-         document.getElementById('strength'+String(i)).innerHTML = (llteam.attrStrength[i]-llteam.attrDebuff[i]+skillst[i]).toString()
-         document.getElementById('skillstrength'+String(i)).innerHTML = skillst[i].toString()
-         document.getElementById('heal'+String(i)).innerHTML = averageheal[i].toString()
-         ttstrength += (llteam.attrStrength[i]-llteam.attrDebuff[i]+skillst[i])
-      }
-      document.getElementById('resultstrength').innerHTML = ttstrength.toFixed(0).toString()+' (属性 '+totalattst.toString()+' + 技能 '+(ttstrength-totalattst).toString()+')'
+      document.getElementById('resultstrength').innerHTML = llteam.totalStrength + ' (属性 ' + llteam.totalAttrStrength + ' + 技能 ' + llteam.totalSkillStrength + ')';
       minstrength = 100000000
       minwhich = -1
       mincardstrength = 100000000
