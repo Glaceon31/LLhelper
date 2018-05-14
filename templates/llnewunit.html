@@ -332,18 +332,6 @@
       return newdist;
    }
 
-   function samegroup(song, card){
-      if (song['muse'] == 1)
-         for (i in unitgradechr[4])
-            if (card['jpname'] == unitgradechr[4][i])
-               return true
-      if (song['aqours'] == 1)
-         for (i in unitgradechr[5])
-            if (card['jpname'] == unitgradechr[5][i])
-               return true
-      return false
-   }
-
    function strengthdetail(i){
     tail = tail || 0
     basic = 0
@@ -441,7 +429,6 @@
 
 
       var showatt = llteam.finalAttr[mainatt];
-      var combomulti = cbmulti(mapcenter['combo']);
       var accmulti = 0.88+0.12*(mapcenter['perfect']/mapcenter['combo']);
 
       var totalweight = 0
@@ -488,117 +475,31 @@
       */
       result['minscore'] = llteam.minScore;
 
-      var skillchance = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-      for (var i = 0; i < 9; i++) {
-         var skill = member[i]['skill'];
-         member[i]['possibility'] *= (1+mapcenter['skillup']/100)
-         if (skill == 1 || skill == 11) {
-            skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-         } else if (skill == 2) {
-            skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-         } else if (skill == 4) {
-            skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-         } else if (skill == 7 || skill == 13) {
-            skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 1
-               member[i]["score"] *= naipan
-            }
-         } else if (skill == 8) {
-            skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 4
-               member[i]["score"] *= naipan
-            }
-         } else if (skill == 9) {
-            skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 2
-               member[i]["score"] *= naipan
-            }
-         } else if (skill == 10) {
-            skillchance[i] = Math.floor(mapcenter['starperfect']/member[i]['require']);
-         }
-      }
-
       if (document.getElementById('distribution').checked){
          var t0 = window.performance.now();
 
-         var percentiles = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.98, 0.99];
-         var dist = [[result['minscore'], 1]];
-         for (var i = 0; i < 9; i++) {
-            var skill = member[i]['skill'];
-            if (skill == 1 || skill == 2 || skill == 4 || skill == 10 || skill == 11) {
-               for (var j = 0; j < skillchance[i]; j++) {
-                  dist = addskill(dist, member[i]['score'], member[i]['possibility'] / 100, 0);
-               }
-            }
+         var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
+         var err = llteam.calculateScoreDistribution();
+         if (err) {
+         } else {
+            llteam.calculatePercentileNaive();
          }
-
-         var nextscore = [Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity];
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3) {
-               nextscore[i] = member[i]['require'];
-            }
-         }
-         for (;;) {
-            var next = 0;
-            for (var i = 1; i < 9; i++) {
-               if (nextscore[i] < nextscore[next]) {
-                  next = i;
-               }
-            }
-            if ((nextscore[next] > dist[dist.length - 1][0]) || (nextscore[next] > 3000000)) {
-               break;
-            }
-            dist = addskill(dist, member[next]['score'], member[next]['possibility'] / 100, nextscore[next]);
-            nextscore[next] += member[next]['require'];
-         }
-
-         var scores = [];
-         var k = 0;
-         var p = 0;
-         for (var i = 0; i < dist.length && k < percentiles.length; i++) {
-            p += dist[i][1];
-            for (; k < percentiles.length && p >= percentiles[k]; k++) {
-               scores[k] = dist[i][0];
-            }
-         }
-
          var t1 = window.performance.now();
-         console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
-         console.debug('Possibilities: ' + dist.length.toString());
-         var p = 0;
-         for (var i = 0; i < dist.length; i++) {
-            p += dist[i][1];
-         }
-         console.debug('Total probability (naïve summation): 1 ' + (p >= 1 ? '+ ' : '- ') + Math.abs(p - 1).toString());
-         var s0 = 0, s1 = 0;
-         for (var i = 0; i < dist.length; i++) {
-            var s = s0 + dist[i][1];
-            var bb = s - s0;
-            var e = (dist[i][1] - bb) + (s0 - (s - bb)) + s1;
-            s0 = s + e;
-            s1 = e - (s0 - s);
-         }
-         var ep = (s0 - 1) + s1;
-         console.debug('Total probability: 1 ' + (ep >= 0 ? '+ ' : '- ') + Math.abs(ep).toString());
-         var meanscore = 0;
-         for (var i = 0; i < dist.length; i++) {
-            meanscore += dist[i][0] * dist[i][1];
-         }
-         document.getElementById('averagescore').innerHTML = meanscore.toFixed(0).toString();
-         console.debug('Mean score: ' + meanscore.toString());
 
-         console.debug(result);
-         for (i in scores){
-            document.getElementById('simresult'+(100-percentiles[i]*100).toString()).innerHTML = scores[i].toFixed(0).toString()
+         console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
+         document.getElementById('averagescore').innerHTML = llteam.naiveExpection;
+         for (var i in percentiles){
+            document.getElementById('simresult'+(100-percentiles[i]).toString()).innerHTML = llteam.naivePercentile[percentiles[i]];
          }
-         console.debug(scores);
-      }
-      else
+         document.getElementById('maxscoreprobability').innerHTML = '(' + (llteam.probabilityForMaxScore * 100) + ')%';
+         document.getElementById('minscoreprobability').innerHTML = '(' + (llteam.probabilityForMinScore * 100) + ')%';
+         document.getElementById('simresult0').innerHTML = llteam.maxScore;
+         document.getElementById('simresult100').innerHTML = llteam.minScore;
+         document.getElementById('distributionresult').style.display = '';
+      } else {
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
+         document.getElementById('distributionresult').style.display = 'none';
+      }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
 
@@ -1059,8 +960,11 @@
 期望回复:<nospan id="averageheal"></nospan><br>
 
 <!--期望判定覆盖率：<nospan id="averageaccuracy"></nospan><br>-->
-
+</div>
+<div id='distributionresult' style='display:none'>
 <h3>得分分布</h3>
+最高分：<span id='simresult0'></span>&nbsp;概率：<span id='maxscoreprobability'></span><br/>
+最低分：<span id='simresult100'></span>&nbsp;概率：<span id='minscoreprobability'></span><br/>
 <table border="1">
 <tr>
 	<td>1%</td>
