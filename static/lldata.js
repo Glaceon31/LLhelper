@@ -1154,6 +1154,8 @@ var LLSkill = (function () {
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
    var float_attr = ['gemsinglepercent','gemallpercent'];
+   var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
+   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
       v = v || {};
       var i;
@@ -1263,6 +1265,16 @@ var LLMember = (function() {
       this.attrDebuff = debuff;
       return debuff;
    };
+   proto.getMicPoint = function () {
+      if (!this.card) throw "No card data";
+      var rarity = this.card.rarity;
+      if (DEFAULT_MAX_SLOT[rarity] != this.card.maxslot) {
+         console.debug('Rarity not match max slot, consider as R for mic calculation');
+         console.debug(this.card);
+         rarity = 'R';
+      }
+      return MIC_RATIO[rarity] * this.skilllevel;
+   };
    return cls;
 })();
 
@@ -1274,6 +1286,18 @@ var LLTeam = (function() {
    };
    var MAX_SCORE = 10000000;
    var MAX_SCORE_TEXT = '1000w+';
+   var MIC_BOUNDARIES = [
+      [0, 187],      // 1
+      [234, 455],    // 2
+      [463, 681],    // 3
+      [682, 1122],   // 4
+      [1129, 1563],  // 5
+      [1605, 2313],  // 6
+      [2324, 3440],  // 7
+      [3452, 5000],  // 8
+      [5005, 7100],  // 9
+      [7200, 7200]   // 10
+   ];
    var proto = cls.prototype;
    proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
       //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
@@ -1508,6 +1532,24 @@ var LLTeam = (function() {
       console.debug('calculatePercentileNaive: expection = ' + expection + ', percent = 1 ' + (percent >= 1 ? '+ ' : '- ') + Math.abs(percent-1));
       this.naivePercentile = percentile;
       this.naiveExpection = Math.round(expection);
+   };
+   proto.calculateMic = function () {
+      var micPoint = 0;
+      var i;
+      for (i = 0; i < 9; i++) {
+         micPoint += this.members[i].getMicPoint();
+      }
+      for (i = 0; i < 10; i++) {
+         if (micPoint >= MIC_BOUNDARIES[i][0] && micPoint <= MIC_BOUNDARIES[i][1]) {
+            this.micNumber = i+1;
+            break;
+         } else if (micPoint < MIC_BOUNDARIES[i][0]) {
+            this.micNumber = i+0.5;
+            break;
+         }
+      }
+      if (i == 10) this.micNumber = 10.5;
+      this.micPoint = micPoint;
    };
    return cls;
 })();

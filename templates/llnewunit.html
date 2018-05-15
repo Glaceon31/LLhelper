@@ -34,25 +34,6 @@
 
    var mezame = 0
    var language = 0
-   var kizuna = new Array();
-   kizuna["N"] = [25, 50]
-   kizuna["R"] = [100, 200]
-   kizuna["SR"] = [250, 500]
-   kizuna["SSR"] = [375, 750]
-   kizuna["UR"] = [500, 1000]
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
-
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
@@ -86,14 +67,6 @@
          result = result[1]
       }
       return result
-   }
-
-   naipan = 480
-   function changenaipan(){
-      if (!document.getElementById('naipan').checked)
-         naipan = 480
-      else
-         naipan = 270
    }
 
    pos = -1
@@ -281,84 +254,7 @@
    	return true;
    }
 
-   function cbmulti(cb) {
-      if (cb <= 50) {
-         return 1;
-      } else if (cb <= 100) {
-         return 1.1 - 5 / cb;
-      } else if (cb <= 200) {
-         return 1.15 - 10 / cb;
-      } else if (cb <= 400) {
-         return 1.2 - 20 / cb;
-      } else if (cb <= 600) {
-         return 1.25 - 40 / cb;
-      } else if (cb <= 800) {
-         return 1.3 - 70 / cb;
-      } else {
-         return 1.35 - 110 / cb;
-      }
-   }
-
-   function addskill(dist, score, prob, minscore) {
-      var newdist = [];
-      var q = 1 - prob;
-      var i = 0;
-      for (; i < dist.length && dist[i][0] < minscore; i++) {
-         newdist.push(dist[i]);
-      }
-      if (i < dist.length) {
-         var j = i;
-         for (;;) {
-            if (dist[i][0] < dist[j][0] + score) {
-               newdist.push([dist[i][0], dist[i][1] * q]);
-               if (++i >= dist.length) {
-                  break;
-               }
-            } else if (dist[i][0] > dist[j][0] + score) {
-               newdist.push([dist[j][0] + score, dist[j][1] * prob]);
-               ++j;
-            } else {
-               newdist.push([dist[i][0], dist[i][1] * q + dist[j][1] * prob]);
-               ++j;
-               if (++i >= dist.length) {
-                  break;
-               }
-            }
-         }
-         for (; j < dist.length; j++) {
-            newdist.push([dist[j][0] + score, dist[j][1] * prob]);
-         }
-      }
-      return newdist;
-   }
-
-   function strengthdetail(i){
-    tail = tail || 0
-    basic = 0
-    if (c.support == 1)
-      return 0
-    if (c.Cskillpercentage < 12){
-      if (mezame == 0)
-        basic = parseInt(c[c.attribute]*1.09)+kizuna[c.rarity][0]
-      else
-        basic = parseInt(c[c.attribute+'2']*1.09)+kizuna[c.rarity][1]
-    }
-    else{
-      if (mezame == 0)
-        basic = parseInt(c[c.attribute])+parseInt(c[c.Cskillattribute]*0.12)+kizuna[c.rarity][0]
-      else
-        basic = parseInt(c[c.attribute+'2'])+parseInt(c[c.Cskillattribute+'2']*0.12)+kizuna[c.rarity][1]
-    }
-    if (!c.skill)
-      return basic
-    skill = 0
-    if (c.skilleffect == 11)
-      skill = skillstrength(c, level, combo, longrate, perfectrate, time, starperfect)
-    return basic+skill
-   }
-
    function docalculate(cards) {
-      var result = {};
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
@@ -427,53 +323,10 @@
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
       document.getElementById('resultcool').innerHTML = llteam.finalAttr.cool + ' (+' + llteam.bonusAttr.cool + ')';
 
-
-      var showatt = llteam.finalAttr[mainatt];
-      var accmulti = 0.88+0.12*(mapcenter['perfect']/mapcenter['combo']);
-
-      var totalweight = 0
-      for (var i = 0; i < 9; i++) {
-         totalweight += member[i]['weight']
-      }
       for (var i = 0; i < 9; i++) {
          document.getElementById('attstrength'+String(i)).innerHTML = llteam.attrStrength[i];
          document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
       }
-
-      result['accuracy'] = 0;
-      var averageaccuracy = [0,0,0,0,0,0,0,0,0]
-      for (var i = 0; i < 9; i++) {
-         var skill = member[i]['skill'];
-         if (skill == 5) {
-            skillc = member[i]['score']*member[i]['possibility']/100/member[i]['require']
-            skillc = skillc/(skillc+1.0)
-            waste = (1-skillc)*skillc*member[i]['require']/2+skillc*member[i]['score']/2
-            skillc = (skillc*mapcenter['time']-waste)/mapcenter['time']
-            skillc = parseInt(1000*skillc)/10
-            averageaccuracy[i] = skillc
-         } else if (skill == 6 || skill == 12) {
-            skillc = mapcenter['combo']*member[i]['score']*member[i]['possibility']/100/member[i]['require']/mapcenter['time']
-            waste = skillc*member[i]['score']/2
-            skillc = mapcenter['combo']*member[i]['score']*member[i]['possibility']/100/member[i]['require']/mapcenter['time']*(mapcenter['combo']-member[i]['require']/2)/mapcenter['combo']
-            skillc = (skillc*mapcenter['time']-waste)/mapcenter['time']
-            skillc = parseInt(1000*skillc)/10
-            averageaccuracy[i] = skillc
-         }
-      }
-      totalaccuracy = 0
-      for (var i = 0; i < 9; i++) {
-         totalaccuracy += (1-totalaccuracy)*(averageaccuracy[i]/100)
-      }
-      /*
-      for (var i = 0; i < 9; i++) {
-         if (member[i]['gemacc'] == "1"){
-            member[i][mainatt]*= (1+0.25*totalaccuracy)
-            member[i][mainatt] = parseInt(member[i][mainatt])
-            showatt += parseInt(member[i][mainatt]*0.25*totalaccuracy)
-         }
-      }
-      */
-      result['minscore'] = llteam.minScore;
 
       if (document.getElementById('distribution').checked){
          var t0 = window.performance.now();
@@ -481,8 +334,11 @@
          var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
          var err = llteam.calculateScoreDistribution();
          if (err) {
+            document.getElementById('errorresult').innerHTML = err;
+            document.getElementById('errorresult').style.display = '';
          } else {
             llteam.calculatePercentileNaive();
+            document.getElementById('errorresult').style.display = 'none';
          }
          var t1 = window.performance.now();
 
@@ -499,80 +355,45 @@
       } else {
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
          document.getElementById('distributionresult').style.display = 'none';
+         document.getElementById('errorresult').style.display = 'none';
       }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
 
-      for (i=0;i<9;i++){
-         document.getElementById('cardstrength'+String(i)).innerHTML = (llteam.attrStrength[i]+llteam.avgSkills[i].strength).toString();
-         document.getElementById('strength'+String(i)).innerHTML = (llteam.attrStrength[i]-llteam.attrDebuff[i]+llteam.avgSkills[i].strength).toString()
+      var minStrength = 0, minStrengthIndex = -1;
+      var minCardStrength = 0, minCardStrengthIndex = -1;
+      for (var i=0;i<9;i++){
+         var curCardStrength = llteam.attrStrength[i]+llteam.avgSkills[i].strength;
+         var curStrength = curCardStrength - llteam.attrDebuff[i];
+         document.getElementById('cardstrength'+String(i)).innerHTML = curCardStrength.toString();
+         document.getElementById('cardstrength'+String(i)).style.color = '';
+         document.getElementById('strength'+String(i)).innerHTML = curStrength.toString();
+         document.getElementById('strength'+String(i)).style.color = '';
          document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength;
          document.getElementById('heal'+String(i)).innerHTML = LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal);
+
+         if (minCardStrengthIndex < 0 || curCardStrength < minCardStrength) {
+            minCardStrength = curCardStrength;
+            minCardStrengthIndex = i;
+         }
+         if (minStrengthIndex < 0 || curStrength < minStrength) {
+            minStrength = curStrength;
+            minStrengthIndex = i;
+         }
       }
       document.getElementById('resultstrength').innerHTML = llteam.totalStrength + ' (属性 ' + llteam.totalAttrStrength + ' + 技能 ' + llteam.totalSkillStrength + ')';
-      minstrength = 100000000
-      minwhich = -1
-      mincardstrength = 100000000
-      mincard = -1
-      for (i=0;i<9;i++){
-         document.getElementById('strength'+String(i)).style.color = ''
-         document.getElementById('cardstrength'+String(i)).style.color = ''
-         if (parseInt(document.getElementById('strength'+String(i)).innerHTML) < minstrength){
-            minwhich = i
-            minstrength = parseInt(document.getElementById('strength'+String(i)).innerHTML)
-         }
-         if (parseInt(document.getElementById('cardstrength'+String(i)).innerHTML) < mincardstrength){
-            mincard = i
-            mincardstrength = parseInt(document.getElementById('cardstrength'+String(i)).innerHTML)
-         }
-         trueacc = 100*(averageaccuracy[i]/100)*(1-totalaccuracy)/(1-averageaccuracy[i]/100)
-         //document.getElementById('accuracy'+String(i)).innerHTML = trueacc.toFixed(1).toString()+'%<br>('+averageaccuracy[i].toString()+'%)'
-      }
       //document.getElementById('averageaccuracy').innerHTML = (totalaccuracy*100).toFixed(1).toString()+'%'
-      document.getElementById('result').style.display = ""
-      document.getElementById('strength'+String(minwhich)).style.color = 'red'
-      document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
 
-      var micBoundaries = [
-        { min: 0.00, max: 1.87, mics: 1 },
-        { min: 2.34, max: 4.55, mics: 2 },
-        { min: 4.63, max: 6.81, mics: 3 },
-        { min: 6.82, max: 11.22, mics: 4 },
-        { min: 11.29, max: 15.63, mics: 5 },
-        { min: 16.05, max: 23.13, mics: 6 },
-        { min: 23.24, max: 34.40, mics: 7 },
-        { min: 34.52, max: 50.00, mics: 8 },
-        { min: 50.05, max: 71.00, mics: 9 },
-        { min: 72.00, max: 72.00, mics: 10 },
-      ]
-      var unknownMicBoundaries = []
-      for (var i = 0; i < micBoundaries.length - 1; i++) {
-            unknownMicBoundaries.push({
-                  min: micBoundaries[i].max,
-                  max: micBoundaries[i + 1].min,
-                  mics: micBoundaries[i].mics + 0.5
-            })
-      }
-      function getRarityRatio (currMember) {
-            var memberCard = cards[currMember.cardid]
-            var rarityValue = ['特典卡', '登录奖励', '特典卡 登录奖励'].indexOf(memberCard.type) !== -1 ? 'R' : memberCard.rarity
-            if (memberCard.type === '') memberCard.rarity = 'N'
-            switch (rarityValue) {
-                  case 'UR': return 1.00
-                  case 'SSR': return 0.59
-                  case 'SR': return 0.29
-                  case 'R': return 0.13
-                  default: return 0.00
-            }
-      }
-      var micRawValue = member.reduce(function (sum, currMember) {
-            return sum + currMember.skilllevel * getRarityRatio(currMember)
-      }, 0.00)
-      var micDisplayValue = Array.prototype.concat(micBoundaries, unknownMicBoundaries).filter(function (boundary) {
-            return micRawValue >= boundary.min && micRawValue <= boundary.max
-      })[0].mics
+      document.getElementById('strength'+String(minStrengthIndex)).style.color = 'red';
+      document.getElementById('cardstrength'+String(minCardStrengthIndex)).style.color = 'red';
+
+      llteam.calculateMic();
+      var micDisplayValue = llteam.micNumber;
       var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
-      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + micRawValue.toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')'
+
+      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + (llteam.micPoint / 100).toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')';
+
+      document.getElementById('result').style.display = ""
       document.getElementById("result").scrollIntoView()
    }
 
@@ -932,7 +753,7 @@
    </select>%<br>
 点击得分增加：<input type="number" step="any" id="tapup" name="tapup" value="0" size=2 />%<br>
 技能发动率增加：<input type="number" step="any" id="skillup" name="skillup" value="0" size=2 />%<br>
-<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input><!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
+<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
    <br><br><br>
 </form>
 
@@ -961,6 +782,7 @@
 
 <!--期望判定覆盖率：<nospan id="averageaccuracy"></nospan><br>-->
 </div>
+<div id="errorresult" style="display:none;color:red"></div>
 <div id='distributionresult' style='display:none'>
 <h3>得分分布</h3>
 最高分：<span id='simresult0'></span>&nbsp;概率：<span id='maxscoreprobability'></span><br/>
