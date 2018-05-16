@@ -2,7 +2,11 @@
  * This script contains following things:
  *   LoadingUtil
  *   LLData
+ *     (instance) LLCardData
  *   LLUnit
+ *   LLSkill
+ *   LLMember
+ *   LLTeam
  *
  * components:
  *   LLComponentBase
@@ -12,7 +16,7 @@
  *     +- LLSkillContainer
  *     +- LLCardSelector
  *
- * v0.4.0
+ * v0.5.0
  * By ben1222
  */
 
@@ -471,6 +475,31 @@ var LLUnit = {
          //document.getElementById('possibility'+String(n)).value = card['skilldetail'][level].possibility;
          //document.getElementById('score'+String(n)).value = card['skilldetail'][level].score;
       }, defaultHandleFailedRequest);
+   },
+
+   comboMulti: function (cb) {
+      if (cb <= 50) {
+         return 1;
+      } else if (cb <= 100) {
+         return 1.1 - 5 / cb;
+      } else if (cb <= 200) {
+         return 1.15 - 10 / cb;
+      } else if (cb <= 400) {
+         return 1.2 - 20 / cb;
+      } else if (cb <= 600) {
+         return 1.25 - 40 / cb;
+      } else if (cb <= 800) {
+         return 1.3 - 70 / cb;
+      } else {
+         return 1.35 - 110 / cb;
+      }
+   },
+
+   healNumberToString: function (n) {
+      var ret = n.toFixed(2);
+      while (ret[ret.length-1] == '0') ret = ret.substring(0, ret.length-1);
+      if (ret[ret.length-1] == '.') ret = ret.substring(0, ret.length-1);
+      return ret;
    },
 
    cardtoskilltype: function(c){
@@ -962,12 +991,175 @@ var LLCardSelector = (function() {
 
 /*
  * strength calculation helper
+ *   LLSkill
  *   LLMember
  *   LLTeam
  */
+var LLSkill = (function () {
+   var cls = function (card, level, buff) {
+      this.card = card;
+      this.level = level;
+      var skilldetails = card.skilldetail || [];
+      var skilldetail = skilldetails[level]  || {};
+      this.hasSkill = (card.skilldetail && skilldetail.possibility);
+      this.require = skilldetail.require || 1;
+      this.possibility = skilldetail.possibility || 0;
+      this.score = skilldetail.score || 0;
+      this.time = skilldetail.time || 0;
+
+      this.triggerType = card.triggertype;
+      this.effectType = card.skilleffect;
+      this.triggerTarget = card.triggertarget;
+      this.effectTarget = card.effecttarget;
+
+      this.reset();
+
+      buff = buff || {};
+      this.setScoreGem(buff.gemskill);
+      this.setSkillPossibilityUp(buff.skillup);
+   };
+   var eTriggerType = {
+      'TIME': 1,
+      'NOTE': 3,
+      'COMBO': 4,
+      'SCORE': 5,
+      'PERFECT': 6,
+      'STAR_PERFECT': 12,
+      'MEMBERS': 100
+   };
+   var eEffectType = {
+      'ACCURACY_SMALL': 4,
+      'ACCURACY_NORMAL': 5,
+      'HEAL': 9,
+      'SCORE': 11,
+      'SKILL_POSSIBILITY_UP': 2000,
+      'REPEAT': 2100,
+      'PERFECT_SCORE_UP': 2201,
+      'SYNC': 2400,
+      'ATTRIBUTE_UP': 2600
+   };
+   var calcBiDist = function (n, p) {
+      // time: O(n^2), space: O(n)
+      if (n < 0) throw 'LLSkill::calcBiDist: n cannot be negitive, n=' + n + ', p=' + p;
+      var dist = [new Array(n+1), new Array(n+1)];
+      var pCur = 0, pNext = 1;
+      var q = 1-p; // p: possiblility for +1, q: possibility for no change
+      dist[pCur][0] = 1;
+      for (var i = 1; i <= n; i++) {
+         dist[pNext][0] = dist[pCur][0] * q;
+         dist[pNext][i] = dist[pCur][i-1] * p;
+         for (var j = 1; j < i; j++) {
+            dist[pNext][j] = dist[pCur][j-1] * p + dist[pCur][j] * q;
+         }
+         pCur = pNext;
+         pNext = 1-pNext;
+      }
+      return dist[pCur];
+   };
+   var proto = cls.prototype;
+   proto.setScoreGem = function (has) {
+      this.actualScore = 0;
+      if (parseInt(has || 0)) {
+         if (this.effectType == eEffectType.HEAL) {
+            // 日服4.1版本前是270, 4.1版本后是480; 国服没有270
+            this.actualScore = this.score * 480;
+         } else if (this.effectType == eEffectType.SCORE) {
+            this.actualScore = Math.ceil(this.score * 2.5);
+         }
+      } else {
+         if (this.effectType == eEffectType.SCORE) {
+            this.actualScore = this.score;
+         }
+      }
+   };
+   proto.setSkillPossibilityUp = function (rate) {
+      this.actualPossibility = this.possibility * (1+parseInt(rate || 0)/100);
+   };
+   proto.reset = function () {
+      this.skillChance = 0;
+      this.averageScore = 0;
+      this.maxScore = 0;
+      this.averageHeal = 0;
+      this.maxHeal = 0;
+      this.simpleCoverage = 0;
+      this.skillDist = undefined;
+   };
+   proto.isScoreTrigger = function () { return this.triggerType == eTriggerType.SCORE; };
+   // 技能发动最大判定次数
+   // 如果比上次计算的次数更多, 返回true, 否则返回false
+   // env: {time, combo, score, perfect, starperfect}
+   proto.calcSkillChance = function (env) {
+      if (!this.hasSkill) return false;
+      var chance = 0;
+      var simpleCoverage = 0;
+      var total = 0;
+      if (this.triggerType == eTriggerType.TIME) {
+         total = env.time;
+      } else if (this.triggerType == eTriggerType.NOTE || this.triggerType == eTriggerType.COMBO) {
+         total = env.combo;
+      } else if (this.triggerType == eTriggerType.SCORE) {
+         total = env.score;
+      } else if (this.triggerType == eTriggerType.PERFECT) {
+         // TODO: combo*perfect_rate?
+         total = env.perfect;
+      } else if (this.triggerType == eTriggerType.STAR_PERFECT) {
+         // TODO: star*perfect_rate?
+         total = env.starperfect;
+      }
+      chance = Math.floor(total/this.require);
+      if (chance > this.skillChance) {
+         this.skillChance = chance;
+         this.skillDist = undefined; // reset distribution
+         return true;
+      } else {
+         return false;
+      }
+   };
+   proto.calcSkillEffect = function (env) {
+      if (!this.hasSkill) return false;
+      this.maxScore = this.skillChance * this.actualScore;
+      if (this.effectType == eEffectType.HEAL) {
+         this.maxHeal = this.skillChance * this.score;
+      } else {
+         this.maxHeal = 0;
+      }
+      this.averageScore = this.maxScore * this.actualPossibility/100;
+      this.averageHeal = this.maxHeal * this.actualPossibility/100;
+      // 对于buff型技能, 计算简易覆盖率
+      if (this.time > 0) {
+         // 令: 判定次数*每次发动需要秒数+判定次数*发动率*发动秒数 <= 总时间
+         // 则: 判定次数<=总时间/(每次发动需要秒数+发动率*发动秒数)
+         // 简易覆盖率: 发动率*发动秒数/(每次发动需要秒数+发动率*发动秒数)
+         // 实际覆盖率受多种因素影响(临近结尾发动的判定, note分布不均匀等), 到llcoverge页面计算实际覆盖率
+         // 非时间系的转换成平均多少秒能满足发动条件
+         var timeRequire = env.time/this.skillChance;
+         var p = this.actualPossibility/100;
+         this.simpleCoverage = p*this.time/(timeRequire+p*this.time);
+      } else {
+         this.simpleCoverage = 0;
+      }
+   };
+   proto.calcSkillStrength = function (scorePerStrength) {
+      if (!this.maxScore) {
+         this.strength = 0;
+      } else {
+         this.strength = Math.round(this.maxScore * this.possibility/100 /scorePerStrength);
+      }
+   };
+   proto.calcSkillDist = function () {
+      if (!this.skillChance) return false;
+      if (this.skillDist) return this.skillDist;
+      this.skillDist = calcBiDist(this.skillChance, this.actualPossibility/100);
+      return this.skillDist;
+   };
+   return cls;
+})();
+
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
    var float_attr = ['gemsinglepercent','gemallpercent'];
+   var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
+   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
       v = v || {};
       var i;
@@ -1077,6 +1269,16 @@ var LLMember = (function() {
       this.attrDebuff = debuff;
       return debuff;
    };
+   proto.getMicPoint = function () {
+      if (!this.card) throw "No card data";
+      var rarity = this.card.rarity;
+      if (DEFAULT_MAX_SLOT[rarity] != this.card.maxslot) {
+         console.debug('Rarity not match max slot, consider as R for mic calculation');
+         console.debug(this.card);
+         rarity = 'R';
+      }
+      return MIC_RATIO[rarity] * this.skilllevel;
+   };
    return cls;
 })();
 
@@ -1086,6 +1288,20 @@ var LLTeam = (function() {
       if (members.length != 9) throw("Expect 9 members");
       this.members = members;
    };
+   var MAX_SCORE = 10000000;
+   var MAX_SCORE_TEXT = '1000w+';
+   var MIC_BOUNDARIES = [
+      [0, 187],      // 1
+      [234, 455],    // 2
+      [463, 681],    // 3
+      [682, 1122],   // 4
+      [1129, 1563],  // 5
+      [1605, 2313],  // 6
+      [2324, 3440],  // 7
+      [3452, 5000],  // 8
+      [5005, 7100],  // 9
+      [7200, 7200]   // 10
+   ];
    var proto = cls.prototype;
    proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
       //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
@@ -1126,17 +1342,219 @@ var LLTeam = (function() {
       }
       //debuff
       var attrDebuff = [];
+      var totalAttrStrength = 0;
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          curMember.calcAttrDebuff(mapcolor, mapunit, weights[i], totalWeight, finalAttr[mapcolor]);
          attrDebuff.push(curMember.attrDebuff);
+         totalAttrStrength += attrStrength[i] - attrDebuff[i];
       }
       this.attrStrength = attrStrength;
       this.attrDebuff = attrDebuff;
       this.finalAttr = finalAttr;
       this.bonusAttr = bonusAttr;
+      // total
+      this.totalWeight = totalWeight;
+      this.totalAttrStrength = totalAttrStrength;
+      // TODO:判定宝石
    };
-   // TODO:判定宝石
+   var calcTeamSkills = function (llskills, env, isAvg) {
+      var finish = false;
+      var scoreAttr = (isAvg ? 'averageScore' : 'maxScore');
+      var healAttr = (isAvg ? 'averageHeal' : 'maxHeal');
+      while (!finish) {
+         finish = true;
+         if (env[scoreAttr] >= MAX_SCORE) {
+            env[scoreAttr] = MAX_SCORE;
+            break;
+         }
+         var sumScore = env.minscore;
+         var sumHeal = 0;
+         for (var i = 0; i < 9; i++) {
+            if (llskills[i].calcSkillChance(env)) {
+               finish = false;
+               llskills[i].calcSkillEffect(env);
+            }
+            sumScore += llskills[i][scoreAttr];
+            sumHeal += llskills[i][healAttr];
+         }
+         sumScore = Math.round(sumScore);
+         env[scoreAttr] = sumScore;
+         env[healAttr] = sumHeal;
+         env.score = sumScore;
+      }
+   };
+   proto.calculateSkillStrength = function (maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup) {
+      var comboMulti = LLUnit.comboMulti(mapcombo);
+      var accuracyMulti = 0.88+0.12*(mapperfect/mapcombo);
+      var scorePerStrength = 1.21/80*this.totalWeight*comboMulti*accuracyMulti;
+      var minScore = Math.round(this.totalAttrStrength * scorePerStrength * (1+parseFloat(tapup)/100));
+
+      var avgSkills = [];
+      var maxSkills = [];
+      for (var i = 0; i < 9 ; i++) {
+         var curMember = this.members[i]
+         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
+         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
+      }
+
+      var env = {
+         'time': maptime,
+         'combo': mapcombo,
+         'score': minScore,
+         'perfect': mapperfect,
+         'starperfect': mapstarperfect,
+         'minscore': minScore
+      };
+      calcTeamSkills(avgSkills, env, true);
+      calcTeamSkills(maxSkills, env, false);
+      var totalSkillStrength = 0;
+      for (var i = 0; i < 9; i++) {
+         avgSkills[i].calcSkillStrength(scorePerStrength);
+         totalSkillStrength += avgSkills[i].strength;
+      }
+      this.avgSkills = avgSkills;
+      this.maxSkills = maxSkills;
+      this.minScore = minScore;
+      this.averageScoreNumber = env.averageScore;
+      this.averageScore = (env.averageScore == MAX_SCORE ? MAX_SCORE_TEXT : env.averageScore);
+      this.maxScoreNumber = env.maxScore;
+      this.maxScore = (env.maxScore == MAX_SCORE ? MAX_SCORE_TEXT : env.maxScore);
+      this.averageHeal = env.averageHeal;
+      this.maxHeal = env.maxHeal;
+      // total
+      this.totalSkillStrength = totalSkillStrength;
+      this.totalStrength = this.totalAttrStrength + this.totalSkillStrength;
+   };
+   proto.calculateScoreDistribution = function () {
+      if (this.maxScore == MAX_SCORE) {
+         console.error('Cannot calculate distribution for infinite max score');
+         return '分数太高，无法计算分布';
+      }
+      var nonScoreTriggerSkills = [];
+      var scoreTriggerSkills = [];
+      var nextScore = [];
+      for (var i = 0; i < 9; i++) {
+         var curSkill = this.avgSkills[i];
+         if (curSkill.actualScore) {
+            if (curSkill.isScoreTrigger()) {
+               scoreTriggerSkills.push(curSkill);
+               nextScore.push(curSkill.require);
+            } else {
+               nonScoreTriggerSkills.push(curSkill);
+            }
+         }
+      }
+      // non-score trigger skills
+      var scoreRange = this.maxScore - this.minScore + 1;
+      var scorePossibility = [new Array(scoreRange), new Array(scoreRange)];
+      var pCur = 0, pNext = 1;
+      var curMax = 0;
+      scorePossibility[pCur][0] = 1;
+      for (var i = 0; i < nonScoreTriggerSkills.length; i++) {
+         var curScore = nonScoreTriggerSkills[i].actualScore;
+         var curDist = nonScoreTriggerSkills[i].calcSkillDist();
+         var nextMax = curMax + curScore * (curDist.length - 1);
+         for (var j = 0; j <= nextMax; j++) {
+            scorePossibility[pNext][j] = 0;
+         }
+         for (var j = 0; j <= curMax; j++) {
+            for (var k = 0; k < curDist.length; k++) {
+               scorePossibility[pNext][j+k*curScore] += scorePossibility[pCur][j] * curDist[k];
+            }
+         }
+         curMax = nextMax;
+         pCur = pNext;
+         pNext = 1 - pNext;
+      }
+      //console.debug(scorePossibility[pCur]);
+      // score trigger skills
+      while (scoreTriggerSkills.length > 0) {
+         var minNextScore = nextScore[0];
+         var minIndex = 0;
+         for (var i = 1; i < nextScore.length; i++) {
+            if (nextScore[i] < minNextScore) {
+               minNextScore = nextScore[i];
+               minIndex = i;
+            }
+         }
+         if (minNextScore > this.maxScore) break;
+         var curSkill = scoreTriggerSkills[minIndex];
+         var curScore = curSkill.actualScore;
+         var curPossibility = curSkill.actualPossibility / 100;
+         var minNextScoreIndex = minNextScore - this.minScore;
+         if (minNextScoreIndex < 0) minNextScoreIndex = 0;
+         var nextMax = curMax + curScore;
+         for (var i = 0; i < minNextScoreIndex; i++) {
+            scorePossibility[pNext][i] = scorePossibility[pCur][i];
+         }
+         for (var i = minNextScoreIndex; i <= nextMax; i++) {
+            scorePossibility[pNext][i] = 0;
+         }
+         for (var i = minNextScoreIndex; i <= curMax; i++) {
+            scorePossibility[pNext][i] += scorePossibility[pCur][i] * (1-curPossibility);
+            scorePossibility[pNext][i+curScore] += scorePossibility[pCur][i] * curPossibility;
+         }
+         curMax = nextMax;
+         pCur = pNext;
+         pNext = 1 - pNext;
+         nextScore[minIndex] += curSkill.require;
+      }
+      //console.debug(scorePossibility[pCur]);
+      this.scoreDistribution = scorePossibility[pCur];
+      this.probabilityForMinScore = this.scoreDistribution[0];
+      this.probabilityForMaxScore = this.scoreDistribution[this.scoreDistribution.length - 1];
+      return undefined;
+   };
+   proto.calculatePercentileNaive = function () {
+      if (!this.scoreDistribution) return undefined;
+      var expection = 0;
+      var percent = 0;
+      var dist = this.scoreDistribution;
+      var percentile = [];
+      percentile.push(this.minScore);
+      var nextPercent = 1;
+      for (var i = 0; i < dist.length; i++) {
+         expection += (i+this.minScore) * dist[i];
+         percent += dist[i];
+         if (percent*100 >= nextPercent) {
+            var curScore = i + this.minScore;
+            while (percent*100 >= nextPercent) {
+               percentile.push(curScore);
+               nextPercent++;
+            }
+         }
+      }
+      if (nextPercent == 100) {
+         percentile.push(i+this.minScore-1);
+         console.debug(percentile);
+      } else {
+         console.log('calculatePercentileNaive: sum of probability over 100%');
+         console.log(percentile);
+         percentile[100] = i+this.minScore-1;
+      }
+      console.debug('calculatePercentileNaive: expection = ' + expection + ', percent = 1 ' + (percent >= 1 ? '+ ' : '- ') + Math.abs(percent-1));
+      this.naivePercentile = percentile;
+      this.naiveExpection = Math.round(expection);
+   };
+   proto.calculateMic = function () {
+      var micPoint = 0;
+      var i;
+      for (i = 0; i < 9; i++) {
+         micPoint += this.members[i].getMicPoint();
+      }
+      for (i = 0; i < 10; i++) {
+         if (micPoint >= MIC_BOUNDARIES[i][0] && micPoint <= MIC_BOUNDARIES[i][1]) {
+            this.micNumber = i+1;
+            break;
+         } else if (micPoint < MIC_BOUNDARIES[i][0]) {
+            this.micNumber = i+0.5;
+            break;
+         }
+      }
+      if (i == 10) this.micNumber = 10.5;
+      this.micPoint = micPoint;
+   };
    return cls;
 })();
 
