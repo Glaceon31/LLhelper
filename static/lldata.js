@@ -2,7 +2,11 @@
  * This script contains following things:
  *   LoadingUtil
  *   LLData
+ *     (instance) LLCardData
  *   LLUnit
+ *   LLSkill
+ *   LLMember
+ *   LLTeam
  *
  * components:
  *   LLComponentBase
@@ -12,7 +16,7 @@
  *     +- LLSkillContainer
  *     +- LLCardSelector
  *
- * v0.4.0
+ * v0.5.0
  * By ben1222
  */
 
