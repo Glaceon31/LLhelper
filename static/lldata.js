@@ -587,8 +587,9 @@ var LLUnit = {
       }
       element.src = path;
    },
+
    changeavatarn: function (n) {
-      var cardid = threetonumber(document.getElementById('cardid'+String(n)).value)
+      var cardid = parseInt(document.getElementById('cardid'+String(n)).value)
       var mezame = parseInt(document.getElementById('mezame'+String(n)).value);
       LLUnit.changeavatar('avatar' + n, cardid, mezame);
    },
@@ -991,10 +992,136 @@ var LLCardSelector = (function() {
 
 /*
  * strength calculation helper
+ *   LLSisGem
  *   LLSkill
  *   LLMember
  *   LLTeam
  */
+var LLSisGem = (function () {
+   var EFFECT_RANGE = {
+      'SELF': 1,
+      'ALL': 2
+   };
+   var GEM_TYPE_DATA = [
+      {'name': 'kiss', 'key': 'SADD_200', 'slot': 1, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 200, 'per_color': 1, 'attr_add': 1},
+      {'name': 'perfume', 'key': 'SADD_450', 'slot': 2, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 450, 'per_color': 1, 'attr_add': 1},
+      {'name': 'ring', 'key': 'SMUL_10', 'slot': 2, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 10, 'per_color': 1, 'per_grade': 1, 'attr_mul': 1},
+      {'name': 'cross', 'key': 'SMUL_16', 'slot': 3, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 16, 'per_color': 1, 'per_grade': 1, 'attr_mul': 1},
+      {'name': 'aura', 'key': 'AMUL_18', 'slot': 3, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 1.8, 'per_color': 1, 'attr_mul': 1},
+      {'name': 'veil', 'key': 'AMUL_24', 'slot': 4, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 2.4, 'per_color': 1, 'attr_mul': 1},
+      {'name': 'charm', 'key': 'SCORE_250', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 150, 'per_color': 1, 'skill_mul': 1},
+      {'name': 'heal', 'key': 'HEAL_480', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 480, 'per_color': 1, 'heal_mul': 1},
+      {'name': 'trick', 'key': 'EMUL_33', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 33, 'per_color': 1, 'ease_attr_mul': 1},
+      {'name': 'wink', 'key': 'SADD_1400', 'slot': 5, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 1400, 'per_color': 1, 'attr_add': 1},
+      {'name': 'trill', 'key': 'SMUL_28', 'slot': 5, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 28, 'per_color': 1, 'per_grade': 1, 'attr_mul': 1},
+      {'name': 'bloom', 'key': 'AMUL_40', 'slot': 6, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 4, 'per_color': 1, 'attr_mul': 1},
+      {'name': 'member', 'key': 'MEMBER_29', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 29, 'per_member': 1, 'attr_mul': 1},
+      {'name': 'nonet', 'key': 'NONET_42', 'slot': 4, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 4.2, 'per_color': 1, 'per_unit': 1, 'attr_mul': 1}
+   ];
+   var MEMBER_COLOR = {
+      "高坂穂乃果": 'smile',
+      "絢瀬絵里": 'cool',
+      "南ことり": 'pure',
+      "園田海未": 'cool',
+      "星空凛": 'smile',
+      "西木野真姫": 'cool',
+      "東條希": 'pure',
+      "小泉花陽": 'pure',
+      "矢澤にこ": 'smile',
+      "高海千歌": 'smile',
+      "桜内梨子": 'cool',
+      "松浦果南": 'pure',
+      "黒澤ダイヤ": 'cool',
+      "渡辺曜": 'pure',
+      "津島善子": 'cool',
+      "国木田花丸": 'smile',
+      "小原鞠莉": 'smile',
+      "黒澤ルビィ": 'pure'
+   };
+   var EPSILON = 1e-8;
+   var cls = function (type, options) {
+      // options: {grade:(1~3), member:(member name), color:({smile|pure|cool}), unit:({muse|aqours})}
+      if (type < 0 || type >= GEM_TYPE_DATA.length) throw 'Unknown type: ' + type;
+      this.type = type;
+      var data = GEM_TYPE_DATA[type];
+      for (var i in data) {
+         if (i != 'key') {
+            this[i] = data[i];
+         }
+      }
+      options = options || {};
+      if (data.per_grade && options.grade) this.grade = options.grade;
+      if (data.per_member && options.member) {
+         this.member = options.member;
+         this.color = MEMBER_COLOR[options.member];
+      }
+      if (data.per_color && options.color) this.color = options.color;
+      if (data.per_unit && options.unit) this.unit = options.unit;
+   };
+   (function (obj) {
+      for (var i = 0; i < GEM_TYPE_DATA.length; i++) {
+         obj[GEM_TYPE_DATA[i].key] = i;
+      }
+   })(cls);
+   var bitSplit = function (val, candidate) {
+      var ret = [];
+      var orig_val = val;
+      // assume candidate sort by value desending
+      for (var i = 0; i < candidate.length; i++) {
+         var cur_type = GEM_TYPE_DATA[candidate[i]];
+         if (val >= cur_type.effect_value) {
+            val -= cur_type.effect_value;
+            ret.push(candidate[i]);
+         }
+      }
+      return ret;
+   };
+   var sumSlot = function (types) {
+      var ret = 0;
+      for (var i = 0; i < types.length; i++) {
+         ret += GEM_TYPE_DATA[types[i]].slot;
+      }
+      return ret;
+   };
+   var createGems = function (types, options) {
+      var ret = [];
+      for (var i = 0; i < types.length; i++) {
+         ret.push(new LLSisGem(types[i], options));
+      }
+      return ret;
+   };
+   cls.createGems = createGems;
+   cls.getGemSlot = function (type) {
+      return GEM_TYPE_DATA[type].slot;
+   };
+   cls.parseSADDSlot = function (val) {
+      return sumSlot(bitSplit(parseInt(val), [cls.SADD_1400, cls.SADD_450, cls.SADD_200]));
+   };
+   cls.parseSMULSlot = function (val) {
+      return sumSlot(bitSplit(parseInt(val), [cls.SMUL_28, cls.SMUL_16, cls.SMUL_10]));
+   };
+   cls.parseAMULSlot = function (val) {
+      val = parseFloat(val);
+      if (Math.abs(val - 4.2) < EPSILON) return sumSlot([cls.AMUL_24, cls.AMUL_18]);
+      return sumSlot(bitSplit(val+EPSILON, [cls.AMUL_40, cls.AMUL_24, cls.AMUL_18]));
+   };
+   cls.parseSADD = function (val, color) {
+      return createGems(bitSplit(parseInt(val), [cls.SADD_1400, cls.SADD_450, cls.SADD_200]), {'color': color});
+   };
+   cls.parseSMUL = function (val, color, grade) {
+      return createGems(bitSplit(parseInt(val), [cls.SMUL_28, cls.SMUL_16, cls.SMUL_10]), {'color': color, 'grade': grade});
+   };
+   cls.parseAMUL = function (val, color) {
+      val = parseFloat(val);
+      if (Math.abs(val - 4.2) < EPSILON) return createGems([cls.AMUL_24, cls.AMUL_18], {'color': color});
+      return createGems(bitSplit(val+EPSILON, [cls.AMUL_40, cls.AMUL_24, cls.AMUL_18]), {'color': color});
+   };
+   var proto = cls.prototype;
+   proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
+   proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
+   return cls;
+})();
+
 var LLSkill = (function () {
    var cls = function (card, level, buff) {
       this.card = card;
@@ -1156,8 +1283,7 @@ var LLSkill = (function () {
 })();
 
 var LLMember = (function() {
-   var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
-   var float_attr = ['gemsinglepercent','gemallpercent'];
+   var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel"];
    var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
@@ -1172,31 +1298,38 @@ var LLMember = (function() {
             this[attr] = parseInt(v[attr]);
          }
       }
-      for (i = 0; i < float_attr.length; i++) {
-         var attr = float_attr[i];
-         if (v[attr] === undefined) {
-            console.error('missing attribute ' + attr);
-            this[attr] = 0;
-         } else {
-            this[attr] = parseFloat(v[attr]);
-         }
-      }
       if (v.card === undefined) {
          console.error('missing card detail');
       } else {
          this.card = v.card;
       }
+      if (v.gems === undefined) {
+         console.error('missing gem info');
+         this.gems = [];
+      } else {
+         this.gems = v.gems;
+      }
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    var proto = cls.prototype;
+   proto.hasSkillGem = function () {
+      for (var i = 0; i < this.gems.length; i++) {
+         if (this.gems[i].skill_mul) return 1;
+      }
+      return 0;
+   };
    proto.calcDisplayAttr = function (mapcolor) {
       //显示属性=(基本属性+绊)*单体百分比宝石加成+数值宝石加成
       var curAttr = this[mapcolor];
-      var ret = curAttr + this.gemnum;
-      if (this.gemsinglepercent > 0.2) {
-         ret += Math.ceil(0.1*curAttr) + Math.ceil(0.16*curAttr);
-      } else {
-         ret += Math.ceil(this.gemsinglepercent * curAttr)
+      var ret = curAttr;
+      for (var i = 0; i < this.gems.length; i++) {
+         var gem = this.gems[i];
+         if (gem.attr_add && gem.color == mapcolor) {
+            ret += gem.effect_value;
+         }
+         if (gem.attr_mul && gem.isEffectRangeSelf() && gem.color == mapcolor) {
+            ret += Math.ceil(gem.effect_value/100 * curAttr);
+         }
       }
       this.displayAttr = ret;
       return ret;
@@ -1209,10 +1342,8 @@ var LLMember = (function() {
       var cumulativeTeamGemBonus = [0];
       var sum = 0;
       for (var i = 0; i < 9; i++) {
-         if (teamgem[i] > 0.04) {
-            sum += Math.ceil(0.018*this[mapcolor]) + Math.ceil(0.024*this[mapcolor]);
-         } else {
-            sum += Math.ceil(teamgem[i] * this[mapcolor]);
+         for (var j = 0; j < teamgem[i].length; j++) {
+            sum += Math.ceil(teamgem[i][j].effect_value/100 * this[mapcolor]);
          }
          cumulativeTeamGemBonus.push(sum);
       }
@@ -1312,7 +1443,12 @@ var LLTeam = (function() {
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          curMember.calcDisplayAttr(mapcolor);
-         teamgem.push(curMember.gemallpercent);
+         var curGems = [];
+         for (j = 0; j < curMember.gems.length; j++) {
+            var curGem = curMember.gems[j];
+            if (curGem.attr_mul && curGem.isEffectRangeAll() && curGem.color == mapcolor) curGems.push(curGem);
+         }
+         teamgem.push(curGems);
          totalWeight += weights[i];
       }
       //全体宝石和主唱技能加成
@@ -1394,8 +1530,8 @@ var LLTeam = (function() {
       var maxSkills = [];
       for (var i = 0; i < 9 ; i++) {
          var curMember = this.members[i]
-         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
-         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.gemskill, 'skillup': skillup}));
+         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
+         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
       }
 
       var env = {
