@@ -55,20 +55,6 @@
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
-   function threetonumber(three){
-      var result = three
-      if (result == '0') {
-         return 0;
-      }
-      if (result[0] == '0') {
-         result = result[1]+result[2]
-      }
-      if (result[0] == '0') {
-         result = result[1]
-      }
-      return result
-   }
-
    pos = -1
    function changepos(i){
       if (pos==-1){
@@ -119,9 +105,9 @@
 
    function calslot(n){
       result = 0
-      result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
-      result +=  parseInt(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)/0.05)
-      result +=  parseInt(parseFloat(document.getElementById("gemallpercent"+String(n)).value)/0.0059)
+      result += LLSisGem.parseSADDSlot(document.getElementById("gemnum"+String(n)).value);
+      result += LLSisGem.parseSMULSlot(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)*100);
+      result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
       result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
@@ -275,6 +261,9 @@
       for (var i = 0; i < sel_element.length; i++) {
          mapcenter[sel_element[i]] = document.getElementById(sel_element[i]).value;
       }
+
+      var mainatt = mapcenter['map']
+
       for (var i = 0; i < 9; i++) {
          for (var j = 0; j < int_element.length; j++) {
             member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
@@ -282,24 +271,21 @@
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
-         member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
-         var cur_skilldetail = cards[member[i]["cardid"]]['skilldetail'];
-         member[i]["require"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].require : 1);
-         member[i]["possibility"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].possibility : 0);
-         member[i]["score"] = (cur_skilldetail ? cur_skilldetail[member[i]['skilllevel']-1].score : 0);
-         sk = member[i]["skill"]
-         if ((sk == 1) || (sk == 2) || (sk == 3) || (sk == 4) || (sk == 11)|| (sk == 10)){
-            member[i]["score"] *= (1+1.5*parseInt(member[i]['gemskill']))
-            member[i]["score"] = Math.ceil(member[i]["score"])
-         } else if ((sk == 5) || (sk == 6) || (sk == 12)) {
-            member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].time
+         var llsisgems = [];
+         llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(document.getElementById('gemallpercent'+i).value)*100, mainatt));
+         if (parseInt(document.getElementById('gemskill' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
+         }
+         if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
          }
          member[i]['card'] = cards[member[i]['cardid']];
+         member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
       }
-
-      var mainatt = mapcenter['map']
 
       var llteam = new LLTeam(llmembers);
       var friendcskill = {
@@ -543,6 +529,10 @@
          <option value="200" >200</option>
          <option value="450" >450</option>
          <option value="650" >650</option>
+         <option value="1400" >1400</option>
+         <option value="1600" >1600</option>
+         <option value="1850" >1850</option>
+         <option value="2050" >2050</option>
       </select></td>
       {% endfor %}
    </tr>
@@ -554,6 +544,9 @@
          <option value="0.1" >10%</option>
          <option value="0.16" >16%</option>
          <option value="0.26" >26%</option>
+         <option value="0.28" >28%</option>
+         <option value="0.38" >38%</option>
+         <option value="0.44" >44%</option>
       </select></td>
       {% endfor %}
    </tr>
@@ -564,6 +557,7 @@
          <option value="0" >0</option>
          <option value="0.018" >1.8%</option>
          <option value="0.024" >2.4%</option>
+         <option value="0.04" >4.0%</option>
          <option value="0.042" >4.2%</option>
       </select></td>
       {% endfor %}
