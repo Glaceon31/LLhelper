@@ -608,94 +608,6 @@ function calc_bestarm(){
       LLUnit.calculate(handle_calculate);
       return true;
    }
-   
-   function cbmulti(cb) {
-      if (cb <= 50) {
-         return 1;
-      } else if (cb <= 100) {
-         return 1.1 - 5 / cb;
-      } else if (cb <= 200) {
-         return 1.15 - 10 / cb;
-      } else if (cb <= 400) {
-         return 1.2 - 20 / cb;
-      } else if (cb <= 600) {
-         return 1.25 - 40 / cb;
-      } else if (cb <= 800) {
-         return 1.3 - 70 / cb;
-      } else {
-         return 1.35 - 110 / cb;
-      }
-   }
-
-   function addskill(dist, score, prob, minscore) {
-      var newdist = [];
-      var q = 1 - prob;
-      var i = 0;
-      for (; i < dist.length && dist[i][0] < minscore; i++) {
-         newdist.push(dist[i]);
-      }
-      if (i < dist.length) {
-         var j = i;
-         for (;;) {
-            if (dist[i][0] < dist[j][0] + score) {
-               newdist.push([dist[i][0], dist[i][1] * q]);
-               if (++i >= dist.length) {
-                  break;
-               }
-            } else if (dist[i][0] > dist[j][0] + score) {
-               newdist.push([dist[j][0] + score, dist[j][1] * prob]);
-               ++j;
-            } else {
-               newdist.push([dist[i][0], dist[i][1] * q + dist[j][1] * prob]);
-               ++j;
-               if (++i >= dist.length) {
-                  break;
-               }
-            }
-         }
-         for (; j < dist.length; j++) {
-            newdist.push([dist[j][0] + score, dist[j][1] * prob]);
-         }
-      }
-      return newdist;
-   }
-
-   function samegroup(song, card){
-      if (song['muse'] == 1)
-         for (i in unitgradechr[4])
-            if (card['jpname'] == unitgradechr[4][i])
-               return true
-      if (song['aqours'] == 1)
-         for (i in unitgradechr[5])
-            if (card['jpname'] == unitgradechr[5][i])
-               return true
-      return false
-   }
-
-   function strengthdetail(i){
-    tail = tail || 0
-    basic = 0
-    if (c.support == 1)
-      return 0
-    if (c.Cskillpercentage < 12){
-      if (mezame == 0)
-        basic = parseInt(c[c.attribute]*1.09)+kizuna[c.rarity][0]
-      else
-        basic = parseInt(c[c.attribute+'2']*1.09)+kizuna[c.rarity][1]
-    }
-    else{
-      if (mezame == 0)
-        basic = parseInt(c[c.attribute])+parseInt(c[c.Cskillattribute]*0.12)+kizuna[c.rarity][0]
-      else
-        basic = parseInt(c[c.attribute+'2'])+parseInt(c[c.Cskillattribute+'2']*0.12)+kizuna[c.rarity][1]
-    }
-    if (!c.skill)
-      return basic
-    skill = 0
-    if (c.skilleffect == 11)
-      skill = skillstrength(c, level, combo, longrate, perfectrate, time, starperfect)
-    return basic+skill
-   }
 
    function docalculate(cards) {
       var result = {};
@@ -707,14 +619,11 @@ function calc_bestarm(){
       var atts = ['smile', 'pure', 'cool'];
       var member = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var mapcenter = {};
-      result['baseatt'] = {};
-      result['bonusatt'] = {};
+      var llmembers = [];
+      var weights = [];
+
       mapcenter['secondbase'] = document.getElementById('map').value
       mapcenter['secondbase2'] = document.getElementById('map').value
-      for (var i = 0; i < atts.length; i++) {
-         result['baseatt'][atts[i]] = 0;
-         result['bonusatt'][atts[i]] = 0;
-      }
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
       }
@@ -724,14 +633,32 @@ function calc_bestarm(){
       for (var i = 0; i < sel_element.length; i++) {
          mapcenter[sel_element[i]] = document.getElementById(sel_element[i]).value;
       }
+
+      var mainatt = mapcenter['map']
+
       for (var i = 0; i < 9; i++) {
          for (var j = 0; j < int_element.length; j++) {
             member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
          }
-		  if(Precal)  member[i]['gemskill']=1; 
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
+         if(Precal)  member[i]['gemskill']=1; 
+         var llsisgems = [];
+         llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(document.getElementById('gemallpercent'+i).value)*100, mainatt));
+         if (parseInt(document.getElementById('gemskill' + i).value) == 1 || Precal) {
+            llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
+         }
+         if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
+         }
+         member[i]['card'] = cards[member[i]['cardid']];
+         member[i].gems = llsisgems;
+         llmembers.push(new LLMember(member[i]));
+         weights.push(member[i].weight);
+
          member[i]["main"] = document.getElementById("main" + i.toString()).value;
          member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
 	 if((member[i]["skill"]==1) || (member[i]["skill"]==2) ||(member[i]["skill"]==3) ||(member[i]["skill"]==4) ||(member[i]["skill"]==10) ||(member[i]["skill"]==11)){
@@ -745,6 +672,7 @@ function calc_bestarm(){
 		if(member[i]["main"]=="cool") skind[i]=5;
 	}
 	else skind[i]=6;
+
          member[i]["require"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].require
          member[i]["possibility"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].possibility
          member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].score
@@ -755,68 +683,141 @@ function calc_bestarm(){
          } else if ((sk == 5) || (sk == 6) || (sk == 12)) {
             member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].time
          }
-         for (var j = 0; j < atts.length; j++) {
-            result['baseatt'][atts[j]] += member[i][atts[j]];
-         }
       }
 
-      mainatt = mapcenter['map']
-      rawmainatt = result['baseatt'][mainatt]
+      var llteam = new LLTeam(llmembers);
+      var friendcskill = {
+        "Csecondskillattribute": parseInt(mapcenter.secondpercentage2),
+        "Csecondskilllimit": parseInt(mapcenter.secondlimit2),
+        "Cskillattribute": mapcenter.base2,
+        "Cskillpercentage": parseInt(mapcenter.percentage2),
+        "attribute": mapcenter.bonus2
+      };
+      var song = llsong.songs[document.getElementById('songchoice').value];
+      var songunit = 0;
+      if (song.muse) {
+         songunit = 4;
+      } else if (song.aqours) {
+         songunit = 5;
+      }
+      llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
+      llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
 
+      document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
+      document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
+      document.getElementById('resultcool').innerHTML = llteam.finalAttr.cool + ' (+' + llteam.bonusAttr.cool + ')';
+
+      for (var i = 0; i < 9; i++) {
+         document.getElementById('attstrength'+String(i)).innerHTML = llteam.attrStrength[i];
+         document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
+      }
+
+      if (document.getElementById('distribution').checked && (!Precal)){
+         var t0 = window.performance.now();
+
+         var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
+         var err = llteam.calculateScoreDistribution();
+         if (err) {
+            document.getElementById('errorresult').innerHTML = err;
+            document.getElementById('errorresult').style.display = '';
+         } else {
+            llteam.calculatePercentileNaive();
+            document.getElementById('errorresult').style.display = 'none';
+         }
+         var t1 = window.performance.now();
+
+         console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
+         document.getElementById('averagescore').innerHTML = llteam.naiveExpection;
+         for (var i in percentiles){
+            document.getElementById('simresult'+(100-percentiles[i]).toString()).innerHTML = llteam.naivePercentile[percentiles[i]];
+         }
+         document.getElementById('maxscoreprobability').innerHTML = '(' + (llteam.probabilityForMaxScore * 100) + ')%';
+         document.getElementById('minscoreprobability').innerHTML = '(' + (llteam.probabilityForMinScore * 100) + ')%';
+         document.getElementById('simresult0').innerHTML = llteam.maxScore;
+         document.getElementById('simresult100').innerHTML = llteam.minScore;
+         document.getElementById('distributionresult').style.display = '';
+      } else {
+         document.getElementById('averagescore').innerHTML = llteam.averageScore;
+         document.getElementById('distributionresult').style.display = 'none';
+         document.getElementById('errorresult').style.display = 'none';
+      }
+
+      document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
+
+      var minStrength = 0, minStrengthIndex = -1;
+      var minCardStrength = 0, minCardStrengthIndex = -1;
+      for (var i=0;i<9;i++){
+         var curCardStrength = llteam.attrStrength[i]+llteam.avgSkills[i].strength;
+         var curStrength = curCardStrength - llteam.attrDebuff[i];
+         document.getElementById('cardstrength'+String(i)).innerHTML = curCardStrength.toString();
+         document.getElementById('cardstrength'+String(i)).style.color = '';
+         document.getElementById('strength'+String(i)).innerHTML = curStrength.toString();
+         document.getElementById('strength'+String(i)).style.color = '';
+         document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength;
+         document.getElementById('heal'+String(i)).innerHTML = LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal);
+
+         if (minCardStrengthIndex < 0 || curCardStrength < minCardStrength) {
+            minCardStrength = curCardStrength;
+            minCardStrengthIndex = i;
+         }
+         if (minStrengthIndex < 0 || curStrength < minStrength) {
+            minStrength = curStrength;
+            minStrengthIndex = i;
+         }
+         if(Precal) skillP[i]=llteam.avgSkills[i].strength;
+         //TODO: move to when best gem is found
+         calslot(i);
+      }
+      document.getElementById('resultstrength').innerHTML = llteam.totalStrength + ' (属性 ' + llteam.totalAttrStrength + ' + 技能 ' + llteam.totalSkillStrength + ')';
+      //document.getElementById('averageaccuracy').innerHTML = (totalaccuracy*100).toFixed(1).toString()+'%'
+
+      document.getElementById('strength'+String(minStrengthIndex)).style.color = 'red';
+      document.getElementById('cardstrength'+String(minCardStrengthIndex)).style.color = 'red';
+
+      llteam.calculateMic();
+      var micDisplayValue = llteam.micNumber;
+      var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
+
+      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + (llteam.micPoint / 100).toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')';
+
+      document.getElementById('result').style.display = ""
+      document.getElementById("result").scrollIntoView()
+
+
+
+      ////////////////
       rawmember = [0,0,0,0,0,0,0,0,0]
-      attst = [0,0,0,0,0,0,0,0,0]
       for (var i = 0; i < 9; i++) {
          tmp = new Array()
          tmp['smile'] = member[i]['smile']
          tmp['pure'] = member[i]['pure']
          tmp['cool'] = member[i]['cool']
          rawmember[i] = tmp
-         attst[i] = member[i][mainatt]
       }
-      totalall = 0
       //数值和单体百分比宝石
       for (var i = 0; i < 9; i++) {
          origin = member[i][mainatt]
          member[i][mainatt] += member[i]["gemnum"]
-         attst[i] += member[i]["gemnum"]
          if (member[i]["gemsinglepercent"] > 0.2){
             member[i][mainatt] += Math.ceil(0.1*origin)+Math.ceil(0.16*origin)
-            attst[i] += Math.ceil(0.1*origin)+Math.ceil(0.16*origin)
          }
          else {
             member[i][mainatt] += Math.ceil(member[i]["gemsinglepercent"]*origin)
-            attst[i] += Math.ceil(member[i]["gemsinglepercent"]*origin)
          }
          
       }
       //i带全体宝石，给j加
-      teamgem = new Array()
       for (var i = 0; i < 9; i++) {
-         teamgem[i] = [0,0,0,0,0,0,0,0,0]
          for (var j = 0;j < 9;j ++){
             if (member[i]["gemallpercent"] > 0.04){
                member[j][mainatt] += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               totalall += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               teamgem[i][j] = Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-               attst[j] += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
             }
             else{
                member[j][mainatt] += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               totalall += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               teamgem[i][j] = Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-               attst[j] += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
             }
          }
       }
 
-      rawattst = attst.concat()
-      rawteamgem= new Array()
-      
-      result['baseatt'][mainatt] = 0
-      for (var i = 0; i < 9; i++) {
-         rawteamgem[i] = teamgem[i].concat()
-         result['baseatt'][mainatt] += member[i][mainatt];
-      }
       //主c技能
       for (var i = 0; i < 9; i++) {
 	  if(Precal){
@@ -828,18 +829,11 @@ function calc_bestarm(){
 			}
 		}
 	  }
-         result['bonusatt'][mapcenter['bonus']] += Math.ceil(mapcenter['percentage']*member[i][mapcenter['base']]/100);
          if (mapcenter['base'] == mainatt){
-            attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage']/100)
 		//////////
-		if(Precal&&(mapcenter['bonus']==mainatt))
-		Match_c[i]+=(mapcenter['percentage']/100);
+		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['percentage']/100);
 		//////////
-            for (var j = 0; j < 9; j++)
-               teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['percentage']/100)
          }
-         else
-            attst[i] += Math.ceil(member[i][mapcenter['base']]*mapcenter['percentage']/100)
       }
       //副c技能
       for (var i = 0; i < 9; i++) {
@@ -847,356 +841,25 @@ function calc_bestarm(){
 		 ////////////////////
 		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage']/100);
 		//////////////////////
-            result['bonusatt'][mapcenter['secondbase']] += Math.ceil(member[i][mapcenter['secondbase']]*mapcenter['secondpercentage']/100)
-            attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage']/100)
-            for (var j = 0; j < 9; j++)
-               teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage']/100)
          }
 
       }
       //好友主c技能
       for (var i = 0; i < 9; i++) {
-         result['bonusatt'][mapcenter['bonus2']] += Math.ceil(mapcenter['percentage2']*member[i][mapcenter['base2']]/100);
          if (mapcenter['base2'] == mainatt){
 		 //////////
-		if(Precal &&(mapcenter['bonus2']==mainatt)){
-		
-		Match_c[i]+=(mapcenter['percentage2']/100);
-		}
+		if(Precal &&(mapcenter['bonus2']==mainatt)) Match_c[i]+=(mapcenter['percentage2']/100);
 		//////////
-            attst[i] += Math.ceil(rawattst[i]*mapcenter['percentage2']/100)
-            for (var j = 0; j < 9; j++)
-               teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['percentage2']/100)
          }
-         else
-            attst[i] += Math.ceil(member[i][mapcenter['base2']]*mapcenter['percentage2']/100)
       }
       //好友副c技能
       for (var i = 0; i < 9; i++) {
          if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
 		 ////////////////////
-		if(Precal &&(mapcenter['bonus2']==mainatt))
-		 Match_c[i]+=(mapcenter['secondpercentage2']/100);
+		if(Precal &&(mapcenter['bonus2']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage2']/100);
 		//////////////////////
-            result['bonusatt'][mapcenter['secondbase2']] += Math.ceil(member[i][mapcenter['secondbase2']]*mapcenter['secondpercentage2']/100)
-            attst[i] += Math.ceil(rawattst[i]*mapcenter['secondpercentage2']/100)
-            for (var j = 0; j < 9; j++)
-               teamgem[j][i] += Math.ceil(rawteamgem[j][i]*mapcenter['secondpercentage2']/100)
          }
       }
-
-      document.getElementById('resultsmile').innerHTML = (result.baseatt.smile+result.bonusatt.smile).toString()+" (+"+result.bonusatt.smile.toString()+")"
-      document.getElementById('resultpure').innerHTML = (result.baseatt.pure+result.bonusatt.pure).toString()+" (+"+result.bonusatt.pure.toString()+")"
-      document.getElementById('resultcool').innerHTML = (result.baseatt.cool+result.bonusatt.cool).toString()+" (+"+result.bonusatt.cool.toString()+")"
-
-
-      var showatt = result['bonusatt'][mapcenter['map']]+result['baseatt'][mapcenter['map']];
-      var combomulti = cbmulti(mapcenter['combo']);
-      var accmulti = 0.88+0.12*(mapcenter['perfect']/mapcenter['combo']);
-      var trueatt = showatt
-
-      totalattst = 0
-      totalweight = 0
-      for (var i = 0; i < 9; i++) {
-         totalweight += member[i]['weight']
-         for (var j = 0; j < 9; j++){
-            attst[i] += teamgem[i][j]
-            attst[j] -= teamgem[i][j]
-         }
-      }
-      rawattst = attst.concat()
-      totalrawst = 0
-      for (var i = 0; i < 9; i++) {
-         totalrawst += rawattst[i]
-         groupbonus = samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]])
-         colorbonus = (mapcenter['map'] == member[i]['main'])
-         if (!groupbonus && !colorbonus)
-            attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.21/1.21)
-         else if (!groupbonus || !colorbonus)
-            attst[i] -= Math.round(showatt*member[i]['weight']/totalweight*0.1/1.1)
-         document.getElementById('attstrength'+String(i)).innerHTML = attst[i].toString()
-         totalattst += attst[i]
-      }
-      
-      result['accuracy'] = 0;
-      var averageaccuracy = [0,0,0,0,0,0,0,0,0]
-      for (var i = 0; i < 9; i++) {
-         var skill = member[i]['skill'];
-         if (skill == 5) {
-            skillc = member[i]['score']*member[i]['possibility']/100/member[i]['require']
-            skillc = skillc/(skillc+1.0)
-            waste = (1-skillc)*skillc*member[i]['require']/2+skillc*member[i]['score']/2
-            skillc = (skillc*mapcenter['time']-waste)/mapcenter['time']
-            skillc = parseInt(1000*skillc)/10
-            averageaccuracy[i] = skillc
-         } else if (skill == 6 || skill == 12) {
-            skillc = mapcenter['combo']*member[i]['score']*member[i]['possibility']/100/member[i]['require']/mapcenter['time']
-            waste = skillc*member[i]['score']/2
-            skillc = mapcenter['combo']*member[i]['score']*member[i]['possibility']/100/member[i]['require']/mapcenter['time']*(mapcenter['combo']-member[i]['require']/2)/mapcenter['combo']
-            skillc = (skillc*mapcenter['time']-waste)/mapcenter['time']
-            skillc = parseInt(1000*skillc)/10
-            averageaccuracy[i] = skillc
-         }
-      }
-      totalaccuracy = 0
-      for (var i = 0; i < 9; i++) {
-         totalaccuracy += (1-totalaccuracy)*(averageaccuracy[i]/100)  
-      }
-      /*
-      for (var i = 0; i < 9; i++) {
-         if (member[i]['gemacc'] == "1"){
-            member[i][mainatt]*= (1+0.25*totalaccuracy)
-            member[i][mainatt] = parseInt(member[i][mainatt])
-            showatt += parseInt(member[i][mainatt]*0.25*totalaccuracy)
-         }
-      }
-      */
-      result['minscore'] = 0;
-      for (var i = 0; i < 9; i++) {
-         //result['minscore'] += Math.floor(showatt/80*member[i]['weight']*combomulti*accmulti*(mapcenter['map'] === member[i]['main'] ? 1.1 : 1)*(samegroup(llsong.songs[document.getElementById('songchoice').value],cards[member[i]["cardid"]]) ? 1.1 : 1));
-      }
-      result['minscore'] = 1.21*totalattst/80*totalweight*combomulti*accmulti*(1+mapcenter['tapup']/100)
-      
-      result['maxscore'] = result['minscore'];
-      result['averagescore'] = result['minscore'];
-      result['averageheal'] = 0;
-      result['maxheal'] = 0;
-      
-      var skillchance = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var averageskillscore = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var averageheal = [0,0,0,0,0,0,0,0,0]
-      
-
-      for (var i = 0; i < 9; i++) {
-         var skill = member[i]['skill'];
-         member[i]['possibility'] *= (1+mapcenter['skillup']/100)
-         if (skill == 1 || skill == 11) {
-            skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-         } else if (skill == 2) {
-            skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-         } else if (skill == 4) {
-            skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-         } else if (skill == 7 || skill == 13) {
-            skillchance[i] = Math.floor(mapcenter['combo']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 1
-               member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            }
-         } else if (skill == 8) {
-            skillchance[i] = Math.floor(mapcenter['time']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 4
-               member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            }
-         } else if (skill == 9) {
-            skillchance[i] = Math.floor(mapcenter['perfect']/member[i]['require']);
-            result['maxheal'] += skillchance[i]*member[i]['score'];
-            averageheal[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100
-            result['averageheal'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            if (member[i]['gemskill'] == '1'){
-               member[i]["skill"] = 2
-               member[i]["score"] *= naipan
-               result['maxscore'] += skillchance[i]*member[i]['score'];
-               averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            }
-         } else if (skill == 10) {
-            skillchance[i] = Math.floor(mapcenter['starperfect']/member[i]['require']);
-            result['maxscore'] += skillchance[i]*member[i]['score'];
-            averageskillscore[i] = skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-            result['averagescore'] += skillchance[i]*member[i]['possibility']*member[i]['score']/100;
-         }
-      }
-      
-      var finish = false;
-      var infinite = false;
-      var averagescoringtimes = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      var maxscoringtimes = [0, 0, 0, 0, 0, 0, 0, 0, 0];
-      while (!finish) {
-         finish = true;
-         if (result['averagescore'] > 10000000) {
-            result['averagescore'] = '1000w+';
-            infinite = true;
-            break;
-         }
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3 && averagescoringtimes[i] < Math.floor(result['averagescore']/member[i]['require'])) {
-               remaintimes = Math.floor(result['averagescore']/member[i]['require'])-averagescoringtimes[i];
-               averagescoringtimes[i] += remaintimes;
-               averageskillscore[i] += remaintimes*member[i]['possibility']*member[i]['score']/100;
-               result['averagescore'] += remaintimes*member[i]['possibility']*member[i]['score']/100;
-               finish = false;
-            }
-         }
-      }
-      if (!infinite) {
-         result['averagescore'] = Math.round(result['averagescore']);
-      }
-      finish = false;
-      infinite = false;
-      while (!finish) {
-         finish = true;
-         if (result['maxscore'] > 10000000) {
-            result['maxscore'] = '1000w+';
-            infinite = true;
-            break
-         }
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3 && maxscoringtimes[i] < Math.floor(result['maxscore']/member[i]['require'])) {
-               remaintimes = Math.floor(result['maxscore']/member[i]['require'])-maxscoringtimes[i];
-               maxscoringtimes[i] += remaintimes;
-               result['maxscore'] += remaintimes*member[i]['score'];
-               finish = false;
-            }
-         }
-      }
-      
-      if (document.getElementById('distribution').checked && (!Precal)){
-         var t0 = window.performance.now();
-         
-         var percentiles = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.98, 0.99];
-         var dist = [[result['minscore'], 1]];
-         for (var i = 0; i < 9; i++) {
-            var skill = member[i]['skill'];
-            if (skill == 1 || skill == 2 || skill == 4 || skill == 10 || skill == 11) {
-               for (var j = 0; j < skillchance[i]; j++) {
-                  dist = addskill(dist, member[i]['score'], member[i]['possibility'] / 100, 0);
-               }
-            }
-         }
-         
-         var nextscore = [Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity, Infinity];
-         for (var i = 0; i < 9; i++) {
-            if (member[i]['skill'] == 3) {
-               nextscore[i] = member[i]['require'];
-            }
-         }
-         for (;;) {
-            var next = 0;
-            for (var i = 1; i < 9; i++) {
-               if (nextscore[i] < nextscore[next]) {
-                  next = i;
-               }
-            }
-            if ((nextscore[next] > dist[dist.length - 1][0]) || (nextscore[next] > 3000000)) {
-               break;
-            }
-            dist = addskill(dist, member[next]['score'], member[next]['possibility'] / 100, nextscore[next]);
-            nextscore[next] += member[next]['require'];
-         }
-         
-         var scores = [];
-         var k = 0;
-         var p = 0;
-         for (var i = 0; i < dist.length && k < percentiles.length; i++) {
-            p += dist[i][1];
-            for (; k < percentiles.length && p >= percentiles[k]; k++) {
-               scores[k] = dist[i][0];
-            }
-         }
-         
-         var t1 = window.performance.now();
-         console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
-         console.debug('Possibilities: ' + dist.length.toString());
-         var p = 0;
-         for (var i = 0; i < dist.length; i++) {
-            p += dist[i][1];
-         }
-         console.debug('Total probability (naïve summation): 1 ' + (p >= 1 ? '+ ' : '- ') + Math.abs(p - 1).toString());
-         var s0 = 0, s1 = 0;
-         for (var i = 0; i < dist.length; i++) {
-            var s = s0 + dist[i][1];
-            var bb = s - s0;
-            var e = (dist[i][1] - bb) + (s0 - (s - bb)) + s1;
-            s0 = s + e;
-            s1 = e - (s0 - s);
-         }
-         var ep = (s0 - 1) + s1;
-         console.debug('Total probability: 1 ' + (ep >= 0 ? '+ ' : '- ') + Math.abs(ep).toString());
-         var meanscore = 0;
-         for (var i = 0; i < dist.length; i++) {
-            meanscore += dist[i][0] * dist[i][1];
-         }
-         document.getElementById('averagescore').innerHTML = meanscore.toFixed(0).toString()
-         console.debug('Mean score: ' + meanscore.toString());
-         
-         console.debug(result);
-         for (i in scores){
-            document.getElementById('simresult'+(100-percentiles[i]*100).toString()).innerHTML = scores[i].toFixed(0).toString()
-         }
-      }
-      else
-         document.getElementById('averagescore').innerHTML = result['averagescore'].toString()
-
-      document.getElementById('resultstrength').innerHTML = (result.averagescore/result.minscore*totalattst).toFixed(0).toString()
-      document.getElementById('averageheal').innerHTML = result.averageheal
-      console.debug(scores);
-      
-      ttweight = 0
-      ttstrength = 0
-      for (i=0;i<9;i++)
-         ttweight += member[i]['weight']
-      skillst = [0,0,0,0,0,0,0,0,0]
-      for (i=0;i<9;i++){
-         leader = 0
-
-         skillst[i] = parseInt(Math.round(averageskillscore[i]/result.minscore*totalattst/(1+mapcenter['skillup']/100)*(1+mapcenter['tapup']/100)).toFixed(0))
-      }
-      for (i=0;i<9;i++){
-         document.getElementById('cardstrength'+String(i)).innerHTML = (rawattst[i]+skillst[i]).toString()
-         document.getElementById('strength'+String(i)).innerHTML = (attst[i]+skillst[i]).toString()
-         document.getElementById('skillstrength'+String(i)).innerHTML = skillst[i].toString()
-		 /////
-		if(Precal) skillP[i]=skillst[i];
-		 /////
-         document.getElementById('heal'+String(i)).innerHTML = averageheal[i].toString()
-         ttstrength += (attst[i]+skillst[i])
-      }
-      document.getElementById('resultstrength').innerHTML = ttstrength.toFixed(0).toString()+' (属性 '+totalattst.toString()+' + 技能 '+(ttstrength-totalattst).toString()+')'
-      minstrength = 100000000
-      minwhich = -1
-      mincardstrength = 100000000
-      mincard = -1
-      for (i=0;i<9;i++){
-         document.getElementById('strength'+String(i)).style.color = ''
-         document.getElementById('cardstrength'+String(i)).style.color = ''
-         if (parseInt(document.getElementById('strength'+String(i)).innerHTML) < minstrength){
-            minwhich = i
-            minstrength = parseInt(document.getElementById('strength'+String(i)).innerHTML)
-         }
-         if (parseInt(document.getElementById('cardstrength'+String(i)).innerHTML) < mincardstrength){
-            mincard = i
-            mincardstrength = parseInt(document.getElementById('cardstrength'+String(i)).innerHTML)
-         }
-         trueacc = 100*(averageaccuracy[i]/100)*(1-totalaccuracy)/(1-averageaccuracy[i]/100)
-	      calslot(i);
-         //document.getElementById('accuracy'+String(i)).innerHTML = trueacc.toFixed(1).toString()+'%<br>('+averageaccuracy[i].toString()+'%)'
-      }
-      //document.getElementById('averageaccuracy').innerHTML = (totalaccuracy*100).toFixed(1).toString()+'%'
-      document.getElementById('result').style.display = ""
-      document.getElementById('strength'+String(minwhich)).style.color = 'red'
-      document.getElementById('cardstrength'+String(mincard)).style.color = 'red'
    }
 
    function callback(){
@@ -1431,6 +1094,12 @@ function calc_bestarm(){
       {% endfor %}
    </tr>
    <tr>
+      <td>异色异团惩罚</td>
+      {% for i in range(0,9) %}
+      <td id="cardstrengthdebuff{{i}}"></td>
+      {% endfor %}
+   </tr>
+   <tr>
       <td>实际强度</td>
       {% for i in range(0,9) %}
       <td id="strength{{i}}"></td>
@@ -1574,13 +1243,18 @@ function calc_bestarm(){
 </tr>
 </table>
 卡组强度:<nospan id="resultstrength"></nospan><br>
+卡组援力:<nospan id="resultmic"></nospan><br>
 期望得分:<nospan id="averagescore"></nospan><br>
 
 期望回复:<nospan id="averageheal"></nospan><br>
 
 <!--期望判定覆盖率：<nospan id="averageaccuracy"></nospan><br>-->
-
+</div>
+<div id="errorresult" style="display:none;color:red"></div>
+<div id='distributionresult' style='display:none'>
 <h3>得分分布</h3>
+最高分：<span id='simresult0'></span>&nbsp;概率：<span id='maxscoreprobability'></span><br/>
+最低分：<span id='simresult100'></span>&nbsp;概率：<span id='minscoreprobability'></span><br/>
 <table border="1">
 <tr>
 	<td>1%</td>
