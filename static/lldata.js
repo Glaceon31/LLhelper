@@ -1704,6 +1704,7 @@ var LLSaveData = (function () {
    // ver 1 : [{team member}, ..] total 9 members
    // ver 2 : [{team member with maxcost}, ..(9 members), {gem stock}] total 10 items
    // ver 10 : [{sub member}, ..] any number of members
+   // ver 11 : {gem stock} ("1".."15", total 15 items)
    // ver 101 : (not compatible with old version)
    //   { "version": 101, "team": [{team member}, ..(9 members)], "gemstock": {gem stock v2}, "submember": [{sub member}, ..] }
    //   gem stock v2:
@@ -1717,6 +1718,7 @@ var LLSaveData = (function () {
    //       gem type has per_unit: "muse", "aqours"
    var checkSaveDataVersion = function (data) {
       if (data.version !== undefined) return parseInt(data.version);
+      if (data.length === undefined && Object.keys(data).length == 15) return 11;
       if (data.length == 0) return 0;
       if (!data[0]) return 0;
       var member = data[0];
@@ -1748,14 +1750,11 @@ var LLSaveData = (function () {
       }
       return ret;
    };
-   var getGemStockV1V2 = function (data) {
+   var getGemStockV11 = function (data) {
       var ret = {};
-      var gemv1 = data[9];
-      if (!gemv1) {
-         return ret;
-      }
-      for (var i = 0; i < 16; i++) {
-         gemv1[i] = parseInt(gemv1[i] || 0);
+      var gemv1 = [9];
+      for (var i = 1; i < 16; i++) {
+         gemv1.push(parseInt(data[i] || 0));
       }
       ret['SADD_200'] = {'smile': gemv1[0], 'pure': gemv1[0], 'cool': gemv1[0]};
       ret['SADD_450'] = {'smile': gemv1[1], 'pure': gemv1[1], 'cool': gemv1[1]};
@@ -1774,6 +1773,12 @@ var LLSaveData = (function () {
       ret['SCORE_250'] = {'smile': gemv1[10], 'pure': gemv1[11], 'cool': gemv1[12]};
       ret['HEAL_480'] = {'smile': gemv1[13], 'pure': gemv1[14], 'cool': gemv1[15]};
       return ret;
+   };
+   var getGemStockV1V2 = function (data) {
+      if (!data[9]) {
+         return {};
+      }
+      return getGemStockV11(data[9]);
    };
    var getSubMemberV10 = function (data) {
       return ret;
@@ -1811,7 +1816,7 @@ var LLSaveData = (function () {
    var fillDefaultGemStock = function (stock) {
       var keys = LLSisGem.getGemTypeKeys();
       for (var i = 0; i < keys.length; i++) {
-         if (stock[i] === undefined) {
+         if (stock[keys[i]] === undefined) {
             stock[keys[i]] = recursiveMakeGemStockData(new LLSisGem(i), function(){return 9;});
          }
       }
@@ -1824,18 +1829,27 @@ var LLSaveData = (function () {
          console.error(data);
          this.teamMember = [];
          this.gemStock = {};
+         this.hasGemStock = false;
          this.subMember = [];
       } else if (this.rawVersion == 1 || this.rawVersion == 2) {
          this.teamMember = getTeamMemberV1V2(data);
          this.gemStock = getGemStockV1V2(data);
+         this.hasGemStock = true;
          this.subMember = [];
       } else if (this.rawVersion == 10) {
          this.teamMember = [];
          this.gemStock = {};
+         this.hasGemStock = false;
          this.subMember = getSubMemberV10(data);
+      } else if (this.rawVersion == 11) {
+         this.teamMember = [];
+         this.gemStock = getGemStockV11(data);
+         this.hasGemStock = true;
+         this.subMember = [];
       } else if (this.rawVersion >= 101) {
          this.teamMember = data.team;
          this.gemStock = data.gemstock;
+         this.hasGemStock = true;
          this.subMember = data.submember;
       }
       fillDefaultGemStock(this.gemStock);
@@ -1843,6 +1857,25 @@ var LLSaveData = (function () {
    cls.checkSaveDataVersion = checkSaveDataVersion;
    cls.calculateSlot = calculateSlot;
    var proto = cls.prototype;
+   proto.getLegacyGemStock = function() {
+      return {
+         '1': '' + this.gemStock.SADD_450.smile,
+         '2': '' + this.gemStock.SMUL_10.smile['1'],
+         '3': '' + this.gemStock.SMUL_10.smile['2'],
+         '4': '' + this.gemStock.SMUL_10.smile['3'],
+         '5': '' + this.gemStock.SMUL_16.smile['1'],
+         '6': '' + this.gemStock.SMUL_16.smile['2'],
+         '7': '' + this.gemStock.SMUL_16.smile['3'],
+         '8': '' + this.gemStock.AMUL_18.smile,
+         '9': '' + this.gemStock.AMUL_24.smile,
+         '10': '' + this.gemStock.SCORE_250.smile,
+         '11': '' + this.gemStock.SCORE_250.pure,
+         '12': '' + this.gemStock.SCORE_250.cool,
+         '13': '' + this.gemStock.HEAL_480.smile,
+         '14': '' + this.gemStock.HEAL_480.pure,
+         '15': '' + this.gemStock.HEAL_480.cool
+      };
+   };
    proto.serializeV1 = function() {
       return JSON.stringify(this.teamMember);
    };
@@ -1851,29 +1884,14 @@ var LLSaveData = (function () {
       for (var i = 0; i < 9; i++) {
          ret.push(this.teamMember[i]);
       }
-      var gems = [
-         this.gemStock.SADD_200.smile,
-         this.gemStock.SADD_450.smile,
-         this.gemStock.SMUL_10.smile['1'],
-         this.gemStock.SMUL_10.smile['2'],
-         this.gemStock.SMUL_10.smile['3'],
-         this.gemStock.SMUL_16.smile['1'],
-         this.gemStock.SMUL_16.smile['2'],
-         this.gemStock.SMUL_16.smile['3'],
-         this.gemStock.AMUL_18.smile,
-         this.gemStock.AMUL_24.smile,
-         this.gemStock.SCORE_250.smile,
-         this.gemStock.SCORE_250.pure,
-         this.gemStock.SCORE_250.cool,
-         this.gemStock.HEAL_480.smile,
-         this.gemStock.HEAL_480.pure,
-         this.gemStock.HEAL_480.cool
-      ];
-      ret.push(gems);
+      ret.push(this.getLegacyGemStock());
       return JSON.stringify(ret);
    };
    proto.serializeV10 = function() {
       return JSON.stringify(this.subMember);
+   };
+   proto.serializeV11 = function() {
+      return JSON.stringify(this.getLegacyGemStock());
    };
    proto.serializeV101 = function() {
       return JSON.stringify({
