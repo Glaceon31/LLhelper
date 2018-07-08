@@ -206,9 +206,11 @@
    }
    
    function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
       for (var i = 0; i < 9; i++) {
-         var member = unit[i];
+         var member = saveData.teamMember[i];
          for (var j in attlist) {
             var att = attlist[j];
             var value = 0;
@@ -291,7 +293,6 @@ sisrecord=new Array(9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9);
    function autoarm(){
 	if(document.getElementById('autoarm0').checked){
 		if(IsPrecalced==false){
-//   if(IsPrecalced==false){
 			sishtml = "<table border='1' style='text-align:center'><tr><td>通用技能</td><td>香水（ 450 ）</td><td>光环（ 1.8% ）</td><td>面纱（ 2.4% ）</td></tr>"
 			sishtml+="</tr>"
 			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
@@ -344,8 +345,6 @@ sisrecord=new Array(9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9);
 			sisrecord[i]=document.getElementById("sis"+String(i)).value;
 		}
 		document.getElementById("sisreserves").innerHTML=" ";
- //  stararm()
-//   document.getElementById("test00").value =document.getElementById("kissnum").value
 	}
    }
    ////////

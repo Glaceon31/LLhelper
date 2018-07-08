@@ -1059,9 +1059,14 @@ var LLSisGem = (function () {
       if (data.per_unit && options.unit) this.unit = options.unit;
    };
    (function (obj) {
+      var keys = [];
       for (var i = 0; i < GEM_TYPE_DATA.length; i++) {
          obj[GEM_TYPE_DATA[i].key] = i;
+         keys.push(GEM_TYPE_DATA[i].key);
       }
+      obj.getGemTypeKeys = function () {
+         return keys;
+      };
    })(cls);
    var bitSplit = function (val, candidate) {
       var ret = [];
@@ -1690,6 +1695,193 @@ var LLTeam = (function() {
       }
       if (i == 10) this.micNumber = 10.5;
       this.micPoint = micPoint;
+   };
+   return cls;
+})();
+
+var LLSaveData = (function () {
+   // ver 0 : invalid save data
+   // ver 1 : [{team member}, ..] total 9 members
+   // ver 2 : [{team member with maxcost}, ..(9 members), {gem stock}] total 10 items
+   // ver 10 : [{sub member}, ..] any number of members
+   // ver 101 : (not compatible with old version)
+   //   { "version": 101, "team": [{team member}, ..(9 members)], "gemstock": {gem stock v2}, "submember": [{sub member}, ..] }
+   //   gem stock v2:
+   //     {
+   //       "<gem type key>": {"<sub type>": {"<sub type>": ...{"<sub type>": "<number>"}...} }, ...
+   //     }
+   //     sub type in following order and value:
+   //       gem type has per_color: "smile", "pure", "cool"
+   //       gem type has per_grade: "1", "2", "3"
+   //       gem type has per_member: "<member name>"
+   //       gem type has per_unit: "muse", "aqours"
+   var checkSaveDataVersion = function (data) {
+      if (data.version !== undefined) return parseInt(data.version);
+      if (data.length == 0) return 0;
+      if (!data[0]) return 0;
+      var member = data[0];
+      if (!(member.cardid && member.mezame && member.skilllevel)) return 0;
+      if (member.maxcost && !member.smile) return 10;
+      if (data.length == 9) return 1;
+      if (data.length == 10) return 2;
+      return 0;
+   };
+   var calculateSlot = function (member){
+      var ret = 0;
+      ret += LLSisGem.parseSADDSlot(member.gemnum || 0);
+      ret += LLSisGem.parseSMULSlot(parseFloat(member.gemsinglepercent || 0)*100);
+      ret += LLSisGem.parseAMULSlot(parseFloat(member.gemallpercent || 0)*100);
+      ret += parseInt(member.gemskill || 0)*4;
+      ret += parseInt(member.gemacc || 0)*4;
+      return ret;
+   }
+   var getTeamMemberV1V2 = function (data) {
+      var ret = [];
+      for (var i = 0; i < 9; i++) {
+         var member = {};
+         var cur = data[i];
+         for (var j in cur) {
+            member[j] = cur[j];
+         }
+         if (member.maxcost === undefined) member.maxcost = calculateSlot(member);
+         ret.push(member);
+      }
+      return ret;
+   };
+   var getGemStockV1V2 = function (data) {
+      var ret = {};
+      var gemv1 = data[9];
+      if (!gemv1) {
+         return ret;
+      }
+      for (var i = 0; i < 16; i++) {
+         gemv1[i] = parseInt(gemv1[i] || 0);
+      }
+      ret['SADD_200'] = {'smile': gemv1[0], 'pure': gemv1[0], 'cool': gemv1[0]};
+      ret['SADD_450'] = {'smile': gemv1[1], 'pure': gemv1[1], 'cool': gemv1[1]};
+      ret['SMUL_10'] = {
+         'smile': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
+         'pure': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
+         'cool': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]}
+      };
+      ret['SMUL_16'] = {
+         'smile': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
+         'pure': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
+         'cool': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]}
+      };
+      ret['AMUL_18'] = {'smile': gemv1[8], 'pure': gemv1[8], 'cool': gemv1[8]};
+      ret['AMUL_24'] = {'smile': gemv1[9], 'pure': gemv1[9], 'cool': gemv1[9]};
+      ret['SCORE_250'] = {'smile': gemv1[10], 'pure': gemv1[11], 'cool': gemv1[12]};
+      ret['HEAL_480'] = {'smile': gemv1[13], 'pure': gemv1[14], 'cool': gemv1[15]};
+      return ret;
+   };
+   var getSubMemberV10 = function (data) {
+      return ret;
+   };
+   var recursiveMakeGemStockDataImpl = function (meta, current_sub, subtypes, callback) {
+      if (!current_sub) {
+         return callback(meta, subtypes);
+      }
+      var next_sub;
+      var types;
+      if (current_sub == 'per_color') {
+         next_sub = 'per_grade';
+         types = ['smile', 'pure', 'cool'];
+      } else if (current_sub == 'per_grade') {
+         next_sub = 'per_member';
+         types = ['1', '2', '3'];
+      } else if (current_sub == 'per_member') {
+         next_sub = 'per_unit';
+         types = ["高坂穂乃果", "絢瀬絵里", "南ことり", "園田海未", "星空凛", "西木野真姫", "東條希", "小泉花陽", "矢澤にこ",
+                  "高海千歌", "桜内梨子", "松浦果南", "黒澤ダイヤ", "渡辺曜", "津島善子", "国木田花丸", "小原鞠莉", "黒澤ルビィ"];
+      } else if (current_sub == 'per_unit') {
+         next_sub = '';
+         types = ['muse', 'aqours'];
+      }
+      if (!meta[current_sub]) return recursiveMakeGemStockDataImpl(meta, next_sub, subtypes, callback);
+      var ret = {};
+      for (var i = 0; i < types.length; i++) {
+         ret[types[i]] = recursiveMakeGemStockDataImpl(meta, next_sub, subtypes.concat(types[i]), callback);
+      }
+      return ret;
+   };
+   var recursiveMakeGemStockData = function (meta, callback) {
+      return recursiveMakeGemStockDataImpl(meta, 'per_color', [], callback);
+   };
+   var fillDefaultGemStock = function (stock) {
+      var keys = LLSisGem.getGemTypeKeys();
+      for (var i = 0; i < keys.length; i++) {
+         if (stock[i] === undefined) {
+            stock[keys[i]] = recursiveMakeGemStockData(new LLSisGem(i), function(){return 9;});
+         }
+      }
+   };
+   var cls = function (data) {
+      this.rawData = data;
+      this.rawVersion = checkSaveDataVersion(data);
+      if (this.rawVersion == 0) {
+         console.error("Unknown save data:");
+         console.error(data);
+         this.teamMember = [];
+         this.gemStock = {};
+         this.subMember = [];
+      } else if (this.rawVersion == 1 || this.rawVersion == 2) {
+         this.teamMember = getTeamMemberV1V2(data);
+         this.gemStock = getGemStockV1V2(data);
+         this.subMember = [];
+      } else if (this.rawVersion == 10) {
+         this.teamMember = [];
+         this.gemStock = {};
+         this.subMember = getSubMemberV10(data);
+      } else if (this.rawVersion >= 101) {
+         this.teamMember = data.team;
+         this.gemStock = data.gemstock;
+         this.subMember = data.submember;
+      }
+      fillDefaultGemStock(this.gemStock);
+   };
+   cls.checkSaveDataVersion = checkSaveDataVersion;
+   cls.calculateSlot = calculateSlot;
+   var proto = cls.prototype;
+   proto.serializeV1 = function() {
+      return JSON.stringify(this.teamMember);
+   };
+   proto.serializeV2 = function() {
+      var ret = [];
+      for (var i = 0; i < 9; i++) {
+         ret.push(this.teamMember[i]);
+      }
+      var gems = [
+         this.gemStock.SADD_200.smile,
+         this.gemStock.SADD_450.smile,
+         this.gemStock.SMUL_10.smile['1'],
+         this.gemStock.SMUL_10.smile['2'],
+         this.gemStock.SMUL_10.smile['3'],
+         this.gemStock.SMUL_16.smile['1'],
+         this.gemStock.SMUL_16.smile['2'],
+         this.gemStock.SMUL_16.smile['3'],
+         this.gemStock.AMUL_18.smile,
+         this.gemStock.AMUL_24.smile,
+         this.gemStock.SCORE_250.smile,
+         this.gemStock.SCORE_250.pure,
+         this.gemStock.SCORE_250.cool,
+         this.gemStock.HEAL_480.smile,
+         this.gemStock.HEAL_480.pure,
+         this.gemStock.HEAL_480.cool
+      ];
+      ret.push(gems);
+      return JSON.stringify(ret);
+   };
+   proto.serializeV10 = function() {
+      return JSON.stringify(this.subMember);
+   };
+   proto.serializeV101 = function() {
+      return JSON.stringify({
+         'version': this.rawVersion,
+         'team': this.teamMember,
+         'gemstock': this.gemStock,
+         'submember': this.subMember
+      });
    };
    return cls;
 })();
