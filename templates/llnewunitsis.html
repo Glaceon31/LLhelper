@@ -43,28 +43,6 @@
                   ["松浦果南","黒澤ダイヤ","国木田花丸"],
                   ["桜内梨子","津島善子","小原鞠莉"]]
 
-   
-	attr = new Array();//↓成员属性值*0
-	HN = new Array();//每张卡的槽数//↓z0
-	grade = new Array();//↓每个成员的年级*
-	Match_c = new Array(0,0,0,0,0,0,0,0,0);//是否满足副c
-	skillP = new Array();//z
-	skind = new Array();//z0
-	var Precal=false;
-	comb=[];
-	arms=new Array();//√
-	P_up=new Array();//每个成员的对应宝石贡献属性增值
-	P_sum = 0;
-	Sum_Max_Mem=0;
-	MPM=new Array();
-	Team_Method=[];
-	Current_MP=0;
-	IsPrecalced=false;
-	gradecount=new Array();
-	skillcount=new Array();
-	SNum = new Array();//↓每种宝石的数量*z0
-   currslot=0;
-
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
@@ -300,236 +278,13 @@
    function autoarm(){
       if(document.getElementById('autoarm0').checked){
          document.getElementById("sisreserves").style.display = '';
-         if(IsPrecalced==false){
-            calc_arms();
-            IsPrecalced=true;
-         }
       }
       else{
          document.getElementById("sisreserves").style.display = 'none';
       }
    }
-   ////////
-   function Sis_get_Data(){
-	//获取主唱
-	var Psong=document.getElementById("map").value;
-	for(var i=0;i<9;i++){
-		attr[i]=parseInt(document.getElementById(Psong+String(i)).value);
-		HN[i]=parseInt(document.getElementById("maxcost"+String(i)).value);
-		if(HN[i]>8){
-			HN[i]=8;
-			document.getElementById("maxcost"+String(i)).value="8";
-		}
-		if(HN[i]<=0){
-			HN[i]=1;
-			document.getElementById("maxcost"+String(i)).value="1";
-		}
-	}
-	SNum[0]=9;
-	for(var i=1;i<16;i++){
-		SNum[i]=parseInt(document.getElementById("sis"+i.toString()).value);
-		if(SNum[i]>9) SNum[i]=9;
-		if(SNum[i]<0) SNum[i]=0;
-		}
-	for(var i=0;i<9;i++){
-//		skillP[i]=parseInt(document.getElementById("skillstrength"+String(i)).value);
-		if(skind[i]<3) skillP[i]=skillP[i]*3/5;
-	}
-	}
-	//////////////////////*******************
-	cost = new Array( 1,2,2,3,3,4,4 );
-
-function arm_sis(mp,mc,Mem) {
-	var s = mp.split('');
-	var p = Team_Method[Mem][mp].strength;
-	for (var x in comb[mc]) {//确定要扣哪一个宝石
-		var xx=0;
-		if (comb[mc][x] < 2) xx = comb[mc][x];
-		if (comb[mc][x] == 2) xx = grade[Mem] + 1;
-		if (comb[mc][x] == 3) xx = grade[Mem] + 4;
-		if (comb[mc][x] == 4 || comb[mc][x] == 5) xx = comb[mc][x] + 4;
-		if (comb[mc][x] == 6) xx = skind[Mem] + 10;
-		if((comb[mc][x] == 6) && skind[Mem]==6) return false;
-		if (s[xx] == '-') {
-			p += P_up[Mem][comb[mc][x]];
-		}
-		if (s[xx] > '0'&&s[xx]<'9') {
-			s[xx] -= 1;
-			p += P_up[Mem][comb[mc][x]];
-		}
-		else if (s[xx] == '0') return false;
-	}
-	for (ii = 0; ii < 16; ii++) {
-		if ((s[ii] != '-') && ((s[ii] - '0') >= (8 - Mem))) {
-			s[ii] = '-';
-		}
-	}
-	if((s[grade[Mem]+1]-'0')>=(gradecount[grade[Mem]-1]-1)) s[grade[Mem]+1]='-';
-	if((s[grade[Mem]+4]-'0')>=(gradecount[grade[Mem]-1]-1)) s[grade[Mem]+4]='-';
-	if(skind[Mem]<6){
-		if((s[skind[Mem]+10]-'0')>=(skillcount[skind[Mem]]-1)) s[skind[Mem]+10]='-';
-	}
-	s=s.join('');
-	if(typeof Team_Method[Mem+1][s]=== 'undefined'){
-		Team_Method[Mem+1][s]={strength:p,premethod:mp,currmethod:mc};
-	}
-	else{
-		if(Team_Method[Mem+1][s].strength<p){
-			Team_Method[Mem+1][s]={strength:p,premethod:mp,currmethod:mc};
-		}
-	}
-	if (p > Current_MP) Current_MP = p;
-	return true;
-}
-function calc_arms(){
-	arms[0]=0;
-	for (i = 1; i < 9; i++) {
-		arms[i]=new Array();
-		arms[i][0]=0;
-		for (j = 1; j < 128; j++) {
-			var m = 0;
-			var sc = 0;
-			var x = j;
-			var sv=new Array();
-			while (x >= 1) {
-				sc += (x % 2)*cost[m];
-				if (x % 2 == 1) sv.push(m);
-				x = parseInt(x/2);
-				m++;
-			}
-			if(sc<i && ((j%2)==0)) continue;
-			if (sc <= i) {
-				if(typeof comb[j]=== 'undefined')
-					comb[j]=sv;
-				arms[i].push(j);
-			}
-		}
-	}
-}
-function P_Matrix(){
-	var P_sumtri=0;
-	var P_sumfor=0;
-	for (i = 0; i < 9; i++){
-		pa=Math.ceil(attr[i]*0.018);
-		pa=Math.ceil(pa*(1 + Match_c[i]));
-		pb=Math.ceil(attr[i]*0.024);
-		pb=Math.ceil(pb*(1 + Match_c[i]));
-		P_sumtri+=pa;
-		P_sumfor+=pb;
-		}
-	for (i = 0; i < 9; i++) {
-		P_up[i]=new Array();
-		P_up[i][0] = 200 * (1.0 + Match_c[i]);
-		P_up[i][1] = 450 * (1.0 + Match_c[i]);
-		P_up[i][2] = 0.1*(1.0 + Match_c[i])*attr[i];
-		P_up[i][3] = 0.16*(1.0  + Match_c[i])*attr[i];
-		P_up[i][4] = P_sumtri;
-		P_up[i][5] = P_sumfor;
-		P_up[i][6] = skillP[i];
-	}//书写宝石强度加成矩阵
-}
-function calc_MPM() {
-	for (i = 0; i < 9; i++) {
-		var MPi = 0;
-		for (var j in arms[HN[i]]) {
-			var p=0;
-			for (var x in comb[arms[HN[i]][j]]) {
-				p += P_up[i][comb[arms[HN[i]][j]][x]];
-			}
-			if (MPi < p) MPi = p;
-		}
-		MPM[i] = MPi;
-		Sum_Max_Mem += MPi;
-	}
-}
 
 
-function calc_bestarm(){
-	for(var i=0;i<9;i++){
-		gradecount[grade[i]-1]++;
-		skillcount[skind[i]]++;
-		}
-	//递归开始
-	
-	var o_sis=new Array();
-	o_sis[0]='-';
-	for (i = 1; i < 16; i++) {
-		if (SNum[i] >= 9) o_sis[i] = '-';
-		else o_sis[i] = SNum[i];
-	}
-	for(i=0;i<3;i++){
-	if(SNum[i+2]>=gradecount[i]) o_sis[i+2] = '-';
-	if(SNum[i+5]>=gradecount[i]) o_sis[i+5] = '-';
-	}
-	for(i=0;i<6;i++){
-	if(SNum[i+10]>skillcount[i]) o_sis[i+10] = '-';
-	}
-	o_sis=o_sis.join('');
-	Team_Method[0]=[];
-	Team_Method[0][o_sis]={strength:0,premethod:"",currmethod:0};
-	
-	for (i = 1; i < 10; i++) {
-		Team_Method[i]=[];
-		for(mp in Team_Method[i - 1]){
-			if ((Current_MP - Team_Method[i - 1][mp].strength) > Sum_Max_Mem) continue;//
-			var smp = mp.split('');
-			for (ii = 0; ii<16; ii++) {
-				if ((smp[ii] != '-') && ((smp[ii] - '0') >= (9 - i)))
-					smp[ii] = '-';
-			}
-			if((smp[grade[i-1]+1]-'0')>=(gradecount[grade[i-1]-1]-1)) smp[grade[i-1]+1]='-';
-			if((smp[grade[i-1]+4]-'0')>=(gradecount[grade[i-1]-1]-1)) smp[grade[i-1]+4]='-';
-			if(skind[i-1]<6){
-				if((smp[skind[i-1]+10]-'0')>=(skillcount[skind[i-1]]-1)) smp[skind[i-1]+10]='-';
-			}
-			smp=smp.join('');
-			if(typeof Team_Method[i][smp]=== 'undefined'){
-				Team_Method[i][smp]={strength:Team_Method[i-1][mp].strength,premethod:mp,currmethod:0};
-				}
-			else if(Team_Method[i][smp].strength<Team_Method[i-1][mp].strength){
-				Team_Method[i][smp]={strength:Team_Method[i-1][mp].strength,premethod:mp,currmethod:0};
-			}
-			for(var mc in arms[HN[i - 1]]){//当前配石方案下计算每一列 mc配石方案标号 mp已有配石所剩余石头标号 
-				arm_sis(mp, arms[HN[i - 1]][mc], i - 1);
-			}
-		}
-		Sum_Max_Mem -= MPM[i - 1];
-		gradecount[grade[i-1]-1]--;
-		skillcount[skind[i-1]]--;
-	}
-//递归结束
-
-	var max_p = 0;
-	var max_s;
-	for (mp in Team_Method[9]) {//找到最大的内个
-		if (max_p < Team_Method[9][mp].strength) {
-			max_p = Team_Method[9][mp].strength;
-			max_s = mp;
-		}
-	}
-	var p_s = max_s;
-	for (i = 9; i > 0; i--) {
-		gnx=0;
-		gspx=0;
-		gapx=0;
-		gsx=0;
-		for(x in comb[Team_Method[i][p_s].currmethod]){
-			if(comb[Team_Method[i][p_s].currmethod][x]==0) gnx+=200;
-			if(comb[Team_Method[i][p_s].currmethod][x]==1) gnx+=450;
-			if(comb[Team_Method[i][p_s].currmethod][x]==2) gspx+=10;
-			if(comb[Team_Method[i][p_s].currmethod][x]==3) gspx+=16;
-			if(comb[Team_Method[i][p_s].currmethod][x]==4) gapx+=18;
-			if(comb[Team_Method[i][p_s].currmethod][x]==5) gapx+=24;
-			if(comb[Team_Method[i][p_s].currmethod][x]==6) gsx=1;
-		}
-		document.getElementById("gemnum"+String(i-1)).value=String(gnx);
-		document.getElementById("gemsinglepercent"+String(i-1)).value=String(gspx/100);
-		document.getElementById("gemallpercent"+String(i-1)).value=String(gapx/1000);
-		document.getElementById("gemskill"+String(i-1)).value=String(gsx);
-		p_s = Team_Method[i][p_s].premethod;
-	}
-	}
-   ////////*******************
    function check(){
    	var inputs = document.getElementsByTagName("input");
    	for (i in inputs){
@@ -542,29 +297,6 @@ function calc_bestarm(){
    	}
    	saveToCookie();
       var handle_calculate = function(cards) {
-         /////////////
-         /*
-         if(document.getElementById('autoarm0').checked){
-            Sum_Max_Mem=0;
-            Current_MP=0;
-            Team_Method=[];
-            for(var i=0;i<9;i++){
-               document.getElementById("gemskill"+String(i)).value="1";
-               Match_c[i]=0;
-            }
-            for(var i=0;i<3;i++) gradecount[i]=0;
-            for(var i=0;i<6;i++) skillcount[i]=0;
-		
-            Precal=true;
-            docalculate(cards);
-            Precal=false;
-            Sis_get_Data();
-            P_Matrix();
-            calc_MPM();
-            calc_bestarm();
-         }
-         */
-	 /////////////////////
          docalculate(cards);
          document.getElementById("result").scrollIntoView()
       }
@@ -606,12 +338,11 @@ function calc_bestarm(){
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
-         if(Precal)  member[i]['gemskill']=1; 
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(document.getElementById('gemallpercent'+i).value)*100, mainatt));
-         if (parseInt(document.getElementById('gemskill' + i).value) == 1 || Precal) {
+         if (parseInt(document.getElementById('gemskill' + i).value) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
          }
          if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
@@ -621,31 +352,6 @@ function calc_bestarm(){
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
-
-         member[i]["main"] = document.getElementById("main" + i.toString()).value;
-         member[i]["skill"] = LLUnit.cardtoskilltype(cards[member[i]["cardid"]])
-	 if((member[i]["skill"]==1) || (member[i]["skill"]==2) ||(member[i]["skill"]==3) ||(member[i]["skill"]==4) ||(member[i]["skill"]==10) ||(member[i]["skill"]==11)){
-		if(member[i]["main"]=="smile") skind[i]=0;
-		if(member[i]["main"]=="pure") skind[i]=1;
-		if(member[i]["main"]=="cool") skind[i]=2;
-	}
-	else if(member[i]["skill"]==7 || member[i]["skill"]==8 ||member[i]["skill"]==9 ||member[i]["skill"]==13){
-		if(member[i]["main"]=="smile") skind[i]=3;
-		if(member[i]["main"]=="pure") skind[i]=4;
-		if(member[i]["main"]=="cool") skind[i]=5;
-	}
-	else skind[i]=6;
-
-         member[i]["require"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].require
-         member[i]["possibility"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].possibility
-         member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].score
-         sk = member[i]["skill"]
-         if ((sk == 1) || (sk == 2) || (sk == 3) || (sk == 4) || (sk == 11)|| (sk == 10)){
-            member[i]["score"] *= (1+1.5*parseInt(member[i]['gemskill']))
-            member[i]["score"] = Math.ceil(member[i]["score"])
-         } else if ((sk == 5) || (sk == 6) || (sk == 12)) {
-            member[i]["score"] = cards[member[i]["cardid"]]['skilldetail'][member[i]['skilllevel']-1].time
-         }
       }
 
       var llteam = new LLTeam(llmembers);
@@ -691,6 +397,7 @@ function calc_bestarm(){
             document.getElementById("gemsinglepercent"+String(i)).value=String(sumSMUL/100);
             document.getElementById("gemallpercent"+String(i)).value=String(sumAMUL/1000);
             document.getElementById("gemskill"+String(i)).value=String(sumSKILL);
+            calslot(i);
          }
       }
       llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
@@ -705,7 +412,7 @@ function calc_bestarm(){
          document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
       }
 
-      if (document.getElementById('distribution').checked && (!Precal)){
+      if (document.getElementById('distribution').checked){
          var t0 = window.performance.now();
 
          var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
@@ -757,9 +464,6 @@ function calc_bestarm(){
             minStrength = curStrength;
             minStrengthIndex = i;
          }
-         if(Precal) skillP[i]=llteam.avgSkills[i].strength;
-         //TODO: move to when best gem is found
-         calslot(i);
       }
       document.getElementById('resultstrength').innerHTML = llteam.totalStrength + ' (属性 ' + llteam.totalAttrStrength + ' + 技能 ' + llteam.totalSkillStrength + ')';
       //document.getElementById('averageaccuracy').innerHTML = (totalaccuracy*100).toFixed(1).toString()+'%'
@@ -776,88 +480,8 @@ function calc_bestarm(){
       document.getElementById('result').style.display = ""
       document.getElementById("result").scrollIntoView()
 
-
-
-      ////////////////
-      rawmember = [0,0,0,0,0,0,0,0,0]
-      for (var i = 0; i < 9; i++) {
-         tmp = new Array()
-         tmp['smile'] = member[i]['smile']
-         tmp['pure'] = member[i]['pure']
-         tmp['cool'] = member[i]['cool']
-         rawmember[i] = tmp
-      }
-      //数值和单体百分比宝石
-      for (var i = 0; i < 9; i++) {
-         origin = member[i][mainatt]
-         member[i][mainatt] += member[i]["gemnum"]
-         if (member[i]["gemsinglepercent"] > 0.2){
-            member[i][mainatt] += Math.ceil(0.1*origin)+Math.ceil(0.16*origin)
-         }
-         else {
-            member[i][mainatt] += Math.ceil(member[i]["gemsinglepercent"]*origin)
-         }
-         
-      }
-      //i带全体宝石，给j加
-      for (var i = 0; i < 9; i++) {
-         for (var j = 0;j < 9;j ++){
-            if (member[i]["gemallpercent"] > 0.04){
-               member[j][mainatt] += Math.ceil(0.018*rawmember[j][mainatt])+Math.ceil(0.024*rawmember[j][mainatt])
-            }
-            else{
-               member[j][mainatt] += Math.ceil(member[i]["gemallpercent"]*rawmember[j][mainatt])
-            }
-         }
-      }
-
-      //主c技能
-      for (var i = 0; i < 9; i++) {
-	  if(Precal){
-	  for(var g=1;g<=3;g++){
-			for(var j in unitgradechr[g]){
-				if(unitgradechr[g][j]==cards[member[i]["cardid"]]["jpname"]){
-					grade[i]=g;
-				}
-			}
-		}
-	  }
-         if (mapcenter['base'] == mainatt){
-		//////////
-		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['percentage']/100);
-		//////////
-         }
-      }
-      //副c技能
-      for (var i = 0; i < 9; i++) {
-         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit'], cards[member[i]["cardid"]]["jpname"])){
-		 ////////////////////
-		if(Precal&&(mapcenter['bonus']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage']/100);
-		//////////////////////
-         }
-
-      }
-      //好友主c技能
-      for (var i = 0; i < 9; i++) {
-         if (mapcenter['base2'] == mainatt){
-		 //////////
-		if(Precal &&(mapcenter['bonus2']==mainatt)) Match_c[i]+=(mapcenter['percentage2']/100);
-		//////////
-         }
-      }
-      //好友副c技能
-      for (var i = 0; i < 9; i++) {
-         if (comp_cardselector.isInUnitGroup(mapcenter['secondlimit2'], cards[member[i]["cardid"]]["jpname"])){
-		 ////////////////////
-		if(Precal &&(mapcenter['bonus2']==mainatt)) Match_c[i]+=(mapcenter['secondpercentage2']/100);
-		//////////////////////
-         }
-      }
    }
 
-   function callback(){
-   	alert('4')
-   }
    </script>
 {% endblock %}
 
