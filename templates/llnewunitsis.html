@@ -543,6 +543,7 @@ function calc_bestarm(){
    	saveToCookie();
       var handle_calculate = function(cards) {
          /////////////
+         /*
          if(document.getElementById('autoarm0').checked){
             Sum_Max_Mem=0;
             Current_MP=0;
@@ -562,6 +563,7 @@ function calc_bestarm(){
             calc_MPM();
             calc_bestarm();
          }
+         */
 	 /////////////////////
          docalculate(cards);
          document.getElementById("result").scrollIntoView()
@@ -572,7 +574,7 @@ function calc_bestarm(){
 
    function docalculate(cards) {
       var result = {};
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
+      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'maxcost'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
@@ -660,6 +662,36 @@ function calc_bestarm(){
          songunit = 4;
       } else if (song.aqours) {
          songunit = 5;
+      }
+      if (document.getElementById('autoarm0').checked){
+         // autoarm
+         var saveData = makeSaveData();
+         llteam.autoArmGem(mainatt, songunit, mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup, friendcskill, weights, saveData.gemStock);
+         for (var i = 0; i < 9; i++) {
+            var curGems = llteam.members[i].gems;
+            var sumSADD = 0;
+            var sumSMUL = 0;
+            var sumAMUL = 0;
+            var sumSKILL = 0;
+            for (var j = 0; j < curGems.length; j++) {
+               var curGem = curGems[j];
+               if (curGem.attr_add && curGem.isEffectRangeSelf()) {
+                  sumSADD += curGem.effect_value;
+               } else if (curGem.attr_mul) {
+                  if (curGem.isEffectRangeSelf()) {
+                     sumSMUL += curGem.effect_value;
+                  } else {
+                     sumAMUL += Math.round(curGem.effect_value*10);
+                  }
+               } else if (curGem.isSkillGem()) {
+                  sumSKILL++;
+               }
+            }
+            document.getElementById("gemnum"+String(i)).value=String(sumSADD);
+            document.getElementById("gemsinglepercent"+String(i)).value=String(sumSMUL/100);
+            document.getElementById("gemallpercent"+String(i)).value=String(sumAMUL/1000);
+            document.getElementById("gemskill"+String(i)).value=String(sumSKILL);
+         }
       }
       llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
       llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
