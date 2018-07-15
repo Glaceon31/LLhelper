@@ -1152,7 +1152,7 @@ var LLSisGem = (function () {
       var keys = this.getGemStockKeys();
       for (var i = 0; i < keys.length; i++) {
          cur = cur[keys[i]];
-         if (!cur) {
+         if (cur === undefined) {
             console.log("Not found " + keys.join('.') + " in gem stock");
             return 0;
          }
@@ -1432,15 +1432,18 @@ var LLMember = (function() {
       this.cumulativeAttrStrength = cumulativeAttrStrength;
       return this.finalAttr[mapcolor];
    };
-   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
-      if (!this.finalAttr) throw "Need calcAttrWithCSkill first";
+   proto.getAttrDebuffFactor = function (mapcolor, mapunit, weight, totalweight) {
       var debuff = 1;
       if (this.card.attribute != mapcolor) debuff *= 1.1;
       if (!isInUnitGroup(mapunit, this.card.jpname)) debuff *= 1.1;
       debuff = 1-1/debuff;
-      debuff = Math.round(teamattr*(weight/totalweight)*debuff);
-      this.attrDebuff = debuff;
+      debuff = (weight/totalweight)*debuff;
       return debuff;
+   };
+   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
+      var attrDebuff = Math.round(this.getAttrDebuffFactor(mapcolor, mapunit, weight, totalweight) * teamattr);
+      this.attrDebuff = attrDebuff;
+      return attrDebuff;
    };
    proto.getMicPoint = function () {
       if (!this.card) throw "No card data";
@@ -1514,10 +1517,17 @@ var LLTeam = (function() {
       return armCombinationList;
    };
    var proto = cls.prototype;
+   var getTotalWeight = function (weights) {
+      var totalWeight = 0;
+      for (var i = 0; i < 9; i++) {
+         totalWeight += weights[i];
+      }
+      return totalWeight;
+   };
    proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
       //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
       var teamgem = [];
-      var totalWeight = 0;
+      var totalWeight = getTotalWeight(weights);
       var i, j;
       //数值和单体百分比宝石
       for (i = 0; i < 9; i++) {
@@ -1529,7 +1539,6 @@ var LLTeam = (function() {
             if (curGem.attr_mul && curGem.isEffectRangeAll() && curGem.color == mapcolor) curGems.push(curGem);
          }
          teamgem.push(curGems);
-         totalWeight += weights[i];
       }
       //全体宝石和主唱技能加成
       var cskills = [this.members[4].card];
@@ -1773,12 +1782,16 @@ var LLTeam = (function() {
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    proto.autoArmGem = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock) {
+      // 计算主唱增益率以及异色异团惩罚率
       var cskills = [this.members[4].card];
       if (friendcskill) cskills.push(friendcskill);
       var cskillPercentages = [];
+      var totalDebuffFactor = 0;
+      var totalWeight = getTotalWeight(weights);
       for (var i = 0; i < 9; i++) {
          var curMember = this.members[i];
          cskillPercentages.push(curMember.calcTotalCSkillPercentageForSameColor(mapcolor, cskills));
+         totalDebuffFactor += curMember.getAttrDebuffFactor(mapcolor, mapunit, weights[i], totalWeight);
       }
       // 需要爆分宝石/治愈宝石可能带来的强度, 所以强行放入宝石进行计算
       for (var i = 0; i < 9; i++) {
@@ -1857,14 +1870,14 @@ var LLTeam = (function() {
                      }
                      if (takeEffect) {
                         for (var k = 0; k < 9; k++) {
-                           curStrengthBuff += Math.ceil( (curGem.effect_value / 100) * this.members[k][mapcolor] * (1 + cskillPercentages[k]/100) );
+                           curStrengthBuff += Math.ceil( (curGem.effect_value / 100) * this.members[k][mapcolor] ) * (1 + cskillPercentages[k]/100);
                         }
                      }
                   }
                }
                //TODO: 判定宝石
-               // 考虑点击得分提升带来的增益
-               curStrengthBuff *= (1 + parseInt(tapup||0)/100);
+               // 考虑点击得分提升带来的增益, 以及异色异团惩罚带来的减益
+               curStrengthBuff *= (1 + parseInt(tapup||0)/100) * (1 - totalDebuffFactor);
             }
             var gemStockKey = curGem.getGemStockKeys().join('.');
             if (gemStockKeyToIndex[gemStockKey] === undefined) {
@@ -1963,7 +1976,7 @@ var LLTeam = (function() {
             // 检查当前成员最大加成所需的宝石是否充足, 如果充足就用这个配置
             var enoughGem = 1;
             for (var j = 0; enoughGem && j < curMaxStrengthBuffComb.length; j++) {
-               if (lastState.charAt(curMaxStrengthBuffComb[j]) != '-') enoughGem = 0;
+               if (lastState.charAt(curPowerUps[curMaxStrengthBuffComb[j]].stockindex) != '-') enoughGem = 0;
             }
             if (enoughGem) {
                addDPState(curDP, i, lastState, lastDPState.strength + curMaxStrengthBuffStrength, lastState, curMaxStrengthBuffComb);
