@@ -7,7 +7,7 @@
 function LLSong(songjson, includeDefaultSong) {
    var songs = songjson;
    if (typeof(songs) == "string") {
-      songs = eval("("+songs+")");
+      songs = JSON.parse(songs);
    }
    if (includeDefaultSong === undefined || includeDefaultSong) {
       var defaultsong = new Array()

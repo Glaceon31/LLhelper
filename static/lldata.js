@@ -342,7 +342,6 @@ var LLSelectComponent = (function() {
          this.options = undefined;
          return this;
       }
-      var me = this;
       var opts = [];
       var orig_opts = this.element.options;
       for (var i = 0; i < orig_opts.length; i++) {
@@ -551,14 +550,15 @@ var LLUnit = {
             comp_skill.setCardData(card);
 
             var infolist2 = ["smile", "pure", "cool"]
+            var i;
             if (!mezame){
-               for (var i in infolist2){
+               for (i in infolist2){
                   document.getElementById(infolist2[i]).value = card[infolist2[i]]
                }
                document.getElementById("mezame").value = "未觉醒"
             }
             else{
-               for (var i in infolist2){
+               for (i in infolist2){
                   document.getElementById(infolist2[i]).value = card[infolist2[i]+"2"]
                }
                document.getElementById("mezame").value = "已觉醒"
@@ -828,7 +828,7 @@ var LLCardSelector = (function() {
 
       // init variables
       if (typeof(cards) == "string") {
-         cards = eval("("+cards+")");
+         cards = JSON.parse(cards);
       }
       this.cards = cards;
       this.language = 0;
@@ -876,7 +876,8 @@ var LLCardSelector = (function() {
       var cardOptionsJP = [{'value': '', 'text': ''}];
       var setnameSet = {};
       var cardKeys = Object.keys(cards).sort(function(a,b){return parseInt(a) - parseInt(b);});
-      for (var i = 0; i < cardKeys.length; i++) {
+      var i;
+      for (i = 0; i < cardKeys.length; i++) {
          var index = cardKeys[i];
          if (index == "0") continue;
          var curCard = this.cards[index];
@@ -890,7 +891,7 @@ var LLCardSelector = (function() {
          var color = this.attcolor[curCard.attribute];
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
-         if (curCard.jpseries && curCard.jpseries.indexOf('編') > 0 && !setnameSet[curCard.jpseries]) {
+         if (curCard.jpseries && curCard.jpseries.indexOf('編') >= 1 && !setnameSet[curCard.jpseries]) {
             setnameSet[curCard.jpseries] = [index, (curCard.series ? curCard.series : curCard.jpseries)];
          }
       }
@@ -900,11 +901,11 @@ var LLCardSelector = (function() {
       // build setname options
       var setnameOptions = this.getComponent('setname').options;
       if (setnameOptions) {
-         for (var i = 0; i < setnameOptions.length; i++) {
+         for (i = 0; i < setnameOptions.length; i++) {
             delete setnameSet[setnameOptions[i].value];
          }
          var setnameMissingList = Object.keys(setnameSet).sort(function(a,b){return parseInt(setnameSet[a][0]) - parseInt(setnameSet[b][0]);});
-         for (var i = 0; i < setnameMissingList.length; i++) {
+         for (i = 0; i < setnameMissingList.length; i++) {
             setnameOptions.push({
                value: setnameMissingList[i],
                text: setnameSet[setnameMissingList[i]][1]
@@ -1070,7 +1071,6 @@ var LLSisGem = (function () {
    })(cls);
    var bitSplit = function (val, candidate) {
       var ret = [];
-      var orig_val = val;
       // assume candidate sort by value desending
       for (var i = 0; i < candidate.length; i++) {
          var cur_type = GEM_TYPE_DATA[candidate[i]];
@@ -1258,7 +1258,6 @@ var LLSkill = (function () {
    proto.calcSkillChance = function (env) {
       if (!this.hasSkill) return false;
       var chance = 0;
-      var simpleCoverage = 0;
       var total = 0;
       if (this.triggerType == eTriggerType.TIME) {
          total = env.time;
@@ -1617,7 +1616,8 @@ var LLTeam = (function() {
 
       var avgSkills = [];
       var maxSkills = [];
-      for (var i = 0; i < 9 ; i++) {
+      var i;
+      for (i = 0; i < 9 ; i++) {
          var curMember = this.members[i]
          avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
          maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
@@ -1634,7 +1634,7 @@ var LLTeam = (function() {
       calcTeamSkills(avgSkills, env, true);
       calcTeamSkills(maxSkills, env, false);
       var totalSkillStrength = 0;
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          avgSkills[i].calcSkillStrength(scorePerStrength);
          totalSkillStrength += avgSkills[i].strength;
       }
@@ -2130,6 +2130,8 @@ var LLSaveData = (function () {
       } else if (current_sub == 'per_unit') {
          next_sub = '';
          types = ['muse', 'aqours'];
+      } else {
+         throw 'Unexpected current_sub "' + current_sub + '"';
       }
       if (!meta[current_sub]) return recursiveMakeGemStockDataImpl(meta, next_sub, subtypes, callback);
       var ret = {};
