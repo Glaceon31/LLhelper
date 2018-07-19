@@ -1059,9 +1059,14 @@ var LLSisGem = (function () {
       if (data.per_unit && options.unit) this.unit = options.unit;
    };
    (function (obj) {
+      var keys = [];
       for (var i = 0; i < GEM_TYPE_DATA.length; i++) {
          obj[GEM_TYPE_DATA[i].key] = i;
+         keys.push(GEM_TYPE_DATA[i].key);
       }
+      obj.getGemTypeKeys = function () {
+         return keys;
+      };
    })(cls);
    var bitSplit = function (val, candidate) {
       var ret = [];
@@ -1119,6 +1124,41 @@ var LLSisGem = (function () {
    var proto = cls.prototype;
    proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
    proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
+   proto.isSkillGem = function () { return this.skill_mul || this.heal_mul; };
+   proto.getGemStockKeys = function () {
+      if (this.gemStockKeys !== undefined) return this.gemStockKeys;
+      var ret = [GEM_TYPE_DATA[this.type].key];
+      if (this.per_color) {
+         if (this.color === undefined) throw "Gem has no color";
+         ret.push(this.color);
+      }
+      if (this.per_grade) {
+         if (this.grade === undefined) throw "Gem has no grade";
+         ret.push(this.grade);
+      }
+      if (this.per_member) {
+         if (this.member === undefined) throw "Gem has no member";
+         ret.push(this.member);
+      }
+      if (this.per_unit) {
+         if (this.unit === undefined) throw "Gem has no unit";
+         ret.push(this.unit);
+      }
+      this.gemStockKeys = ret;
+      return ret;
+   };
+   proto.getGemStockCount = function (gemStock) {
+      var cur = gemStock;
+      var keys = this.getGemStockKeys();
+      for (var i = 0; i < keys.length; i++) {
+         cur = cur[keys[i]];
+         if (cur === undefined) {
+            console.log("Not found " + keys.join('.') + " in gem stock");
+            return 0;
+         }
+      }
+      return cur;
+   };
    return cls;
 })();
 
@@ -1279,11 +1319,13 @@ var LLSkill = (function () {
       this.skillDist = calcBiDist(this.skillChance, this.actualPossibility/100);
       return this.skillDist;
    };
+   proto.isEffectHeal = function () { return this.effectType == eEffectType.HEAL; }
+   proto.isEffectScore = function () { return this.effectType == eEffectType.SCORE; }
    return cls;
 })();
 
 var LLMember = (function() {
-   var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel"];
+   var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
    var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
@@ -1314,7 +1356,7 @@ var LLMember = (function() {
    var proto = cls.prototype;
    proto.hasSkillGem = function () {
       for (var i = 0; i < this.gems.length; i++) {
-         if (this.gems[i].skill_mul) return 1;
+         if (this.gems[i].isSkillGem()) return 1;
       }
       return 0;
    };
@@ -1390,15 +1432,18 @@ var LLMember = (function() {
       this.cumulativeAttrStrength = cumulativeAttrStrength;
       return this.finalAttr[mapcolor];
    };
-   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
-      if (!this.finalAttr) throw "Need calcAttrWithCSkill first";
+   proto.getAttrDebuffFactor = function (mapcolor, mapunit, weight, totalweight) {
       var debuff = 1;
       if (this.card.attribute != mapcolor) debuff *= 1.1;
       if (!isInUnitGroup(mapunit, this.card.jpname)) debuff *= 1.1;
       debuff = 1-1/debuff;
-      debuff = Math.round(teamattr*(weight/totalweight)*debuff);
-      this.attrDebuff = debuff;
+      debuff = (weight/totalweight)*debuff;
       return debuff;
+   };
+   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
+      var attrDebuff = Math.round(this.getAttrDebuffFactor(mapcolor, mapunit, weight, totalweight) * teamattr);
+      this.attrDebuff = attrDebuff;
+      return attrDebuff;
    };
    proto.getMicPoint = function () {
       if (!this.card) throw "No card data";
@@ -1409,6 +1454,21 @@ var LLMember = (function() {
          rarity = 'R';
       }
       return MIC_RATIO[rarity] * this.skilllevel;
+   };
+   proto.calcTotalCSkillPercentageForSameColor = function (mapcolor, cskills) {
+      var sumPercentage = 0;
+      for (var i = 0; i < cskills.length; i++) {
+         var cskill = cskills[i];
+         if (cskill.Cskillpercentage && cskill.attribute == mapcolor && cskill.Cskillattribute == mapcolor) {
+            sumPercentage += parseInt(cskill.Cskillpercentage);
+         }
+         if (cskill.Csecondskillattribute && cskill.attribute == mapcolor) {
+            if (isInUnitGroup(cskill.Csecondskilllimit, this.card.jpname)) {
+               sumPercentage += parseInt(cskill.Csecondskillattribute);
+            }
+         }
+      }
+      return sumPercentage;
    };
    return cls;
 })();
@@ -1433,11 +1493,41 @@ var LLTeam = (function() {
       [5005, 7100],  // 9
       [7200, 7200]   // 10
    ];
+   var armCombinationList = [];
+   var getArmCombinationList = function (gems) {
+      if (armCombinationList.length > 0) return armCombinationList;
+      for (var i = 0; i <= 8; i++) {
+         armCombinationList.push([]);
+      }
+      var gemTypeCount = gems.length;
+      var dfs = function (gemList, usedSlot, nextGemIndex) {
+         if (nextGemIndex >= gemTypeCount) {
+            for (var i = usedSlot; i <= 8; i++) {
+               armCombinationList[i].push(gemList);
+            }
+            return;
+         }
+         dfs(gemList, usedSlot, nextGemIndex+1);
+         var nextUsedSlot = usedSlot + gems[nextGemIndex].gem.slot
+         if (nextUsedSlot <= 8) {
+            dfs(gemList.concat(nextGemIndex), nextUsedSlot, nextGemIndex+1);
+         }
+      };
+      dfs([], 0, 0);
+      return armCombinationList;
+   };
    var proto = cls.prototype;
+   var getTotalWeight = function (weights) {
+      var totalWeight = 0;
+      for (var i = 0; i < 9; i++) {
+         totalWeight += weights[i];
+      }
+      return totalWeight;
+   };
    proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
       //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
       var teamgem = [];
-      var totalWeight = 0;
+      var totalWeight = getTotalWeight(weights);
       var i, j;
       //数值和单体百分比宝石
       for (i = 0; i < 9; i++) {
@@ -1449,7 +1539,6 @@ var LLTeam = (function() {
             if (curGem.attr_mul && curGem.isEffectRangeAll() && curGem.color == mapcolor) curGems.push(curGem);
          }
          teamgem.push(curGems);
-         totalWeight += weights[i];
       }
       //全体宝石和主唱技能加成
       var cskills = [this.members[4].card];
@@ -1690,6 +1779,455 @@ var LLTeam = (function() {
       }
       if (i == 10) this.micNumber = 10.5;
       this.micPoint = micPoint;
+   };
+   var isInUnitGroup = LLCardSelector.isInUnitGroup;
+   proto.autoArmGem = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock) {
+      // 计算主唱增益率以及异色异团惩罚率
+      var cskills = [this.members[4].card];
+      if (friendcskill) cskills.push(friendcskill);
+      var cskillPercentages = [];
+      var totalDebuffFactor = 0;
+      var totalWeight = getTotalWeight(weights);
+      for (var i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         cskillPercentages.push(curMember.calcTotalCSkillPercentageForSameColor(mapcolor, cskills));
+         totalDebuffFactor += curMember.getAttrDebuffFactor(mapcolor, mapunit, weights[i], totalWeight);
+      }
+      // 需要爆分宝石/治愈宝石可能带来的强度, 所以强行放入宝石进行计算
+      for (var i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         if (!curMember.hasSkillGem()) {
+            curMember.gems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': curMember.card.attribute}));
+         }
+      }
+      this.calculateAttributeStrength(mapcolor, mapunit, friendcskill, weights);
+      this.calculateSkillStrength(maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup);
+      // 统计年级, 组合信息
+      var gradeInfo = [];
+      var gradeCount = [0, 0, 0];
+      var unitInfo = [];
+      var unitMemberCount = {'muse':{}, 'aqours':{}};
+      for (var i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         for (var j = 1; j <= 3; j++) {
+            if (isInUnitGroup(j, curMember.card.jpname)) {
+               gradeInfo.push(j);
+               gradeCount[j]++;
+               break;
+            }
+         }
+         if (isInUnitGroup(4, curMember.card.jpname)) {
+            unitInfo.push('muse');
+            unitMemberCount.muse[curMember.card.jpname] = 1;
+         } else if (isInUnitGroup(5, curMember.card.jpname)) {
+            unitInfo.push('aqours');
+            unitMemberCount.aqours[curMember.card.jpname] = 1;
+         }
+      }
+      var allMuse = (Object.keys(unitMemberCount.muse).length == 9);
+      var allAqours = (Object.keys(unitMemberCount.aqours).length == 9);
+      // 计算每种宝石带来的增益
+      var gemStockSubset = [];
+      var gemStockKeyToIndex = {};
+      var powerUps = [];
+      var gemTypes = LLSisGem.getGemTypeKeys();
+      for (var i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         var curPowerUps = [];
+         var gemOption = {'grade': gradeInfo[i], 'color': mapcolor, 'member': curMember.card.jpname, 'unit': unitInfo[i]};
+         for (var j = 0; j < gemTypes.length; j++) {
+            var curGem = new LLSisGem(LLSisGem[gemTypes[j]], gemOption);
+            var curStrengthBuff = 0;
+            if (curGem.isSkillGem()) {
+               var curSkill = this.avgSkills[i];
+               curGem.color = curMember.card.attribute;
+               if (curGem.heal_mul && curSkill.isEffectHeal()) {
+                  curStrengthBuff = curSkill.strength;
+               } else if (curGem.skill_mul && curSkill.isEffectScore()) {
+                  curStrengthBuff = curSkill.strength * curGem.effect_value / (100+curGem.effect_value);
+               }
+               // 考虑技能概率提升带来的增益
+               curStrengthBuff *= (1 + parseInt(skillup||0)/100);
+            } else {
+               if (curGem.attr_add) {
+                  if (curGem.isEffectRangeSelf()) {
+                     curStrengthBuff = curGem.effect_value * (1 + cskillPercentages[i]/100);
+                  }
+               } else if (curGem.attr_mul) {
+                  if (curGem.isEffectRangeSelf()) {
+                     if (curGem.color == mapcolor) {
+                        curStrengthBuff = (curGem.effect_value / 100) * (1 + cskillPercentages[i]/100) * curMember[mapcolor];
+                     }
+                     // TODO: 个人宝石和歌曲颜色不同的情况下, 增加强度为12%主唱技能加成带来的强度
+                  } else if (curGem.isEffectRangeAll()) {
+                     var takeEffect = 0;
+                     if (curGem.name == 'nonet') {
+                        if ((curGem.unit == 'muse' && allMuse) || (curGem.unit == 'aqours' && allAqours)) {
+                           takeEffect = 1;
+                        }
+                     } else {
+                        takeEffect = 1;
+                     }
+                     if (takeEffect) {
+                        for (var k = 0; k < 9; k++) {
+                           curStrengthBuff += Math.ceil( (curGem.effect_value / 100) * this.members[k][mapcolor] ) * (1 + cskillPercentages[k]/100);
+                        }
+                     }
+                  }
+               }
+               //TODO: 判定宝石
+               // 考虑点击得分提升带来的增益, 以及异色异团惩罚带来的减益
+               curStrengthBuff *= (1 + parseInt(tapup||0)/100) * (1 - totalDebuffFactor);
+            }
+            var gemStockKey = curGem.getGemStockKeys().join('.');
+            if (gemStockKeyToIndex[gemStockKey] === undefined) {
+               gemStockKeyToIndex[gemStockKey] = gemStockSubset.length;
+               gemStockSubset.push(curGem.getGemStockCount(gemStock));
+            }
+            curPowerUps.push({'gem': curGem, 'strength': curStrengthBuff, 'stockindex': gemStockKeyToIndex[gemStockKey]});
+         }
+         powerUps.push(curPowerUps);
+      }
+      // 假设宝石库存充足的情况下, 计算宝石对每个成员带来的最大强度
+      var combList = getArmCombinationList(powerUps[0]);
+      var maxStrengthBuffForMember = [];
+      for (var i = 0; i < 9; i++) {
+         var curCombList = combList[this.members[i].maxcost];
+         var curPowerUps = powerUps[i];
+         var curMaxStrengthBuff = 0;
+         var curMaxStrengthBuffComb = [];
+         for (var j = 0; j < curCombList.length; j++) {
+            var curComb = curCombList[j];
+            var sumStrengthBuff = 0;
+            for (var k = 0; k < curComb.length; k++) {
+               sumStrengthBuff += curPowerUps[curComb[k]].strength;
+            }
+            if (sumStrengthBuff > curMaxStrengthBuff) {
+               curMaxStrengthBuff = sumStrengthBuff;
+               curMaxStrengthBuffComb = curComb;
+            }
+         }
+         maxStrengthBuffForMember.push({'strength': curMaxStrengthBuff, 'comb': curMaxStrengthBuffComb});
+      }
+      // gemStockRequests[i][j]: 统计第(i+1)~第9个成员(下标i~8)对第j种宝石的总需求量
+      var gemStockRequests = [];
+      for (var i = 0; i < 9; i++) {
+         var curRequests = [];
+         var curPowerUps = powerUps[i];
+         for (var j = 0; j < gemStockSubset.length; j++) {
+            curRequests.push(0);
+         }
+         for (var j = 0; j < curPowerUps.length; j++) {
+            curRequests[curPowerUps[j].stockindex] = 1;
+         }
+         gemStockRequests.push(curRequests);
+      }
+      for (var i = 7; i >= 0; i--) {
+         for (var j = 0; j < gemStockSubset.length; j++) {
+            gemStockRequests[i][j] += gemStockRequests[i+1][j];
+         }
+      }
+      // dp[member_index][cur_state]={'strength': cur_max_strength, 'prev': prev_state, 'comb': cur_combination}
+      // DP状态: 在考虑第1~member_index个成员(下标0~(member_index-1))的宝石分配情况下, 还剩cur_state个宝石的时候, 所能达到的最大强度加成
+      // prev_state和cur_combination用于记录到达该状态的路径
+      // member_index==0: 初始状态
+      // cur_state, prev_state: 状态用字符串表示, 每个字符用0~9或者-, 表示剩余宝石数, -表示库存充足
+      var curState = '';
+      for (var i = 0; i < gemStockSubset.length; i++) {
+         if (gemStockSubset[i] >= gemStockRequests[0][i]) {
+            curState = curState + '-';
+         } else {
+            curState = curState + String(gemStockSubset[i]);
+         }
+      }
+      var dp = [{}];
+      dp[0][curState] = {'strength': 0, 'prev': '', 'comb': []};
+      var maxStrengthBuff = 0;
+      var addDPState = function (curDP, memberIndex, state, strength, prev, comb) {
+         var nextState = state.split('');
+         for (var i = 0; i < nextState.length; i++) {
+            if (nextState[i] != '-') {
+               if (memberIndex+1 < 9) {
+                  if (parseInt(nextState[i]) >= gemStockRequests[memberIndex+1][i]) nextState[i] = '-';
+               } else {
+                  nextState[i] = '-';
+               }
+            }
+         }
+         var nextStateStr = nextState.join('');
+         if (curDP[nextStateStr] !== undefined && curDP[nextStateStr].strength >= strength) return;
+         curDP[nextStateStr] = {'strength': strength, 'prev': prev, 'comb': comb};
+         if (strength > maxStrengthBuff) maxStrengthBuff = strength;
+      };
+      for (var i = 0; i < 9; i++) {
+         var curMaxStrengthBuffStrength = maxStrengthBuffForMember[i].strength;
+         var curMaxStrengthBuffComb = maxStrengthBuffForMember[i].comb;
+         var curCombList = combList[this.members[i].maxcost];
+         var curPowerUps = powerUps[i];
+         var remainingMaxStrengthBuff = 0;
+         for (var j = i; j < 9; j++) {
+            remainingMaxStrengthBuff += maxStrengthBuffForMember[j].strength;
+         }
+         var lastDP = dp[i];
+         var curDP = {};
+         for (var lastState in lastDP) {
+            var lastDPState = lastDP[lastState];
+            if (lastDPState.strength + remainingMaxStrengthBuff < maxStrengthBuff) continue;
+            // 检查当前成员最大加成所需的宝石是否充足, 如果充足就用这个配置
+            var enoughGem = 1;
+            for (var j = 0; enoughGem && j < curMaxStrengthBuffComb.length; j++) {
+               if (lastState.charAt(curPowerUps[curMaxStrengthBuffComb[j]].stockindex) != '-') enoughGem = 0;
+            }
+            if (enoughGem) {
+               addDPState(curDP, i, lastState, lastDPState.strength + curMaxStrengthBuffStrength, lastState, curMaxStrengthBuffComb);
+               continue;
+            }
+            // 尝试该槽数下所有可行的宝石组合
+            for (var j = 0; j < curCombList.length; j++) {
+               var curComb = curCombList[j];
+               var nextState = lastState.split('');
+               var sumStrengthBuff = 0;
+               var k;
+               for (k = 0; k < curComb.length; k++) {
+                  var powerUp = curPowerUps[curComb[k]];
+                  if (nextState[powerUp.stockindex] == '0') break;
+                  if (nextState[powerUp.stockindex] != '-') {
+                     nextState[powerUp.stockindex] = String(parseInt(nextState[powerUp.stockindex])-1);
+                  }
+                  sumStrengthBuff += powerUp.strength;
+               }
+               if (k < curComb.length) continue;
+               addDPState(curDP, i, nextState.join(''), lastDPState.strength + sumStrengthBuff, lastState, curComb);
+            }
+         }
+         dp.push(curDP);
+      }
+      // 找到最优组合并沿着路径获取每个成员的最优宝石分配
+      // dp[9]里应该只有一个状态(全是'-')
+      maxStrengthBuff = 0;
+      var maxStrengthState;
+      for (var i in dp[9]) {
+         if (dp[9][i].strength > maxStrengthBuff) {
+            maxStrengthBuff = dp[9][i].strength;
+            maxStrengthState = i;
+         }
+      }
+      for (var i = 8; i >= 0; i--) {
+         var curDPState = dp[i+1][maxStrengthState];
+         var curComb = curDPState.comb;
+         var curPowerUps = powerUps[i];
+         var curGems = [];
+         for (var j = 0; j < curComb.length; j++) {
+            curGems.push(curPowerUps[curComb[j]].gem);
+         }
+         this.members[i].gems = curGems;
+         maxStrengthState = curDPState.prev;
+      }
+   };
+   return cls;
+})();
+
+var LLSaveData = (function () {
+   // ver 0 : invalid save data
+   // ver 1 : [{team member}, ..] total 9 members
+   // ver 2 : [{team member with maxcost}, ..(9 members), {gem stock}] total 10 items
+   // ver 10 : [{sub member}, ..] any number of members
+   // ver 11 : {gem stock} ("1".."15", total 15 items)
+   // ver 101 : (not compatible with old version)
+   //   { "version": 101, "team": [{team member}, ..(9 members)], "gemstock": {gem stock v2}, "submember": [{sub member}, ..] }
+   //   gem stock v2:
+   //     {
+   //       "<gem type key>": {"<sub type>": {"<sub type>": ...{"<sub type>": "<number>"}...} }, ...
+   //     }
+   //     sub type in following order and value:
+   //       gem type has per_color: "smile", "pure", "cool"
+   //       gem type has per_grade: "1", "2", "3"
+   //       gem type has per_member: "<member name>"
+   //       gem type has per_unit: "muse", "aqours"
+   var checkSaveDataVersion = function (data) {
+      if (data.version !== undefined) return parseInt(data.version);
+      if (data.length === undefined && Object.keys(data).length == 15) return 11;
+      if (data.length == 0) return 0;
+      if (!data[0]) return 0;
+      var member = data[0];
+      if (!(member.cardid && member.mezame && member.skilllevel)) return 0;
+      if (member.maxcost && !member.smile) return 10;
+      if (data.length == 9) return 1;
+      if (data.length == 10) return 2;
+      return 0;
+   };
+   var calculateSlot = function (member){
+      var ret = 0;
+      ret += LLSisGem.parseSADDSlot(member.gemnum || 0);
+      ret += LLSisGem.parseSMULSlot(parseFloat(member.gemsinglepercent || 0)*100);
+      ret += LLSisGem.parseAMULSlot(parseFloat(member.gemallpercent || 0)*100);
+      ret += parseInt(member.gemskill || 0)*4;
+      ret += parseInt(member.gemacc || 0)*4;
+      return ret;
+   }
+   var getTeamMemberV1V2 = function (data) {
+      var ret = [];
+      for (var i = 0; i < 9; i++) {
+         var member = {};
+         var cur = data[i];
+         for (var j in cur) {
+            member[j] = cur[j];
+         }
+         if (member.maxcost === undefined) member.maxcost = calculateSlot(member);
+         ret.push(member);
+      }
+      return ret;
+   };
+   var getGemStockV11 = function (data) {
+      var ret = {};
+      var gemv1 = [9];
+      for (var i = 1; i < 16; i++) {
+         gemv1.push(parseInt(data[i] || 0));
+      }
+      ret['SADD_200'] = {'smile': gemv1[0], 'pure': gemv1[0], 'cool': gemv1[0]};
+      ret['SADD_450'] = {'smile': gemv1[1], 'pure': gemv1[1], 'cool': gemv1[1]};
+      ret['SMUL_10'] = {
+         'smile': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
+         'pure': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
+         'cool': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]}
+      };
+      ret['SMUL_16'] = {
+         'smile': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
+         'pure': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
+         'cool': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]}
+      };
+      ret['AMUL_18'] = {'smile': gemv1[8], 'pure': gemv1[8], 'cool': gemv1[8]};
+      ret['AMUL_24'] = {'smile': gemv1[9], 'pure': gemv1[9], 'cool': gemv1[9]};
+      ret['SCORE_250'] = {'smile': gemv1[10], 'pure': gemv1[11], 'cool': gemv1[12]};
+      ret['HEAL_480'] = {'smile': gemv1[13], 'pure': gemv1[14], 'cool': gemv1[15]};
+      return ret;
+   };
+   var getGemStockV1V2 = function (data) {
+      if (!data[9]) {
+         return {};
+      }
+      return getGemStockV11(data[9]);
+   };
+   var getSubMemberV10 = function (data) {
+      return ret;
+   };
+   var recursiveMakeGemStockDataImpl = function (meta, current_sub, subtypes, callback) {
+      if (!current_sub) {
+         return callback(meta, subtypes);
+      }
+      var next_sub;
+      var types;
+      if (current_sub == 'per_color') {
+         next_sub = 'per_grade';
+         types = ['smile', 'pure', 'cool'];
+      } else if (current_sub == 'per_grade') {
+         next_sub = 'per_member';
+         types = ['1', '2', '3'];
+      } else if (current_sub == 'per_member') {
+         next_sub = 'per_unit';
+         types = ["高坂穂乃果", "絢瀬絵里", "南ことり", "園田海未", "星空凛", "西木野真姫", "東條希", "小泉花陽", "矢澤にこ",
+                  "高海千歌", "桜内梨子", "松浦果南", "黒澤ダイヤ", "渡辺曜", "津島善子", "国木田花丸", "小原鞠莉", "黒澤ルビィ"];
+      } else if (current_sub == 'per_unit') {
+         next_sub = '';
+         types = ['muse', 'aqours'];
+      }
+      if (!meta[current_sub]) return recursiveMakeGemStockDataImpl(meta, next_sub, subtypes, callback);
+      var ret = {};
+      for (var i = 0; i < types.length; i++) {
+         ret[types[i]] = recursiveMakeGemStockDataImpl(meta, next_sub, subtypes.concat(types[i]), callback);
+      }
+      return ret;
+   };
+   var recursiveMakeGemStockData = function (meta, callback) {
+      return recursiveMakeGemStockDataImpl(meta, 'per_color', [], callback);
+   };
+   var fillDefaultGemStock = function (stock, fillnum) {
+      var keys = LLSisGem.getGemTypeKeys();
+      for (var i = 0; i < keys.length; i++) {
+         if (stock[keys[i]] === undefined) {
+            stock[keys[i]] = recursiveMakeGemStockData(new LLSisGem(i), function(){return fillnum;});
+         }
+      }
+   };
+   var cls = function (data) {
+      this.rawData = data;
+      this.rawVersion = checkSaveDataVersion(data);
+      if (this.rawVersion == 0) {
+         console.error("Unknown save data:");
+         console.error(data);
+         this.teamMember = [];
+         this.gemStock = {};
+         this.hasGemStock = false;
+         this.subMember = [];
+      } else if (this.rawVersion == 1 || this.rawVersion == 2) {
+         this.teamMember = getTeamMemberV1V2(data);
+         this.gemStock = getGemStockV1V2(data);
+         this.hasGemStock = true;
+         this.subMember = [];
+      } else if (this.rawVersion == 10) {
+         this.teamMember = [];
+         this.gemStock = {};
+         this.hasGemStock = false;
+         this.subMember = getSubMemberV10(data);
+      } else if (this.rawVersion == 11) {
+         this.teamMember = [];
+         this.gemStock = getGemStockV11(data);
+         this.hasGemStock = true;
+         this.subMember = [];
+      } else if (this.rawVersion >= 101) {
+         this.teamMember = data.team;
+         this.gemStock = data.gemstock;
+         this.hasGemStock = true;
+         this.subMember = data.submember;
+      }
+      fillDefaultGemStock(this.gemStock, (this.hasGemStock ? 0 : 9));
+   };
+   cls.checkSaveDataVersion = checkSaveDataVersion;
+   cls.calculateSlot = calculateSlot;
+   var proto = cls.prototype;
+   proto.getLegacyGemStock = function() {
+      return {
+         '1': String(this.gemStock.SADD_450.smile),
+         '2': String(this.gemStock.SMUL_10.smile['1']),
+         '3': String(this.gemStock.SMUL_10.smile['2']),
+         '4': String(this.gemStock.SMUL_10.smile['3']),
+         '5': String(this.gemStock.SMUL_16.smile['1']),
+         '6': String(this.gemStock.SMUL_16.smile['2']),
+         '7': String(this.gemStock.SMUL_16.smile['3']),
+         '8': String(this.gemStock.AMUL_18.smile),
+         '9': String(this.gemStock.AMUL_24.smile),
+         '10': String(this.gemStock.SCORE_250.smile),
+         '11': String(this.gemStock.SCORE_250.pure),
+         '12': String(this.gemStock.SCORE_250.cool),
+         '13': String(this.gemStock.HEAL_480.smile),
+         '14': String(this.gemStock.HEAL_480.pure),
+         '15': String(this.gemStock.HEAL_480.cool)
+      };
+   };
+   proto.serializeV1 = function() {
+      return JSON.stringify(this.teamMember);
+   };
+   proto.serializeV2 = function() {
+      var ret = [];
+      for (var i = 0; i < 9; i++) {
+         ret.push(this.teamMember[i]);
+      }
+      ret.push(this.getLegacyGemStock());
+      return JSON.stringify(ret);
+   };
+   proto.serializeV10 = function() {
+      return JSON.stringify(this.subMember);
+   };
+   proto.serializeV11 = function() {
+      return JSON.stringify(this.getLegacyGemStock());
+   };
+   proto.serializeV101 = function() {
+      return JSON.stringify({
+         'version': this.rawVersion,
+         'team': this.teamMember,
+         'gemstock': this.gemStock,
+         'submember': this.subMember
+      });
    };
    return cls;
 })();
