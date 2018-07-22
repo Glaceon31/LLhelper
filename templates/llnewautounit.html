@@ -236,95 +236,119 @@
    	window.location.href="/llnewautounit"
 	refreshsubmemberlist()
    }
-   function savesis(){
-	sisstore={}
-	for(i=1;i<16;i++){
-		sisstore[i]=document.getElementById('sis'+String(i)).value
-	}
-	unitjson = JSON.stringify(sisstore)
-   	window.location.href="/llsavesis/"+unitjson
-   }
-   function saveunit(){
-   	member = [{}, {}, {},{},{},{},{},{},{},{}]
-   	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost']
-   	for (i=0;i<9;i++){
-   		for (j in saveatt){
-   			member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
-   		}
-   	}
-	for(i=1;i<16;i++){
-		member[9][i]=document.getElementById('sis'+String(i)).value
-	}
-   	unitjson = JSON.stringify(member)
-   	window.location.href="/llsaveunit/"+unitjson
-   }
-   function savesubmembers(){
-	var submemberlist=[]
-	savesubmemberatt=['cardid','mezame','skilllevel','maxcost']
-	for(var i in submember){
-		submemberlist[i]={}
-		for(j in savesubmemberatt){
-			submemberlist[i][savesubmemberatt[j]]=String(submember[i][savesubmemberatt[j]])
-			}
-	}
-	submembersjson=JSON.stringify(submemberlist)
-	window.location.href="/llsavesubmembers/"+submembersjson
-   }
-   function saveallmembers(){
-	var submemberlist=[]
-	savesubmemberatt=['cardid','mezame','skilllevel','maxcost']
-	for (i=0;i<9;i++){
-		submemberlist[i]={}
-   		for (j in savesubmemberatt){
-   			submemberlist[i][savesubmemberatt[j]] = document.getElementById(savesubmemberatt[j]+String(i)).value
-   		}
-   	}
-	for(var i=0;i<submember.length;i++){
-		submemberlist[i+9]={}
-		for(j in savesubmemberatt){
-			submemberlist[i+9][savesubmemberatt[j]]=String(submember[i][savesubmemberatt[j]])
-			}
-	}
-	
-	submembersjson=JSON.stringify(submemberlist)
-	window.location.href="/llsaveallmembers/"+submembersjson
-   }
-   function loadsubmembers(){
-      document.getElementById("unitform").action = '/llloadex/filesub/parent.handleLoadSubmembersData'
-   	document.getElementById("unitform").target = 'if'
+
+   function makeSaveData() {
+      var member = [{}, {}, {},{},{},{},{},{},{},{}];
+      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost'];
+      for (var i=0; i<9; i++){
+         for (var j in saveatt){
+            member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
+         }
+      }
+      for (var i=1; i<16; i++){
+         var ele = document.getElementById('sis'+String(i));
+         member[9][i] = (ele ? ele.value : 9);
+      }
+      var submemberlist=[]
+      var savesubmemberatt=['cardid','mezame','skilllevel','maxcost']
+      for (var i in submember){
+         submemberlist[i]={}
+         for (var j in savesubmemberatt){
+            submemberlist[i][savesubmemberatt[j]]=String(submember[i][savesubmemberatt[j]])
+         }
+      }
+      var ret = new LLSaveData(member);
+      ret.mergeV10(submemberlist);
+      return ret;
    }
 
-   function handleLoadSis(sis) {
-      if (sis && Object.keys(sis).length == 15) {
-         for (var i = 1; i < 16; i++) {
-            if (sis[i]) {
-               sisrecord[i] = sis[i];
-            } else {
-               sisrecord[i] = 0;
+   function loadSaveData(data, loadTeam, loadGemStock, loadSubMember) {
+      var saveData = new LLSaveData(data);
+      if (loadTeam) {
+         var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
+         for (var i = 0; i < 9; i++) {
+            var member = saveData.teamMember[i];
+            for (var j in attlist) {
+               var att = attlist[j];
+               var value = 0;
+               if (member && member[att] !== undefined) value = member[att];
+               document.getElementById(att + i).value = value;
             }
+            if (member && member.cardid) {
+               document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
+            }
+            LLUnit.changeavatarn(i);
+            calslot(i);
          }
-         autoarm();
+         LLUnit.changecenter();
+         precalcu();
+      }
+      if (loadGemStock) {
+         var gemStock = saveData.getLegacyGemStock();
+         for (var i = 1; i < 16; i++) {
+            document.getElementById("sis" + i).value = gemStock[i];
+         }
+      }
+      if (loadSubMember) {
+         var loadedSubMember = saveData.subMember;
+         var requests = [];
+         for (var i = 0; i < loadedSubMember.length; i++) {
+            (function(index){
+               // data has: 'cardid','mezame','skilllevel','maxcost'
+               var cur = loadedSubMember[index];
+               if ((!cur.maxcost) || (!cur.main)) {
+                  requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
+                     if (!cur.maxcost) cur.maxcost = card.minslot;
+                     if (!cur.main) {
+                        var intMezame = parseInt(cur.mezame);
+                        cur.main = card.attribute;
+                        cur.smile = (intMezame ? card.smile2 : card.smile);
+                        cur.pure = (intMezame ? card.pure2 : card.pure);
+                        cur.cool = (intMezame ? card.cool2 : card.cool);
+                        cur[cur.main] += kizuna[card.rarity][intMezame];
+                     }
+                     submember[index] = cur;
+                  }));
+               } else {
+                  submember[index] = cur;
+               }
+            })(i);
+         }
+         LoadingUtil.start(requests).then(function () {
+            refreshsubmemberlist();
+         }, defaultHandleFailedRequest);
       }
    }
+
+   function savesis(){
+      var saveData = makeSaveData();
+      var unitjson = saveData.serializeV11();
+      window.location.href="/llsavesis/"+unitjson;
+   }
+   function saveunit(){
+      var saveData = makeSaveData();
+      var unitjson = saveData.serializeV2();
+      window.location.href="/llsaveunit/"+unitjson;
+   }
+   function savesubmembers(){
+      var saveData = makeSaveData();
+      var submembersjson = saveData.serializeV10();
+      window.location.href="/llsavesubmembers/"+submembersjson;
+   }
+   function saveallmembers(){
+      var saveData = makeSaveData();
+      saveData.subMember = saveData.subMember.concat(saveData.teamMember);
+      var submembersjson = saveData.serializeV10();
+      window.location.href="/llsaveallmembers/"+submembersjson;
+   }
+   function handleLoadSis(sis) {
+      loadSaveData(sis, 0, 1, 0);
+   }
    function handleLoadUnit(unit) {
-      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
-      for (var i = 0; i < 9; i++) {
-         var member = unit[i];
-         for (var j in attlist) {
-            var att = attlist[j];
-            var value = 0;
-            if (member && member[att] !== undefined) value = member[att];
-            document.getElementById(att + i).value = value;
-         }
-         if (member && member.cardid) {
-            document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
-         }
-         LLUnit.changeavatarn(i);
-         calslot(i);
-      }
-      LLUnit.changecenter();
-      precalcu();
-      handleLoadSis(unit[9]);
+      loadSaveData(unit, 1, 1, 0);
+   }
+   function handleLoadSubmembersData(data) {
+      loadSaveData(data, 0, 0, 1);
    }
 
    function loadunit(){
@@ -339,6 +363,11 @@
 	document.getElementById("unitform").action = '/llloadex/filesis/parent.handleLoadSis'
    	document.getElementById("unitform").target = 'if'
    }
+   function loadsubmembers(){
+      document.getElementById("unitform").action = '/llloadex/filesub/parent.handleLoadSubmembersData'
+      document.getElementById("unitform").target = 'if'
+   }
+
    function init(){
    	mezame = getCookie("mezameunit")
    	language = getCookie("languageunit")
@@ -409,35 +438,6 @@
 		refreshsubmemberlist()
 	}
    }
-   function handleLoadSubmembersData(data) {
-      var requests = [];
-      for (var i = 0; i < data.length; i++) {
-         if (Object.keys(data[i]).length == 15) continue;
-         (function(index){
-            // data has: 'cardid','mezame','skilllevel','maxcost'
-            var cur = data[index];
-            if ((!cur.maxcost) || (!cur.main)) {
-               requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
-                  if (!cur.maxcost) cur.maxcost = card.minslot;
-                  if (!cur.main) {
-                     var intMezame = parseInt(cur.mezame);
-                     cur.main = card.attribute;
-                     cur.smile = (intMezame ? card.smile2 : card.smile);
-                     cur.pure = (intMezame ? card.pure2 : card.pure);
-                     cur.cool = (intMezame ? card.cool2 : card.cool);
-                     cur[cur.main] += kizuna[card.rarity][intMezame];
-                  }
-                  submember[index] = cur;
-               }));
-            } else {
-               submember[index] = cur;
-            }
-         })(i);
-      }
-      LoadingUtil.start(requests).then(function () {
-         refreshsubmemberlist();
-      }, defaultHandleFailedRequest);
-   }
    function refreshsubmemberlist(){
 	//	submemberhtml="<h3>备选队员</h3>"
 		if(submember.length>0) document.getElementById("submembersoperation").style.display="block"
@@ -469,69 +469,19 @@ function changesubslot(n){
 	submember[n]["maxcost"]=parseInt(document.getElementById("submemslot"+String(n)).value)
 }
    ///////////
-sisrecord=new Array(9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9);
    function autoarm(){
-	if(document.getElementById('autoarm0').checked){
-		if(IsPrecalced==false){
-//   if(IsPrecalced==false){
-			sishtml = "<table border='1' style='text-align:center'><tr><td>通用技能</td><td>香水（ 450 ）</td><td>光环（ 1.8% ）</td><td>面纱（ 2.4% ）</td></tr>"
-			sishtml+="</tr>"
-			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
-			sishtml+="<td id=si1"+">"+'<input type="text" id="sis1" name="kissnum" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si8"+">"+'<input type="text" id="sis8" name="purfumenum" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si9"+">"+'<input type="text" id="sis9" name="ringnum" size="5" value="0" />'+"</td>"
-			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>10%技能</td><td>指环（一年级）</td><td>指环（二年级）</td><td>指环（三年级）</td></tr>"
-			sishtml+="</tr>"
-			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
-			sishtml+="<td id=si2"+">"+'<input type="text" id="sis2" name="Scharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si3"+">"+'<input type="text" id="sis3" name="Pcharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si4"+">"+'<input type="text" id="sis4" name="Ccharm" size="5" value="0" />'+"</td>"
-			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>16%技能</td><td>十字（一年级）</td><td>十字（二年级）</td><td>十字（三年级）</td></tr>"
-			sishtml+="</tr>"
-			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
-			sishtml+="<td id=si5"+">"+'<input type="text" id="sis5" name="Scharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si6"+">"+'<input type="text" id="sis6" name="Pcharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si7"+">"+'<input type="text" id="sis7" name="Ccharm" size="5" value="0" />'+"</td>"
-			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>加分 2.5</td><td>公主魅力（红）</td><td>天使魅力（绿）</td><td>皇后魅力（蓝）</td></tr>"
-			sishtml+="</tr>"
-			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
-			sishtml+="<td id=si10"+">"+'<input type="text" id="sis10" name="Scharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si11"+">"+'<input type="text" id="sis11" name="Pcharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si12"+">"+'<input type="text" id="sis12" name="Ccharm" size="5" value="0" />'+"</td>"
-			sishtml+="</tr>"
-			sishtml+="<table border='1' style='text-align:center'><tr><td>体力 480</td><td>公主治愈（红）</td><td>天使治愈（绿）</td><td>皇后治愈（蓝）</td></tr>"
-			sishtml+="</tr>"
-			sishtml+="<td id=chubei"+">"+'储备数量'+"</td>"
-			sishtml+="<td id=si13"+">"+'<input type="text" id="sis13" name="Scharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si14"+">"+'<input type="text" id="sis14" name="Pcharm" size="5" value="0" />'+"</td>"
-			sishtml+="<td id=si15"+">"+'<input type="text" id="sis15" name="Ccharm" size="5" value="0" />'+"</td>"
-			sishtml+="</table>"
-			sishtml+='<input type="button" onclick="savesis()" value="保存仓库" />'
-			sishtml+='<input type="file" name="filesis">'
-			sishtml+='<input type="submit" value="读取仓库" onclick="loadsis()">'
-			document.getElementById("sisreserves").innerHTML=sishtml
-//   document.getElementById("autoarm0").value = '自动装填'
-			calc_arms();
-			IsPrecalced=true;
-		}
-		else{
-			document.getElementById("sisreserves").innerHTML=sishtml
-		}
-		for(var i=1;i<16;i++){
-				document.getElementById("sis"+String(i)).value=sisrecord[i];
-			}
-	}
-	else{
-		for(var i=1;i<16;i++){
-			sisrecord[i]=document.getElementById("sis"+String(i)).value;
-		}
-		document.getElementById("sisreserves").innerHTML=" ";
+      if(document.getElementById('autoarm0').checked){
+         document.getElementById("sisreserves").style.display = '';
+         if(IsPrecalced==false){
+             calc_arms();
+             IsPrecalced=true;
+         }
+      }
+      else{
+         document.getElementById("sisreserves").style.display = 'none';
  //  stararm()
 //   document.getElementById("test00").value =document.getElementById("kissnum").value
-	}
+      }
    }
    ////////
    function Sis_get_Data(){
@@ -1898,7 +1848,47 @@ function calc_bestarm(){
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
 <br><br><br>
-<div id="sisreserves">
+<div id="sisreserves" style='display:none'>
+   <table border='1' style='text-align:center'>
+      <tr><td>通用技能</td><td>香水（ 450 ）</td><td>光环（ 1.8% ）</td><td>面纱（ 2.4% ）</td></tr>
+      <tr>
+         <td>储备数量</td>
+         <td><input name="sis1" type="text" id="sis1" size="5" value="9" /></td>
+         <td><input name="sis8" type="text" id="sis8" size="5" value="9" /></td>
+         <td><input name="sis9" type="text" id="sis9" size="5" value="9" /></td>
+      </tr>
+      <tr><td>10%技能</td><td>指环（一年级）</td><td>指环（二年级）</td><td>指环（三年级）</td></tr>
+      <tr>
+         <td>储备数量</td>
+         <td><input name="sis2" type="text" id="sis2" size="5" value="9" /></td>
+         <td><input name="sis3" type="text" id="sis3" size="5" value="9" /></td>
+         <td><input name="sis4" type="text" id="sis4" size="5" value="9" /></td>
+      </tr>
+      <tr><td>16%技能</td><td>十字（一年级）</td><td>十字（二年级）</td><td>十字（三年级）</td></tr>
+      <tr>
+         <td>储备数量</td>
+         <td><input name="sis5" type="text" id="sis5" size="5" value="9" /></td>
+         <td><input name="sis6" type="text" id="sis6" size="5" value="9" /></td>
+         <td><input name="sis7" type="text" id="sis7" size="5" value="9" /></td>
+      </tr>
+      <tr><td>加分 2.5</td><td>公主魅力（红）</td><td>天使魅力（绿）</td><td>皇后魅力（蓝）</td></tr>
+      <tr>
+         <td>储备数量</td>
+         <td><input name="sis10" type="text" id="sis10" size="5" value="9" /></td>
+         <td><input name="sis11" type="text" id="sis11" size="5" value="9" /></td>
+         <td><input name="sis12" type="text" id="sis12" size="5" value="9" /></td>
+      </tr>
+      <tr><td>体力 480</td><td>公主治愈（红）</td><td>天使治愈（绿）</td><td>皇后治愈（蓝）</td></tr>
+      <tr>
+         <td>储备数量</td>
+         <td><input name="sis13" type="text" id="sis13" size="5" value="9" /></td>
+         <td><input name="sis14" type="text" id="sis14" size="5" value="9" /></td>
+         <td><input name="sis15" type="text" id="sis15" size="5" value="9" /></td>
+      </tr>
+   </table>
+   <input type="button" onclick="savesis()" value="保存仓库" />
+   <input type="file" name="filesis">
+   <input type="submit" value="读取仓库" onclick="loadsis()">
 </div>
 <div id="testtime">
 </div>
@@ -1995,7 +1985,7 @@ function calc_bestarm(){
 点击得分增加：<input id="tapup" name="tapup" value="0" size=2></input>%<br>
 技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
 <input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
-<input type="checkbox" id="autoarm0" name="autoarm0" onclick="autoarm()">自动配饰<!--<input type="checkbox" id="naipan" name="naipan" onchange="changenaipan()">弱奶判宝石</input>-->
+<input type="checkbox" id="autoarm0" name="autoarm0" onclick="autoarm()">自动配饰</input>
    <br><br><br>
 </form>
 

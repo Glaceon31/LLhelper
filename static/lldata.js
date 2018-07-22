@@ -4,9 +4,11 @@
  *   LLData
  *     (instance) LLCardData
  *   LLUnit
+ *   LLSisGem
  *   LLSkill
  *   LLMember
  *   LLTeam
+ *   LLSaveData
  *
  * components:
  *   LLComponentBase
@@ -16,7 +18,7 @@
  *     +- LLSkillContainer
  *     +- LLCardSelector
  *
- * v0.5.0
+ * v0.6.0
  * By ben1222
  */
 
@@ -2109,7 +2111,7 @@ var LLSaveData = (function () {
       return getGemStockV11(data[9]);
    };
    var getSubMemberV10 = function (data) {
-      return ret;
+      return data;
    };
    var recursiveMakeGemStockDataImpl = function (meta, current_sub, subtypes, callback) {
       if (!current_sub) {
@@ -2230,6 +2232,9 @@ var LLSaveData = (function () {
          'gemstock': this.gemStock,
          'submember': this.subMember
       });
+   };
+   proto.mergeV10 = function (v10data) {
+      this.subMember = getSubMemberV10(v10data);
    };
    return cls;
 })();
