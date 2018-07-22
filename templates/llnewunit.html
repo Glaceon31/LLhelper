@@ -139,22 +139,29 @@
       window.location.href="/llnewunit"
    }
 
+   function makeSaveData() {
+      var member = [{}, {}, {},{},{},{},{},{},{}];
+      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc'];
+      for (var i=0; i<9; i++){
+         for (var j in saveatt){
+            member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
+         }
+      }
+      return new LLSaveData(member);
+   }
+
    function saveunit(){
-   	member = [{}, {}, {},{},{},{},{},{},{}]
-   	saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc']
-   	for (i=0;i<9;i++){
-   		for (j in saveatt){
-   			member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
-   		}
-   	}
-   	unitjson = JSON.stringify(member)
-   	window.location.href="/llsaveunit/"+unitjson
+      var saveData = makeSaveData();
+      var unitjson = saveData.serializeV1();
+      window.location.href="/llsaveunit/"+unitjson;
    }
 
    function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc'];
       for (var i = 0; i < 9; i++) {
-         var member = unit[i];
+         var member = saveData.teamMember[i];
          for (var j in attlist) {
             var att = attlist[j];
             var value = 0;
@@ -271,6 +278,7 @@
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
+         member[i]['maxcost'] = 0; // not used, added to not print error in console
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
