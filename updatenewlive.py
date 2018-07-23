@@ -43,6 +43,9 @@ if __name__ == "__main__":
 		livesetting = jpdbconn.execute('SELECT * FROM live_setting_m WHERE live_track_id = '+str(jptmp[0])+';')
 		livetmp = livesetting.fetchone()
 		while livetmp:
+			# Exclude AC charts
+			if livetmp[0] >= 10000:
+				continue
 			diffname = difficulty[livetmp[2]]
 			if diffname =='random':
 				song['expert']['randomdifficulty'] = livetmp[3]
@@ -73,7 +76,7 @@ if __name__ == "__main__":
 			jsonpath = livetmp[9]
 			song['attribute'] = attribute[livetmp[4]]
 			livetmp = livesetting.fetchone()
-		
+
 		#dangerous
 		'''
 		for oldsong in oldsongs:
