@@ -185,7 +185,7 @@ LLSong.prototype.filterDiff = function (diffsel, songindex, cnhave, defaultdiff)
    if (!savediff) savediff = this.getElementValue(this.songDiffId, "");
    if (!savediff) savediff = defaultdiff;
 
-   var diffname = ['easy', 'normal', 'hard', 'expert', 'master'];
+   var diffname = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade'];
    var curSong = this.songs[songindex];
    for (var i in diffname) {
       var diff = diffname[i];
