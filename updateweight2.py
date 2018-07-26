@@ -2,14 +2,10 @@ import urllib2
 import os
 import urlparse
 import json
-import multiprocessing
+import threading
+import Queue
 import sys
-
-DIFFICULTY_KEYS_EASY = 'easy'
-DIFFICULTY_KEYS_NORMAL = 'normal'
-DIFFICULTY_KEYS_HARD = 'hard'
-DIFFICULTY_KEYS_EXPERT = 'expert'
-DIFFICULTY_KEYS_MASTER = 'master'
+import ctypes
 
 LLSIF_WIN_API_DOMAIN = 'http://a.llsif.win/'
 LLSIF_WIN_API_ENDPOINT = 'live/json/'
@@ -41,12 +37,13 @@ NUMBER_OF_PROCESSES = 20
 FILENAME_SUCCESSFUL_LOG = 'success.json'
 FILENAME_SONG_LIST_JSON = 'newsongsjson.txt'
 
-difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master']
+difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade']
 
 TITLE_WELCOME = '''# Welcome to LLHelper LLSIF Song Updater!
 
 * Song data based on `%s`.
 * Program originally authored by **Chazeon** and the end of Sept 2017 in NY.
+* Updated by **ben1222** at 2018 July
 
 * We are now updating song list file: `%s`.
 * Song log will be loaded from and written to: `%s`.
@@ -72,6 +69,14 @@ class Note:
             weightValue *= NOTE_WEIGHT_HOLD_FACTOR
         return weightValue
 
+class SyncPrinter:
+    def __init__(self):
+        self.lock = threading.Lock()
+    def myPrint(self, message):
+        self.lock.acquire()
+        print message
+        self.lock.release()
+
 def getLiveMapJsonUrl(liveId):
     return LLSIF_WIN_API_DOMAIN + LLSIF_WIN_API_ENDPOINT + str(liveId)
 
@@ -90,48 +95,71 @@ def getPositionWeight(liveId):
         positionWeight[position] += note.getNoteWeightedValue()
     return map(str, positionWeight)
 
-def updatePositionWeight(live):
-    liveId = int(live['liveid'])
-    try:
-        result = getPositionWeight(liveId)
-        return (liveId, None, STATUS_SUCCESSFUL, '* Successfully processed %d' % (liveId), result)
-    except KeyboardInterrupt as e:
-        return (liveId, e, STATUS_KEYBOARD_INTERRUPT, '* User trying to exit program', None)
-    except Exception as e:
-        return (liveId, e, STATUS_ERROR, '* Failed to process %d' % (liveId), None)
+class positionWeightUpdateThread (threading.Thread):
+    def __init__(self, liveQueue, messageQueue, printer):
+        threading.Thread.__init__(self)
+        self.liveQueue = liveQueue
+        self.messageQueue = messageQueue
+        self.printer = printer
+    def run(self):
+        while True:
+            try:
+                live = self.liveQueue.get(False)
+                self.messageQueue.put(self.updatePositionWeight(live))
+            except Queue.Empty:
+                self.printer.myPrint('* Queue is empty, exiting... *')
+                break;
+            except Exception as e:
+                self.printer.myPrint('* Unknown exception *')
+                self.printer.myPrint(e)
+                break;
+    def updatePositionWeight(self, live):
+        liveId = int(live['liveid'])
+        try:
+            result = getPositionWeight(liveId)
+            self.printer.myPrint('* Successfully processed %d' % (liveId))
+            return (liveId, STATUS_SUCCESSFUL, result)
+        except KeyboardInterrupt:
+            self.printer.myPrint('* User trying to exit program')
+            return (liveId, STATUS_KEYBOARD_INTERRUPT, None)
+        except Exception as e:
+            self.printer.myPrint('* Failed to process %d' % (liveId))
+            self.printer.myPrint(e)
+            return (liveId, STATUS_ERROR, None)
+    def interrupt(self, e):
+        if not self.isAlive():
+            return
+        ex = ctypes.py_object(e)
+        ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.ident), ex)
+        if ret == 0:
+            self.printer.myPrint('thread already exit')
+        elif ret > 1:
+            self.printer.myPrint('Failed to interrupt thread')
 
-def positionWeightUpdateWorker(liveQueue, messageQueue, pipeOut):
-    while True:
-        if pipeOut.poll():
-            signal = pipeOut.recv()
-            if signal == STATUS_EXIT: break
-        if liveQueue.empty(): break
-        live = liveQueue.get()
-        messageQueue.put(updatePositionWeight(live))
 
 def main():
     songs = {}
     prevLoadedLives = []
     updatedLives = []
 
-    messageQueue = multiprocessing.Queue()
-    liveQueue = multiprocessing.Queue()
+    messageQueue = Queue.Queue()
+    liveQueue = Queue.Queue()
     liveQueueCount = 0
-    mpProcs = []
+    threads = []
 
     lives = {}
+    printer = SyncPrinter()
 
     with open(FILENAME_SONG_LIST_JSON, 'r') as f:
         songs = json.load(f)
     if os.path.exists(FILENAME_SUCCESSFUL_LOG):
-        print '* Succesful log found at `%s`.' % FILENAME_SUCCESSFUL_LOG
+        printer.myPrint('* Succesful log found at `%s`.' % FILENAME_SUCCESSFUL_LOG)
         with open(FILENAME_SUCCESSFUL_LOG, 'r') as f:
             prevLoadedLives = json.load(f)
-            print '* %d live maps have previously loaded, skipping...' % len(prevLoadedLives)
-    print '* Skipping lives: %s' % (str(prevLoadedLives))
+            printer.myPrint('* %d live maps have previously loaded, skipping...' % len(prevLoadedLives))
+    printer.myPrint('* Skipping lives: %s' % (str(prevLoadedLives)))
     for song in songs.values():
         for difficulty_name in [difficulty for difficulty in song.keys() if (difficulty in difficultyKeys)]:
-            parentConn, childConn = multiprocessing.Pipe()
             live = song[difficulty_name]
             liveId = int(live['liveid'])
             if liveId not in prevLoadedLives:
@@ -140,34 +168,34 @@ def main():
                 liveQueueCount += 1
     try:
         for i in range(0, NUMBER_OF_PROCESSES):
-            pipeOut, pipeIn = multiprocessing.Pipe()
-            proc = multiprocessing.Process(target=positionWeightUpdateWorker, args=(liveQueue, messageQueue, pipeOut,))
-            proc.start()
-            mpProcs.append((proc, pipeIn))
+            newThread = positionWeightUpdateThread(liveQueue, messageQueue, printer)
+            newThread.start()
+            threads.append(newThread)
         for i in range(liveQueueCount):
-            liveId, error, status, message, result = messageQueue.get()
-            print message
-            if status == STATUS_ERROR:
-                print error
+            liveId, status, result = messageQueue.get()
             if status == STATUS_SUCCESSFUL:
                 updatedLives.append(liveId)
                 lives[str(liveId)]['positionweight'] = result
 
-        for proc, _ in mpProcs:
-            proc.join()
     except KeyboardInterrupt:
-        for proc, pipe in mpProcs:
-            while not liveQueue.empty():
-                liveQueue.get()
-            pipe.send(STATUS_EXIT)
+        try:
+            while True:
+                liveQueue.get(False)
+        except Queue.Empty:
+            printer.myPrint('* Cleared queue *')
+        for curThread in threads:
+            curThread.interrupt(KeyboardInterrupt)
 
     with open(FILENAME_SONG_LIST_JSON, 'w') as f:
-        json.dump(songs, f)
-    print '* Successfully processed lives: `%s`.' % (str(updatedLives))
+        json.dump(songs, f, sort_keys=True)
+    printer.myPrint('* Successfully processed lives: `%s`.' % (str(updatedLives)))
     with open(FILENAME_SUCCESSFUL_LOG, 'w') as f:
         prevLoadedLives.extend(updatedLives)
-        json.dump(prevLoadedLives, f)
-    print '* Successful log written to `%s`, %d records written (%d new).' % (FILENAME_SUCCESSFUL_LOG, len(prevLoadedLives), len(updatedLives))
+        json.dump(prevLoadedLives, f, sort_keys=True)
+    printer.myPrint('* Successful log written to `%s`, %d records written (%d new).' % (FILENAME_SUCCESSFUL_LOG, len(prevLoadedLives), len(updatedLives)))
+
+    for curThread in threads:
+        curThread.join()
 
 if __name__ == '__main__':
     print TITLE_WELCOME
