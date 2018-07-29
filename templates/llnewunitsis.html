@@ -95,7 +95,7 @@
       }
       else{
          document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','maxcost']
+         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost']
          for (j in swaplist){
             at = swaplist[j]
             tmp = document.getElementById(at+String(pos)).value
@@ -137,11 +137,13 @@
 
    function calslot(n){
       result = 0
-      result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
-      result +=  parseInt(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)/0.05)
-      result +=  parseInt(parseFloat(document.getElementById("gemallpercent"+String(n)).value)/0.0059)
+      result += LLSisGem.parseSADDSlot(document.getElementById("gemnum"+String(n)).value);
+      result += LLSisGem.parseSMULSlot(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)*100);
+      result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
       result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemmember"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemnonet"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
@@ -178,7 +180,7 @@
 
    function makeSaveData() {
       var member = [{}, {}, {},{},{},{},{},{},{}];
-      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost'];
+      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','gemmember','gemnonet','maxcost'];
       for (var i=0; i<9; i++){
          for (var j in saveatt){
             member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
@@ -196,7 +198,7 @@
    function handleLoadUnit(unit) {
       var saveData = new LLSaveData(unit);
       console.log(saveData);
-      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
       for (var i = 0; i < 9; i++) {
          var member = saveData.teamMember[i];
          if (!member) continue;
@@ -330,7 +332,7 @@
 
    function docalculate(cards) {
       var result = {};
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'maxcost'];
+      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet', 'maxcost'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
@@ -362,6 +364,7 @@
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
+         member[i]['card'] = cards[member[i]['cardid']];
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
@@ -372,7 +375,12 @@
          if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
          }
-         member[i]['card'] = cards[member[i]['cardid']];
+         if (parseInt(document.getElementById('gemmember' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
+         }
+         if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+         }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
@@ -403,12 +411,18 @@
             var sumSMUL = 0;
             var sumAMUL = 0;
             var sumSKILL = 0;
+            var sumMEMBER = 0;
+            var sumNONET = 0;
             for (var j = 0; j < curGems.length; j++) {
                var curGem = curGems[j];
                if (curGem.attr_add && curGem.isEffectRangeSelf()) {
                   sumSADD += curGem.effect_value;
                } else if (curGem.attr_mul) {
-                  if (curGem.isEffectRangeSelf()) {
+                  if (curGem.per_member) {
+                     sumMEMBER++;
+                  } else if (curGem.per_unit) {
+                     sumNONET++;
+                  } else if (curGem.isEffectRangeSelf()) {
                      sumSMUL += curGem.effect_value;
                   } else {
                      sumAMUL += Math.round(curGem.effect_value*10);
@@ -421,6 +435,8 @@
             document.getElementById("gemsinglepercent"+String(i)).value=String(sumSMUL/100);
             document.getElementById("gemallpercent"+String(i)).value=String(sumAMUL/1000);
             document.getElementById("gemskill"+String(i)).value=String(sumSKILL);
+            document.getElementById("gemmember"+String(i)).value=String(sumMEMBER);
+            document.getElementById("gemnonet"+String(i)).value=String(sumNONET);
             calslot(i);
          }
       }
@@ -711,6 +727,24 @@
       {% endfor %}
    </tr>
    <tr>
+      <td>个人宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemmember{{i}}" name="gemmember{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td>九重奏宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemnonet{{i}}" name="gemnonet{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
       <td>使用槽数</td>
       {% for i in range(0,9) %}
       <td id="slot{{i}}" name="slot{{i}}"></td>
@@ -950,6 +984,7 @@
    <li>判定覆盖率仅供参考</li>
    <li>判定期间属性1.25倍的宝石计算有误，暂时按无效计算。</li>
    <li>在队伍中有爆分SR时，由于技能强度会随着队伍强度变化而变化，可能出现多次计算「自动配饰」得到的结果不唯一的情况，此时只需重复计算多次取强度最高者即可。</li>
+   <li>日服新宝石的计算正在测试中，可能有计算错误，欢迎反馈</li>
 </ul>
 {% endblock %}
 

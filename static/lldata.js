@@ -1372,15 +1372,14 @@ var LLMember = (function() {
    };
    proto.calcDisplayAttr = function (mapcolor) {
       //显示属性=(基本属性+绊)*单体百分比宝石加成+数值宝石加成
-      var curAttr = this[mapcolor];
-      var ret = curAttr;
+      var ret = {'smile': this.smile, 'pure': this.pure, 'cool': this.cool};
       for (var i = 0; i < this.gems.length; i++) {
          var gem = this.gems[i];
-         if (gem.attr_add && gem.color == mapcolor) {
-            ret += gem.effect_value;
+         if (gem.attr_add) {
+            ret[gem.color] += gem.effect_value;
          }
-         if (gem.attr_mul && gem.isEffectRangeSelf() && gem.color == mapcolor) {
-            ret += Math.ceil(gem.effect_value/100 * curAttr);
+         if (gem.attr_mul && gem.isEffectRangeSelf()) {
+            ret[gem.color] += Math.ceil(gem.effect_value/100 * this[gem.color]);
          }
       }
       this.displayAttr = ret;
@@ -1400,7 +1399,7 @@ var LLMember = (function() {
          cumulativeTeamGemBonus.push(sum);
       }
       this.cumulativeTeamGemBonus = cumulativeTeamGemBonus;
-      this.attrWithGem = this.displayAttr + sum;
+      this.attrWithGem = this.displayAttr[mapcolor] + sum;
       return this.attrWithGem;
    };
    proto.calcAttrWithCSkill = function (mapcolor, cskills) {
@@ -1409,9 +1408,9 @@ var LLMember = (function() {
       var cumulativeCSkillBonus = [];
       //属性强度(下标i表示只考虑前i-1个队员的全体宝石时的属性强度)
       var cumulativeAttrStrength = [];
-      var baseAttr = {'smile':this.smile, 'pure':this.pure, 'cool':this.cool};
+      var baseAttr = {'smile':this.displayAttr.smile, 'pure':this.displayAttr.pure, 'cool':this.displayAttr.cool};
       for (var i = 0; i <= 9; i++) {
-         baseAttr[mapcolor] = this.displayAttr + this.cumulativeTeamGemBonus[i];
+         baseAttr[mapcolor] = this.displayAttr[mapcolor] + this.cumulativeTeamGemBonus[i];
          var bonusAttr = {'smile':0, 'pure':0, 'cool':0};
          for (var j = 0; j < cskills.length; j++) {
             var cskill = cskills[j];
@@ -1539,6 +1538,17 @@ var LLTeam = (function() {
       var teamgem = [];
       var totalWeight = getTotalWeight(weights);
       var i, j;
+      var unitMemberCount = {'muse':{}, 'aqours':{}};
+      for (i = 0; i < 9; i++) {
+         var curMember = this.members[i];
+         if (isInUnitGroup(4, curMember.card.jpname)) {
+            unitMemberCount.muse[curMember.card.jpname] = 1;
+         } else if (isInUnitGroup(5, curMember.card.jpname)) {
+            unitMemberCount.aqours[curMember.card.jpname] = 1;
+         }
+      }
+      var allMuse = (Object.keys(unitMemberCount.muse).length == 9);
+      var allAqours = (Object.keys(unitMemberCount.aqours).length == 9);
       //数值和单体百分比宝石
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
@@ -1546,7 +1556,12 @@ var LLTeam = (function() {
          var curGems = [];
          for (j = 0; j < curMember.gems.length; j++) {
             var curGem = curMember.gems[j];
-            if (curGem.attr_mul && curGem.isEffectRangeAll() && curGem.color == mapcolor) curGems.push(curGem);
+            if (curGem.attr_mul && curGem.isEffectRangeAll() && curGem.color == mapcolor) {
+               if (curGem.per_unit) {
+                  if (!((curGem.unit == 'muse' && allMuse) || (curGem.unit == 'aqours' && allAqours))) continue;
+               }
+               curGems.push(curGem);
+            }
          }
          teamgem.push(curGems);
       }
