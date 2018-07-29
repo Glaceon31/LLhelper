@@ -24,28 +24,11 @@
 
    var mezame = 0
    var language = 0
-   var kizuna = new Array();
-   kizuna["N"] = [25, 50]
-   kizuna["R"] = [100, 200]
-   kizuna["SR"] = [250, 500]
-   kizuna["SSR"] = [375, 750]
-   kizuna["UR"] = [500, 1000]
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
+   var comp_gemstock = 0;
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       // init components
       comp_skill = new LLSkillContainer();
@@ -56,26 +39,15 @@
       // load cookie
       comp_cardselector.loadCookie('llnewunitsis_cardselector');
 
+      comp_gemstock = new LLGemStockComponent('sisreserves');
+      comp_gemstock.loadJson(localStorage.getItem('llnewunitsis_gemstock'));
+
       // addition script
       {{additional_script|safe}}
 
       // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
-
-   function threetonumber(three){
-      var result = three
-      if (result == '0') {
-         return 0;
-      }
-      if (result[0] == '0') {
-         result = result[1]+result[2]
-      }
-      if (result[0] == '0') {
-         result = result[1]
-      }
-      return result
-   }
 
    pos = -1
    function changepos(i){
@@ -85,7 +57,7 @@
       }
       else{
          document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','maxcost']
+         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost']
          for (j in swaplist){
             at = swaplist[j]
             tmp = document.getElementById(at+String(pos)).value
@@ -127,11 +99,13 @@
 
    function calslot(n){
       result = 0
-      result += parseInt(parseInt(document.getElementById("gemnum"+String(n)).value)/200)
-      result +=  parseInt(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)/0.05)
-      result +=  parseInt(parseFloat(document.getElementById("gemallpercent"+String(n)).value)/0.0059)
+      result += LLSisGem.parseSADDSlot(document.getElementById("gemnum"+String(n)).value);
+      result += LLSisGem.parseSMULSlot(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)*100);
+      result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
       result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemmember"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemnonet"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
@@ -150,44 +124,43 @@
 
 
    function clearall(){
-   	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
-   	for (var i=0; i<inputs.length; i++){
-   		setCookie(inputs[i].name+"unit", inputs[i].value, -1);
-   	}
-   	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"unit", selects[i].value, -1);
-   	}
-   	setCookie("mezame"+"unit", mezame, -1)
+      var inputs = document.getElementsByTagName("input");
+      var selects = document.getElementsByTagName("select");
+      for (var i=0; i<inputs.length; i++){
+         if (inputs[i].name)
+            setCookie(inputs[i].name+"unit", inputs[i].value, -1);
+      }
+      for (var i=0; i<selects.length; i++){
+         if (selects[i].name)
+            setCookie(selects[i].name+"unit", selects[i].value, -1);
+      }
+      setCookie("mezame"+"unit", mezame, -1)
       comp_cardselector.deleteCookie('llnewunitsis_cardselector');
-   	window.location.href="/llnewunitsis"
+      localStorage.removeItem('llnewunitsis_gemstock');
+      window.location.href="/llnewunitsis"
    }
 
    function makeSaveData() {
-      var member = [{}, {}, {},{},{},{},{},{},{},{}];
-      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','maxcost'];
+      var member = [{}, {}, {},{},{},{},{},{},{}];
+      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','gemmember','gemnonet','maxcost'];
       for (var i=0; i<9; i++){
          for (var j in saveatt){
             member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
          }
       }
-      for (var i=1; i<16; i++){
-         var ele = document.getElementById('sis'+String(i));
-         member[9][i] = (ele ? ele.value : 9);
-      }
-      return new LLSaveData(member);
+      return new LLSaveData({'version': 102, 'team': member, 'gemstock': comp_gemstock.saveData(), 'submember': {}});
    }
 
    function saveunit(){
       var saveData = makeSaveData();
-      var unitjson = saveData.serializeV2();
+      var unitjson = saveData.serializeV102();
       window.location.href="/llsaveunit/"+unitjson;
    }
 
    function handleLoadUnit(unit) {
       var saveData = new LLSaveData(unit);
       console.log(saveData);
-      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'maxcost'];
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
       for (var i = 0; i < 9; i++) {
          var member = saveData.teamMember[i];
          if (!member) continue;
@@ -206,10 +179,7 @@
       LLUnit.changecenter();
       precalcu();
       if (saveData.hasGemStock) {
-         var gemStock = saveData.getLegacyGemStock();
-         for (var i = 1; i < 16; i++) {
-            document.getElementById("sis" + i).value = gemStock[i];
-         }
+         comp_gemstock.loadData(saveData.gemStock);
       }
    }
 
@@ -239,12 +209,13 @@
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
+   		if (inputs[i].type == "text" && inputs[i].name)
    			if (getCookie(inputs[i].name+"unit") != "")
    				inputs[i].value = getCookie(inputs[i].name+"unit");
    	}
    	for (var i=0; i<selects.length; i++){
          if (comp_cardselector.getComponent(selects[i].id)) continue;
+         if (!selects[i].name) continue;
    		if (getCookie(selects[i].name+"unit") != "")
    			selects[i].value = getCookie(selects[i].name+"unit");
    	}
@@ -260,18 +231,20 @@
    }
    
    function saveToCookie(){
-   	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
-   	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
-   			setCookie(inputs[i].name+"unit", inputs[i].value, 1);
-   	}
-   	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"unit", selects[i].value, 1);
-   	}
-   	setCookie("mezame"+"unit", mezame, 1)
-   	setCookie("language"+"unit", language, 1)
+      var inputs = document.getElementsByTagName("input");
+      var selects = document.getElementsByTagName("select");
+      for (var i=0; i<inputs.length; i++){
+         if (inputs[i].type == "text" && inputs[i].name)
+            setCookie(inputs[i].name+"unit", inputs[i].value, 1);
+      }
+      for (var i=0; i<selects.length; i++){
+         if (selects[i].name)
+            setCookie(selects[i].name+"unit", selects[i].value, 1);
+      }
+      setCookie("mezame"+"unit", mezame, 1)
+      setCookie("language"+"unit", language, 1)
       comp_cardselector.saveCookie('llnewunitsis_cardselector');
+      localStorage.setItem('llnewunitsis_gemstock', comp_gemstock.saveJson());
    }
    
    ///////////
@@ -284,11 +257,26 @@
       }
    }
 
+   function showErrorResult(text) {
+      document.getElementById('errorresult').innerHTML = text;
+      document.getElementById('errorresult').style.display = '';
+      document.getElementById("errorresult").scrollIntoView();
+   }
+   function hideErrorResult() {
+      document.getElementById('errorresult').style.display = 'none';
+   }
+
+
 
    function check(){
+      if (!llsong.getSelectedSong()) {
+         showErrorResult("请选择歌曲");
+         return;
+      }
+      hideErrorResult();
    	var inputs = document.getElementsByTagName("input");
    	for (i in inputs){
-   		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
+   		if ((inputs[i].type != "text") || (!inputs[i].name) || (inputs[i].name == "songsearch"))
    			continue
    		if (!isNumber(inputs[i].value)){
    			alert("请输入数字");
@@ -306,7 +294,7 @@
 
    function docalculate(cards) {
       var result = {};
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'maxcost'];
+      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet', 'maxcost'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
@@ -338,6 +326,7 @@
          for (var j = 0; j < float_element.length; j++) {
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
+         member[i]['card'] = cards[member[i]['cardid']];
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
@@ -348,7 +337,12 @@
          if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
          }
-         member[i]['card'] = cards[member[i]['cardid']];
+         if (parseInt(document.getElementById('gemmember' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
+         }
+         if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+         }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
@@ -379,12 +373,18 @@
             var sumSMUL = 0;
             var sumAMUL = 0;
             var sumSKILL = 0;
+            var sumMEMBER = 0;
+            var sumNONET = 0;
             for (var j = 0; j < curGems.length; j++) {
                var curGem = curGems[j];
                if (curGem.attr_add && curGem.isEffectRangeSelf()) {
                   sumSADD += curGem.effect_value;
                } else if (curGem.attr_mul) {
-                  if (curGem.isEffectRangeSelf()) {
+                  if (curGem.per_member) {
+                     sumMEMBER++;
+                  } else if (curGem.per_unit) {
+                     sumNONET++;
+                  } else if (curGem.isEffectRangeSelf()) {
                      sumSMUL += curGem.effect_value;
                   } else {
                      sumAMUL += Math.round(curGem.effect_value*10);
@@ -397,6 +397,8 @@
             document.getElementById("gemsinglepercent"+String(i)).value=String(sumSMUL/100);
             document.getElementById("gemallpercent"+String(i)).value=String(sumAMUL/1000);
             document.getElementById("gemskill"+String(i)).value=String(sumSKILL);
+            document.getElementById("gemmember"+String(i)).value=String(sumMEMBER);
+            document.getElementById("gemnonet"+String(i)).value=String(sumNONET);
             calslot(i);
          }
       }
@@ -418,11 +420,10 @@
          var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
          var err = llteam.calculateScoreDistribution();
          if (err) {
-            document.getElementById('errorresult').innerHTML = err;
-            document.getElementById('errorresult').style.display = '';
+            showErrorResult(err);
          } else {
             llteam.calculatePercentileNaive();
-            document.getElementById('errorresult').style.display = 'none';
+            hideErrorResult();
          }
          var t1 = window.performance.now();
 
@@ -439,7 +440,7 @@
       } else {
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
          document.getElementById('distributionresult').style.display = 'none';
-         document.getElementById('errorresult').style.display = 'none';
+         hideErrorResult();
       }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
@@ -550,8 +551,7 @@
 
 <div style="clear:both"></div>
 <h3>队伍属性</h3>
-<div>
-<div style="float:left">
+<div class="col-xs-12 col-md-9" style="overflow-x:auto">
 <table border='1'>
    <tr>
       <td>权重</td>
@@ -620,7 +620,7 @@
 	<tr>
       <td>总槽数</td>
       {% for i in range(0,9) %}
-      <td><input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="changeunitmaxcost({{i}})"></td>
+      <td><input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:40px"></td>
       {% endfor %}
    </tr>
    <tr>
@@ -637,6 +637,10 @@
          <option value="200" >200</option>
          <option value="450" >450</option>
          <option value="650" >650</option>
+         <option value="1400" >1400</option>
+         <option value="1600" >1600</option>
+         <option value="1850" >1850</option>
+         <option value="2050" >2050</option>
       </select></td>
       {% endfor %}
    </tr>
@@ -648,6 +652,9 @@
          <option value="0.1" >10%</option>
          <option value="0.16" >16%</option>
          <option value="0.26" >26%</option>
+         <option value="0.28" >28%</option>
+         <option value="0.38" >38%</option>
+         <option value="0.44" >44%</option>
       </select></td>
       {% endfor %}
    </tr>
@@ -658,6 +665,7 @@
          <option value="0" >0</option>
          <option value="0.018" >1.8%</option>
          <option value="0.024" >2.4%</option>
+         <option value="0.04" >4.0%</option>
          <option value="0.042" >4.2%</option>
       </select></td>
       {% endfor %}
@@ -675,6 +683,24 @@
       <td>判定宝石</td>
       {% for i in range(0,9) %}
       <td><select id="gemacc{{i}}" name="gemacc{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td>个人宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemmember{{i}}" name="gemmember{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td>九重奏宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemnonet{{i}}" name="gemnonet{{i}}" onchange="calslot({{i}})">
          <option value="0" >无</option>
          <option value="1" >有</option>
       </select></td>
@@ -738,56 +764,17 @@
    </tr>
 </table>
 </div>
-<div style="float:left">
+<div class="col-xs-12 col-md-3">
 
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
-<br><br><br>
-<div id="sisreserves" style='display:none'>
-   <table border='1' style='text-align:center'>
-      <tr><td>通用技能</td><td>香水（ 450 ）</td><td>光环（ 1.8% ）</td><td>面纱（ 2.4% ）</td></tr>
-      <tr>
-         <td>储备数量</td>
-         <td><input name="sis1" type="text" id="sis1" size="5" value="9" /></td>
-         <td><input name="sis8" type="text" id="sis8" size="5" value="9" /></td>
-         <td><input name="sis9" type="text" id="sis9" size="5" value="9" /></td>
-      </tr>
-      <tr><td>10%技能</td><td>指环（一年级）</td><td>指环（二年级）</td><td>指环（三年级）</td></tr>
-      <tr>
-         <td>储备数量</td>
-         <td><input name="sis2" type="text" id="sis2" size="5" value="9" /></td>
-         <td><input name="sis3" type="text" id="sis3" size="5" value="9" /></td>
-         <td><input name="sis4" type="text" id="sis4" size="5" value="9" /></td>
-      </tr>
-      <tr><td>16%技能</td><td>十字（一年级）</td><td>十字（二年级）</td><td>十字（三年级）</td></tr>
-      <tr>
-         <td>储备数量</td>
-         <td><input name="sis5" type="text" id="sis5" size="5" value="9" /></td>
-         <td><input name="sis6" type="text" id="sis6" size="5" value="9" /></td>
-         <td><input name="sis7" type="text" id="sis7" size="5" value="9" /></td>
-      </tr>
-      <tr><td>加分 2.5</td><td>公主魅力（红）</td><td>天使魅力（绿）</td><td>皇后魅力（蓝）</td></tr>
-      <tr>
-         <td>储备数量</td>
-         <td><input name="sis10" type="text" id="sis10" size="5" value="9" /></td>
-         <td><input name="sis11" type="text" id="sis11" size="5" value="9" /></td>
-         <td><input name="sis12" type="text" id="sis12" size="5" value="9" /></td>
-      </tr>
-      <tr><td>体力 480</td><td>公主治愈（红）</td><td>天使治愈（绿）</td><td>皇后治愈（蓝）</td></tr>
-      <tr>
-         <td>储备数量</td>
-         <td><input name="sis13" type="text" id="sis13" size="5" value="9" /></td>
-         <td><input name="sis14" type="text" id="sis14" size="5" value="9" /></td>
-         <td><input name="sis15" type="text" id="sis15" size="5" value="9" /></td>
-      </tr>
-   </table>
-</div>
-</div>
-</div>
-<div style="clear:both">
 </div>
 
+<div class="col-xs-12 col-md-3 gem-stock-list-group" id="sisreserves" style='display:none'>
+</div>
+
+<div class="col-xs-12 col-md-9">
 主唱技能 :<select id="bonus" name="bonus">
 		<option value="smile" style="color:red">smile</option>
 		<option value="pure" style="color:green">pure</option>
@@ -876,12 +863,14 @@
 技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
 <input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
 <input type="checkbox" id="autoarm0" name="autoarm0" onclick="autoarm()">自动配饰</input>
-   <br><br><br>
+</div>
 </form>
 
 <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
 {% include 'components/loadingbox.html' %}
+
+<div style="clear:both"></div>
 
 <div id="result" style="display:none">
 <table border="1">
@@ -957,6 +946,7 @@
    <li>判定覆盖率仅供参考</li>
    <li>判定期间属性1.25倍的宝石计算有误，暂时按无效计算。</li>
    <li>在队伍中有爆分SR时，由于技能强度会随着队伍强度变化而变化，可能出现多次计算「自动配饰」得到的结果不唯一的情况，此时只需重复计算多次取强度最高者即可。</li>
+   <li>日服新宝石的计算正在测试中，可能有计算错误，欢迎反馈</li>
 </ul>
 {% endblock %}
 

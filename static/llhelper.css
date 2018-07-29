@@ -1,0 +1,53 @@
+.tri-right {
+   display: inline-block;
+   width: 0;
+   height: 0;
+   vertical-align: middle;
+   border-top: 4px solid transparent;
+   border-bottom: 4px solid transparent;
+   border-right: 0px;
+   border-left: 4px dashed;
+   margin-right: 4px;
+}
+.tri-down {
+   display: inline-block;
+   width: 0;
+   height: 0;
+   vertical-align: middle;
+   border-top: 4px dashed;
+   border-bottom: 0px;
+   border-right: 4px solid transparent;
+   border-left: 4px solid transparent;
+}
+.gem-stock-list-group .list-group-item {
+   padding-top: 4px;
+   padding-bottom: 4px;
+}
+.gem-stock-list-group .list-group-item:hover {
+   background-color: #eee;
+}
+.gem-stock-list-group .subtype-padding {
+   padding-left: 10px;
+   padding-right: 0px;
+   padding-top: 0px;
+   padding-bottom: 0px;
+}
+.gem-count {
+   position: absolute;
+   right: 0px;
+   color: #fff;
+   background-color: #777;
+   border-radius: 10px;
+   font-weight: 700;
+   text-align: center;
+   vertical-align: middle;
+}
+.gem-text {
+   display: inline-block;
+   width: 80%;
+   padding-left: 4px;
+}
+.subtype-padding .list-group {
+   margin-bottom: 0px;
+}
+

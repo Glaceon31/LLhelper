@@ -63,7 +63,7 @@
       }
       else{
          document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc']
+         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemmember','gemnonet','gemacc']
          for (j in swaplist){
             at = swaplist[j]
             tmp = document.getElementById(at+String(pos)).value
@@ -110,6 +110,8 @@
       result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
       result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
       result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemmember"+String(n)).value)*4)
+      result += parseInt(parseInt(document.getElementById("gemnonet"+String(n)).value)*4)
       document.getElementById("slot"+String(n)).innerHTML = result
    }
 
@@ -141,7 +143,7 @@
 
    function makeSaveData() {
       var member = [{}, {}, {},{},{},{},{},{},{}];
-      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc'];
+      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
       for (var i=0; i<9; i++){
          for (var j in saveatt){
             member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
@@ -159,7 +161,7 @@
    function handleLoadUnit(unit) {
       var saveData = new LLSaveData(unit);
       console.log(saveData);
-      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc'];
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
       for (var i = 0; i < 9; i++) {
          var member = saveData.teamMember[i];
          for (var j in attlist) {
@@ -248,7 +250,7 @@
    }
 
    function docalculate(cards) {
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc'];
+      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
@@ -279,6 +281,7 @@
             member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
          }
          member[i]['maxcost'] = 0; // not used, added to not print error in console
+         member[i]['card'] = cards[member[i]['cardid']];
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
          llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
@@ -289,7 +292,12 @@
          if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
          }
-         member[i]['card'] = cards[member[i]['cardid']];
+         if (parseInt(document.getElementById('gemmember' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
+         }
+         if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+         }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
@@ -584,6 +592,24 @@
       {% endfor %}
    </tr>
    <tr>
+      <td>个人宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemmember{{i}}" name="gemmember{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
+      <td>九重奏宝石</td>
+      {% for i in range(0,9) %}
+      <td><select id="gemnonet{{i}}" name="gemnonet{{i}}" onchange="calslot({{i}})">
+         <option value="0" >无</option>
+         <option value="1" >有</option>
+      </select></td>
+      {% endfor %}
+   </tr>
+   <tr>
       <td>使用槽数</td>
       {% for i in range(0,9) %}
       <td id="slot{{i}}" name="slot{{i}}"></td>
@@ -830,6 +856,7 @@
    <li>由于使用歌曲信息计算，最终结果可能会有千分之一的误差</li>
    <li>判定覆盖率仅供参考</li>
    <li>判定期间属性1.25倍的宝石计算有误，暂时按无效计算。</li>
+   <li>日服新宝石的计算正在测试中，可能有计算错误，欢迎反馈</li>
 </ul>
 {% endblock %}
 
