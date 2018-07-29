@@ -24,24 +24,6 @@
 
    var mezame = 0
    var language = 0
-   var kizuna = new Array();
-   kizuna["N"] = [25, 50]
-   kizuna["R"] = [100, 200]
-   kizuna["SR"] = [250, 500]
-   kizuna["SSR"] = [375, 750]
-   kizuna["UR"] = [500, 1000]
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
@@ -66,26 +48,6 @@
       // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
-
-   function toggleSisSubtype(id, arrow_id) {
-      var comp = new LLComponentBase(id);
-      comp.toggleVisible();
-      document.getElementById(arrow_id).className = (comp.visible ? 'tri-down' : 'tri-right');
-   }
-
-   function threetonumber(three){
-      var result = three
-      if (result == '0') {
-         return 0;
-      }
-      if (result[0] == '0') {
-         result = result[1]+result[2]
-      }
-      if (result[0] == '0') {
-         result = result[1]
-      }
-      return result
-   }
 
    pos = -1
    function changepos(i){
