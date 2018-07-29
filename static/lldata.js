@@ -209,11 +209,16 @@ var LLComponentBase = (function () {
     *    on
     */
    var cls = function (id, options) {
-      this.id = id;
+      this.id = undefined;
       this.exist = false;
       this.visible = false;
-      if (this.id) {
-         this.element = document.getElementById(this.id);
+      if (id) {
+         if (typeof(id) == 'string') {
+            this.id = id;
+            this.element = document.getElementById(id);
+         } else {
+            this.element = id;
+         }
          if (this.element) {
             this.exist = true;
             if (this.element.style.display != 'none') {
@@ -1123,6 +1128,19 @@ var LLSisGem = (function () {
       if (Math.abs(val - 4.2) < EPSILON) return createGems([cls.AMUL_24, cls.AMUL_18], {'color': color});
       return createGems(bitSplit(val+EPSILON, [cls.AMUL_40, cls.AMUL_24, cls.AMUL_18]), {'color': color});
    };
+   cls.getGemStockCount = function (gemStock, gemStockKeys) {
+      var cur = gemStock;
+      var keys = gemStockKeys;
+      for (var i = 0; i < keys.length; i++) {
+         if (cur.ALL !== undefined) return cur.ALL;
+         cur = cur[keys[i]];
+         if (cur === undefined) {
+            console.log("Not found " + keys.join('.') + " in gem stock");
+            return 0;
+         }
+      }
+      return cur;
+   };
    var proto = cls.prototype;
    proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
    proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
@@ -1130,10 +1148,6 @@ var LLSisGem = (function () {
    proto.getGemStockKeys = function () {
       if (this.gemStockKeys !== undefined) return this.gemStockKeys;
       var ret = [GEM_TYPE_DATA[this.type].key];
-      if (this.per_color) {
-         if (this.color === undefined) throw "Gem has no color";
-         ret.push(this.color);
-      }
       if (this.per_grade) {
          if (this.grade === undefined) throw "Gem has no grade";
          ret.push(this.grade);
@@ -1146,20 +1160,15 @@ var LLSisGem = (function () {
          if (this.unit === undefined) throw "Gem has no unit";
          ret.push(this.unit);
       }
+      if (this.per_color) {
+         if (this.color === undefined) throw "Gem has no color";
+         ret.push(this.color);
+      }
       this.gemStockKeys = ret;
       return ret;
    };
    proto.getGemStockCount = function (gemStock) {
-      var cur = gemStock;
-      var keys = this.getGemStockKeys();
-      for (var i = 0; i < keys.length; i++) {
-         cur = cur[keys[i]];
-         if (cur === undefined) {
-            console.log("Not found " + keys.join('.') + " in gem stock");
-            return 0;
-         }
-      }
-      return cur;
+      return cls.getGemStockCount(gemStock, this.getGemStockKeys());
    };
    return cls;
 })();
@@ -2042,11 +2051,18 @@ var LLSaveData = (function () {
    //       "<gem type key>": {"<sub type>": {"<sub type>": ...{"<sub type>": "<number>"}...} }, ...
    //     }
    //     sub type in following order and value:
-   //       gem type has per_color: "smile", "pure", "cool"
    //       gem type has per_grade: "1", "2", "3"
    //       gem type has per_member: "<member name>"
    //       gem type has per_unit: "muse", "aqours"
+   //       gem type has per_color: "smile", "pure", "cool"
+   // ver 102 : use gem stock v3
+   //   gem stock v3:
+   //     {
+   //       "ALL": "<number>" | "<gem type key>" : {...}
+   //     }
+   //     added "ALL" for any type/sub-type dict, when specified, all sub-types having "<number>" of gem
    var checkSaveDataVersion = function (data) {
+      if (data === undefined) return 0;
       if (data.version !== undefined) return parseInt(data.version);
       if (data.length === undefined && Object.keys(data).length == 15) return 11;
       if (data.length == 0) return 0;
@@ -2086,20 +2102,20 @@ var LLSaveData = (function () {
       for (var i = 1; i < 16; i++) {
          gemv1.push(parseInt(data[i] || 0));
       }
-      ret['SADD_200'] = {'smile': gemv1[0], 'pure': gemv1[0], 'cool': gemv1[0]};
-      ret['SADD_450'] = {'smile': gemv1[1], 'pure': gemv1[1], 'cool': gemv1[1]};
+      ret['SADD_200'] = {'ALL': gemv1[0]};
+      ret['SADD_450'] = {'ALL': gemv1[1]};
       ret['SMUL_10'] = {
-         'smile': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
-         'pure': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]},
-         'cool': {'1': gemv1[2], '2': gemv1[3], '3': gemv1[4]}
+         '1': {'ALL': gemv1[2]},
+         '2': {'ALL': gemv1[3]},
+         '3': {'ALL': gemv1[4]}
       };
       ret['SMUL_16'] = {
-         'smile': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
-         'pure': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]},
-         'cool': {'1': gemv1[5], '2': gemv1[6], '3': gemv1[7]}
+         '1': {'ALL': gemv1[5]},
+         '2': {'ALL': gemv1[6]},
+         '3': {'ALL': gemv1[7]}
       };
-      ret['AMUL_18'] = {'smile': gemv1[8], 'pure': gemv1[8], 'cool': gemv1[8]};
-      ret['AMUL_24'] = {'smile': gemv1[9], 'pure': gemv1[9], 'cool': gemv1[9]};
+      ret['AMUL_18'] = {'ALL': gemv1[8]};
+      ret['AMUL_24'] = {'ALL': gemv1[9]};
       ret['SCORE_250'] = {'smile': gemv1[10], 'pure': gemv1[11], 'cool': gemv1[12]};
       ret['HEAL_480'] = {'smile': gemv1[13], 'pure': gemv1[14], 'cool': gemv1[15]};
       return ret;
@@ -2119,10 +2135,7 @@ var LLSaveData = (function () {
       }
       var next_sub;
       var types;
-      if (current_sub == 'per_color') {
-         next_sub = 'per_grade';
-         types = ['smile', 'pure', 'cool'];
-      } else if (current_sub == 'per_grade') {
+      if (current_sub == 'per_grade') {
          next_sub = 'per_member';
          types = ['1', '2', '3'];
       } else if (current_sub == 'per_member') {
@@ -2130,8 +2143,11 @@ var LLSaveData = (function () {
          types = ["高坂穂乃果", "絢瀬絵里", "南ことり", "園田海未", "星空凛", "西木野真姫", "東條希", "小泉花陽", "矢澤にこ",
                   "高海千歌", "桜内梨子", "松浦果南", "黒澤ダイヤ", "渡辺曜", "津島善子", "国木田花丸", "小原鞠莉", "黒澤ルビィ"];
       } else if (current_sub == 'per_unit') {
-         next_sub = '';
+         next_sub = 'per_color';
          types = ['muse', 'aqours'];
+      } else if (current_sub == 'per_color') {
+         next_sub = '';
+         types = ['smile', 'pure', 'cool'];
       } else {
          throw 'Unexpected current_sub "' + current_sub + '"';
       }
@@ -2143,9 +2159,10 @@ var LLSaveData = (function () {
       return ret;
    };
    var recursiveMakeGemStockData = function (meta, callback) {
-      return recursiveMakeGemStockDataImpl(meta, 'per_color', [], callback);
+      return recursiveMakeGemStockDataImpl(meta, 'per_grade', [], callback);
    };
    var fillDefaultGemStock = function (stock, fillnum) {
+      if (stock.ALL !== undefined) return;
       var keys = LLSisGem.getGemTypeKeys();
       for (var i = 0; i < keys.length; i++) {
          if (stock[keys[i]] === undefined) {
@@ -2157,8 +2174,10 @@ var LLSaveData = (function () {
       this.rawData = data;
       this.rawVersion = checkSaveDataVersion(data);
       if (this.rawVersion == 0) {
-         console.error("Unknown save data:");
-         console.error(data);
+         if (data !== undefined) {
+            console.error("Unknown save data:");
+            console.error(data);
+         }
          this.teamMember = [];
          this.gemStock = {};
          this.hasGemStock = false;
@@ -2190,23 +2209,28 @@ var LLSaveData = (function () {
    cls.calculateSlot = calculateSlot;
    var proto = cls.prototype;
    proto.getLegacyGemStock = function() {
-      return {
-         '1': String(this.gemStock.SADD_450.smile),
-         '2': String(this.gemStock.SMUL_10.smile['1']),
-         '3': String(this.gemStock.SMUL_10.smile['2']),
-         '4': String(this.gemStock.SMUL_10.smile['3']),
-         '5': String(this.gemStock.SMUL_16.smile['1']),
-         '6': String(this.gemStock.SMUL_16.smile['2']),
-         '7': String(this.gemStock.SMUL_16.smile['3']),
-         '8': String(this.gemStock.AMUL_18.smile),
-         '9': String(this.gemStock.AMUL_24.smile),
-         '10': String(this.gemStock.SCORE_250.smile),
-         '11': String(this.gemStock.SCORE_250.pure),
-         '12': String(this.gemStock.SCORE_250.cool),
-         '13': String(this.gemStock.HEAL_480.smile),
-         '14': String(this.gemStock.HEAL_480.pure),
-         '15': String(this.gemStock.HEAL_480.cool)
-      };
+      var mapping = [
+         ['SADD_450', 'smile'],
+         ['SMUL_10', '1', 'smile'],
+         ['SMUL_10', '2', 'smile'],
+         ['SMUL_10', '3', 'smile'],
+         ['SMUL_16', '1', 'smile'],
+         ['SMUL_16', '2', 'smile'],
+         ['SMUL_16', '3', 'smile'],
+         ['AMUL_18', 'smile'],
+         ['AMUL_24', 'smile'],
+         ['SCORE_250', 'smile'],
+         ['SCORE_250', 'pure'],
+         ['SCORE_250', 'cool'],
+         ['HEAL_480', 'smile'],
+         ['HEAL_480', 'pure'],
+         ['HEAL_480', 'cool'],
+      ];
+      var ret = {};
+      for (var i = 0; i < mapping.length; i++) {
+         ret[String(i+1)] = String(LLSisGem.getGemStockCount(this.gemStock, mapping[i]));
+      }
+      return ret;
    };
    proto.serializeV1 = function() {
       return JSON.stringify(this.teamMember);
@@ -2225,7 +2249,7 @@ var LLSaveData = (function () {
    proto.serializeV11 = function() {
       return JSON.stringify(this.getLegacyGemStock());
    };
-   proto.serializeV101 = function() {
+   proto.serializeV102 = function() {
       return JSON.stringify({
          'version': this.rawVersion,
          'team': this.teamMember,
@@ -2239,4 +2263,292 @@ var LLSaveData = (function () {
    return cls;
 })();
 
+var LLGemStockComponent = (function () {
+   var textMapping = {
+      'SADD_200': '吻 (C1/200)',
+      'SADD_450': '香水 (C2/450)',
+      'SMUL_10': '指环 (C2/10%)',
+      'SMUL_16': '十字 (C3/16%)',
+      'AMUL_18': '光环 (C3/1.8%)',
+      'AMUL_24': '面纱 (C4/2.4%)',
+      'SCORE_250': '魅力 (C4/2.5x)',
+      'HEAL_480': '治愈 (C4/480x)',
+      'EMUL_33': '诡计 (C4/33%/判)',
+      'SADD_1400': 'Wink (C5/1400)',
+      'SMUL_28': 'Trill (C5/28%)',
+      'AMUL_40': 'Bloom (C6/4%)',
+      'MEMBER_29': '个人宝石 (C4/29%/本色)',
+      'NONET_42': '九重奏 (C4/4.2%)',
+      '1': '一年级',
+      '2': '二年级',
+      '3': '三年级',
+      'muse': "μ's",
+      'aqours': 'Aqours'
+   };
+   function toggleSubGroup(arrowSpan, subGroupComp, visible) {
+      if (visible === undefined) {
+         subGroupComp.toggleVisible();
+      } else if (visible) {
+         subGroupComp.show();
+      } else {
+         subGroupComp.hide();
+      }
+      arrowSpan.className = (subGroupComp.visible ? 'tri-down' : 'tri-right');
+   }
+   function createListGroup(subItems) {
+      var group = document.createElement('div');
+      group.className = 'list-group';
+      for (var i in subItems) {
+         group.appendChild(subItems[i]);
+      }
+      return group;
+   }
+   function createListGroupItem(text, val, controller, subGroup) {
+      var item = document.createElement('div');
+
+      var textSpan = document.createElement('span');
+      textSpan.className = 'gem-text';
+      textSpan.innerHTML = (textMapping[text] ? textMapping[text] : text);
+
+      var gemCountInput = document.createElement('input');
+      gemCountInput.type = 'text';
+      gemCountInput.size = 2;
+      gemCountInput.className = 'gem-count';
+      gemCountInput.addEventListener('click', function() {
+         event.cancelBubble = true;
+      });
+      gemCountInput.addEventListener('change', function() {
+         if (controller.onchange) controller.onchange(gemCountInput.value);
+      });
+      controller.get = function() { return gemCountInput.value; };
+      controller.set = function(v) {
+         gemCountInput.value = v;
+         if (String(v) == '9') {
+            gemCountInput.style['background-color'] = '#373';
+         } else {
+            gemCountInput.style['background-color'] = '';
+         }
+      };
+      controller.set(val);
+
+      if (subGroup) {
+         var arrowSpan = document.createElement('span');
+         arrowSpan.className = 'tri-down';
+
+         var subGroupDiv = document.createElement('div');
+         subGroupDiv.className = 'list-group-item subtype-padding';
+         subGroupDiv.appendChild(subGroup);
+         var subGroupComp = new LLComponentBase(subGroupDiv);
+
+         item.className = 'list-group-item';
+         item.addEventListener(
+            'click',
+            function() { toggleSubGroup(arrowSpan, subGroupComp); }
+         );
+         item.appendChild(arrowSpan);
+         item.appendChild(textSpan);
+         item.appendChild(gemCountInput);
+         controller.fold = function() { toggleSubGroup(arrowSpan, subGroupComp, 0); };
+         controller.unfold = function() { toggleSubGroup(arrowSpan, subGroupComp, 1); };
+         return [item, subGroupDiv];
+      } else {
+         item.className = 'list-group-item leaf-gem';
+         item.appendChild(textSpan);
+         item.appendChild(gemCountInput);
+         return [item];
+      }
+   }
+   function makeControllerOnChangeFunc(text) {
+      return function(v) {
+         var num = parseInt(v);
+         if (isNaN(num)) num = 0;
+         if (num < 0) num = 0;
+         if (num > 9) num = 9;
+         if (this.pushchange) this.pushchange(num);
+         if (this.raisechange) this.raisechange(text, num, num);
+      }
+   }
+   function makeControllerRaiseChangeFunc(controllers, text) {
+      return function (key, minv, maxv) {
+         var raiseMin = minv;
+         var raiseMax = maxv;
+         var raiseController;
+         for (var i in controllers) {
+            var curController = controllers[i];
+            if (i == 'ALL') {
+               raiseController = curController;
+            } else if (i != key) {
+               if (curController.ALL.min < raiseMin) raiseMin = curController.ALL.min;
+               if (curController.ALL.max > raiseMax) raiseMax = curController.ALL.max;
+            }
+         }
+         raiseController.min = raiseMin;
+         raiseController.max = raiseMax;
+         if (raiseMin != raiseMax) {
+            raiseController.set(raiseMin + '+');
+         } else {
+            raiseController.set(raiseMin);
+         }
+         if (raiseController.raisechange) {
+            raiseController.raisechange(text, raiseMin, raiseMax);
+         }
+      };
+   }
+   function makeControllerPushChangeFunc(controllers) {
+      return function(n) {
+         if (controllers) {
+            for (var i in controllers) {
+               if (i == 'ALL') continue;
+               var curController = controllers[i].ALL;
+               if (curController.pushchange) {
+                  curController.pushchange(n);
+               }
+            }
+         }
+         this.set(n);
+         this.min = n;
+         this.max = n;
+      }
+   }
+   function makeControllerDeserializeFunc(controllers) {
+      return function(data) {
+         if (typeof(data) == 'number' || typeof(data) == 'string') {
+            this.onchange(data);
+         } else if (data.ALL !== undefined) {
+            this.onchange(data.ALL);
+            if (this.fold) this.fold();
+         } else {
+            if (controllers) {
+               var minVal = 9;
+               var maxVal = 0;
+               for (var i in controllers) {
+                  if (i == 'ALL') continue;
+                  if (data[i]) {
+                     controllers[i].ALL.deserialize(data[i]);
+                  } else {
+                     controllers[i].ALL.deserialize({'ALL':0});
+                  }
+                  if (controllers[i].ALL.min < minVal) minVal = controllers[i].ALL.min;
+                  if (controllers[i].ALL.max > maxVal) maxVal = controllers[i].ALL.max;
+               }
+               if (this.unfold && minVal != maxVal) this.unfold();
+               if (this.fold && minVal == maxVal) this.fold();
+            } else {
+               console.error("Failed to deserialize gem stock data");
+               console.error(data);
+               console.error(this);
+            }
+         }
+      }
+   }
+   function makeControllerSerializeFunc(controllers) {
+      return function() {
+         if (controllers) {
+            if (this.min == this.max) {
+               return {'ALL': parseInt(this.get())};
+            }
+            var ret = {};
+            for (var i in controllers) {
+               if (i == 'ALL') continue;
+               ret[i] = controllers[i].ALL.serialize();
+            }
+            return ret;
+         } else {
+            return parseInt(this.get());
+         }
+      }
+   }
+   function buildStockGUI(text, data) {
+      if (typeof(data) == 'number' || typeof(data) == 'string') {
+         var val = parseInt(data);
+         if (val > 9) val = 9;
+         if (val < 0) val = 0;
+         var controller = {
+            'onchange': makeControllerOnChangeFunc(text),
+            'pushchange': makeControllerPushChangeFunc(),
+            'deserialize': makeControllerDeserializeFunc(),
+            'serialize': makeControllerSerializeFunc(),
+            'min': val,
+            'max': val
+         };
+         return {
+            'items': createListGroupItem(text, val, controller),
+            'controller': {'ALL': controller}
+         };
+      } else {
+         var items = [];
+         var controllers = {};
+         var minVal = 9;
+         var maxVal = 0;
+         for (var dataKey in data) {
+            var ret = buildStockGUI(dataKey, data[dataKey]);
+            var curController = ret.controller.ALL;
+            if (curController.min < minVal) minVal = curController.min;
+            if (curController.max > maxVal) maxVal = curController.max;
+            curController.raisechange = makeControllerRaiseChangeFunc(controllers);
+            controllers[dataKey] = ret.controller;
+            items = items.concat(ret.items);
+         }
+         var controller = {
+            'onchange': makeControllerOnChangeFunc(text),
+            'pushchange': makeControllerPushChangeFunc(controllers),
+            'deserialize': makeControllerDeserializeFunc(controllers),
+            'serialize': makeControllerSerializeFunc(controllers),
+            'min': minVal,
+            'max': maxVal
+         };
+         var subGroup = createListGroup(items);
+         var retItems = createListGroupItem(text, (minVal == maxVal ? minVal : minVal + '+'), controller, subGroup);
+         if (minVal == maxVal && controller.fold) controller.fold();
+         controllers['ALL'] = controller;
+         return {
+            'items': retItems,
+            'controller': controllers
+         };
+      }
+   };
+   // controllers:
+   // {
+   //    'ALL': controller, //for current node and control all its sub nodes
+   //    '<subtype>': controllers,
+   //    '<subtype>': controllers, ...
+   // }
+   // controller:
+   // {
+   //    'onchange': function (v), // v: new value; called when deserialize or input by user
+   //    'pushchange': function (n), // set self node value and all its sub node value to n
+   //    'raisechange': function (key, minv, maxv), // key: self node's subtype name; minv/maxv: min/max value in current sub-tree; recalculate the value to display and raise
+   //    'deserialize': function (data),
+   //    'serialize': function (),
+   //    'get': function (), // get node value
+   //    'set': function (v), // set node value
+   //    'fold': function (), // fold the current sub-tree
+   //    'unfold': function (), // unfold the current sub-tree
+   //    'min': min,
+   //    'max': max,
+   // }
+   var cls = function (id) {
+      var data = new LLSaveData();
+      var gui = buildStockGUI('技能宝石仓库', data.gemStock);
+      document.getElementById(id).appendChild(createListGroup(gui.items));
+      this.loadData = function(data) { gui.controller.ALL.deserialize(data); };
+      this.saveData = function() { return gui.controller.ALL.serialize(); }
+   };
+   var proto = cls.prototype;
+   proto.loadJson = function(data) {
+      if (typeof(data) != 'string') return;
+      if (data == '') return;
+      try {
+         var json = JSON.parse(data);
+         this.loadData(json);
+      } catch (e) {
+         console.error('Failed to load json:');
+         console.error(data);
+      }
+   };
+   proto.saveJson = function() {
+      return JSON.stringify(this.saveData());
+   }
+   return cls;
+})();
 
