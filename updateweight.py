@@ -101,7 +101,7 @@ for index in songs:
 			print 'no master distribution'
 	#break
 output = open('newsongsjson.txt', 'wb')
-output.write(json.dumps(songs))
+output.write(json.dumps(songs, sort_keys=True))
 output.close()
 slo = open('successlist.txt', 'w')
 slo.write(json.dumps(successlist))

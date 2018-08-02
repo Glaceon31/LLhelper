@@ -7,7 +7,7 @@
 function LLSong(songjson, includeDefaultSong) {
    var songs = songjson;
    if (typeof(songs) == "string") {
-      songs = eval("("+songs+")");
+      songs = JSON.parse(songs);
    }
    if (includeDefaultSong === undefined || includeDefaultSong) {
       var defaultsong = new Array()
@@ -185,14 +185,15 @@ LLSong.prototype.filterDiff = function (diffsel, songindex, cnhave, defaultdiff)
    if (!savediff) savediff = this.getElementValue(this.songDiffId, "");
    if (!savediff) savediff = defaultdiff;
 
-   var diffname = ['easy', 'normal', 'hard', 'expert', 'master'];
+   var diffname = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade'];
+   var diffDisplay = ['容易(Easy)', '普通(Normal)', '困难(Hard)', '专家(Expert)', '大师(Master)', 'Master Arcade'];
    var curSong = this.songs[songindex];
    for (var i in diffname) {
       var diff = diffname[i];
       var curSongWithDiff = curSong[diff];
       if (!curSongWithDiff) continue;
       if (cnhave == '' || (curSongWithDiff['cnhave'] == cnhave)) {
-         var newOption = new Option(diff, diff);
+         var newOption = new Option(diffDisplay[i], diff);
          diffsel.options.add(newOption);
          if (savediff == diff) {
             diffsel.value = savediff;

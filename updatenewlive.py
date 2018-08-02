@@ -14,11 +14,27 @@ livejsonpath = 'livejson/'
 
 attribute = ['','smile', 'pure', 'cool', '', 'all']
 difficulty = ['' ,'easy', 'normal', 'hard', 'expert', 'random', 'master']
+live_setting_query_str = (
+'SELECT live_setting_m.live_setting_id,'
+' live_setting_m.difficulty,'
+' live_setting_m.stage_level,'
+' live_setting_m.attribute_icon_id,'
+' live_setting_m.notes_setting_asset,'
+' live_setting_m.c_rank_score,'
+' live_setting_m.b_rank_score,'
+' live_setting_m.a_rank_score,'
+' live_setting_m.s_rank_score,'
+' live_setting_m.s_rank_combo,'
+' CASE WHEN special_live_m.ac_flag IS NOT NULL THEN 1 ELSE 0 END as is_ac '
+'FROM live_setting_m '
+'LEFT JOIN special_live_m ON special_live_m.live_setting_id = live_setting_m.live_setting_id AND special_live_m.ac_flag = 1 '
+'WHERE live_track_id = %s;'
+)
 
 if __name__ == "__main__":
 	jpdbconn = sqlite3.connect(livejpdbpath)
 	cndbconn = sqlite3.connect(livecndbpath)
-	jptc = jpdbconn.execute('SELECT * FROM live_track_m;')
+	jptc = jpdbconn.execute('SELECT live_track_id,name,member_category FROM live_track_m;')
 	jptmp = jptc.fetchone()
 	while jptmp:
 		new = False
@@ -34,21 +50,22 @@ if __name__ == "__main__":
 		song = songs[str(jptmp[0])]
 		song['jpname'] = jptmp[1]
 		song['id'] = jptmp[0]
-		if jptmp[5] == 1:
+		if jptmp[2] == 1:
 			song['muse'] = 1
 			song['aqours'] = 0
 		else:
 			song['muse'] = 0
 			song['aqours'] = 1
-		livesetting = jpdbconn.execute('SELECT * FROM live_setting_m WHERE live_track_id = '+str(jptmp[0])+';')
+		livesetting = jpdbconn.execute(live_setting_query_str % str(jptmp[0]))
 		livetmp = livesetting.fetchone()
 		while livetmp:
-			# Exclude AC charts
-			if livetmp[0] >= 10000:
-				continue
-			diffname = difficulty[livetmp[2]]
+			# AC charts
+			if livetmp[10] == 1:
+				diffname = 'arcade'
+			else:
+				diffname = difficulty[livetmp[1]]
 			if diffname =='random':
-				song['expert']['randomdifficulty'] = livetmp[3]
+				song['expert']['randomdifficulty'] = livetmp[2]
 			if not song.has_key(diffname):
 				song[diffname] = {}
 				diff = song[diffname]
@@ -67,14 +84,14 @@ if __name__ == "__main__":
 				diff['positionweight'] = ['','','','','','','','','']
 			diff = song[diffname]
 			diff['liveid'] = str(livetmp[0])
-			diff['stardifficulty'] = livetmp[3]
-			diff['combo'] = livetmp[17]
-			diff['cscore'] = livetmp[10]
-			diff['bscore'] = livetmp[11]
-			diff['ascore'] = livetmp[12]
-			diff['sscore'] = livetmp[13]
-			jsonpath = livetmp[9]
-			song['attribute'] = attribute[livetmp[4]]
+			diff['stardifficulty'] = livetmp[2]
+			diff['combo'] = livetmp[9]
+			diff['cscore'] = livetmp[5]
+			diff['bscore'] = livetmp[6]
+			diff['ascore'] = livetmp[7]
+			diff['sscore'] = livetmp[8]
+			jsonpath = livetmp[4]
+			song['attribute'] = attribute[livetmp[3]]
 			livetmp = livesetting.fetchone()
 
 		#dangerous
@@ -118,5 +135,5 @@ if __name__ == "__main__":
 
 
 	output = open('newsongsjson.txt', 'wb')
-	output.write(json.dumps(songs))
+	output.write(json.dumps(songs, sort_keys=True))
 	output.close()
