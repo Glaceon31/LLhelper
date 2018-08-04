@@ -17,8 +17,9 @@
  *   LLComponentCollection
  *     +- LLSkillContainer
  *     +- LLCardSelector
+ *   LLGemStockComponent
  *
- * v0.6.0
+ * v0.7.0
  * By ben1222
  */
 
