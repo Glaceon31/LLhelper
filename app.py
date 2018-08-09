@@ -9,7 +9,6 @@ from lldata import LLData
 
 app = Flask(__name__)
 app.secret_key = "hatsune miku"
-app.debug = True
 
 g_llcarddata = LLData()
 g_llcarddata.loadJson('newcardsjson.txt')
