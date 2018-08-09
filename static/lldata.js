@@ -17,8 +17,9 @@
  *   LLComponentCollection
  *     +- LLSkillContainer
  *     +- LLCardSelector
+ *   LLGemStockComponent
  *
- * v0.6.0
+ * v0.7.0
  * By ben1222
  */
 
@@ -2264,12 +2265,12 @@ var LLSaveData = (function () {
    proto.serializeV11 = function() {
       return JSON.stringify(this.getLegacyGemStock());
    };
-   proto.serializeV102 = function() {
+   proto.serializeV102 = function(excludeTeam, excludeGemStock, excludeSubMember) {
       return JSON.stringify({
          'version': this.rawVersion,
-         'team': this.teamMember,
-         'gemstock': this.gemStock,
-         'submember': this.subMember
+         'team': (excludeTeam ? [] : this.teamMember),
+         'gemstock': (excludeGemStock ? {} : this.gemStock),
+         'submember': (excludeSubMember ? [] : this.subMember)
       });
    };
    proto.mergeV10 = function (v10data) {
