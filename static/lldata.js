@@ -9,6 +9,8 @@
  *   LLMember
  *   LLTeam
  *   LLSaveData
+ *   LLSaveLoadJsonMixin
+ *   LLSwapper
  *
  * components:
  *   LLComponentBase
@@ -18,8 +20,9 @@
  *     +- LLSkillContainer
  *     +- LLCardSelector
  *   LLGemStockComponent
+ *   LLSubMemberComponent
  *
- * v0.7.0
+ * v0.8.0
  * By ben1222
  */
 
@@ -580,7 +583,7 @@ var LLUnit = {
    },
 
    // getimagepath require twintailosu.js
-   changeavatar: function (elementid, cardid, mezame) {
+   changeavatare: function (element, cardid, mezame) {
       var path;
       if ((!cardid) || cardid == "0")
          path = '/static/null.png'
@@ -588,12 +591,15 @@ var LLUnit = {
          path = getimagepath(cardid,'avatar',0)
       else
          path = getimagepath(cardid,'avatar',1)
-      var element = document.getElementById(elementid);
       if (element.src != path) {
          // avoid showing last image before new image is loaded
          element.src = '';
       }
       element.src = path;
+   },
+
+   changeavatar: function (elementid, cardid, mezame) {
+      LLUnit.changeavatare(document.getElementById(elementid), cardid, mezame);
    },
 
    changeavatarn: function (n) {
@@ -1362,6 +1368,7 @@ var LLMember = (function() {
       } else {
          this.gems = v.gems;
       }
+      this.raw = v;
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    var proto = cls.prototype;
@@ -1370,6 +1377,9 @@ var LLMember = (function() {
          if (this.gems[i].isSkillGem()) return 1;
       }
       return 0;
+   };
+   proto.empty = function () {
+      return (!this.cardid) || (this.cardid == '0');
    };
    proto.calcDisplayAttr = function (mapcolor) {
       //显示属性=(基本属性+绊)*单体百分比宝石加成+数值宝石加成
@@ -1441,6 +1451,12 @@ var LLMember = (function() {
       this.cumulativeCSkillBonus = cumulativeCSkillBonus;
       this.cumulativeAttrStrength = cumulativeAttrStrength;
       return this.finalAttr[mapcolor];
+   };
+   proto.getAttrBuffFactor = function (mapcolor, mapunit) {
+      var buff = 1;
+      if (this.card.attribute == mapcolor) buff *= 1.1;
+      if (isInUnitGroup(mapunit, this.card.jpname)) buff *= 1.1;
+      return buff;
    };
    proto.getAttrDebuffFactor = function (mapcolor, mapunit, weight, totalweight) {
       var debuff = 1;
@@ -2051,6 +2067,115 @@ var LLTeam = (function() {
          maxStrengthState = curDPState.prev;
       }
    };
+   proto.autoUnit = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock, submembers) {
+      var me = this;
+      //排序权重, 不包括主唱位, 从大到小
+      var totalWeight = getTotalWeight(weights);
+      var visitedWeight = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+      var weightSort = [];
+      var i, j;
+      for (i = 0; i < 8; i++) {
+         var maxWeight = 0;
+         var maxWeightPos = -1;
+         for (j = 0; j < 9; j++) {
+            if (visitedWeight[j]) continue;
+            if (maxWeight < weights[j]) {
+               maxWeight = weights[j];
+               maxWeightPos = j;
+            }
+         }
+         weightSort.push(maxWeightPos);
+         visitedWeight[maxWeightPos] = 1;
+      }
+      //把除了主唱的所有成员放到一起
+      var allMembers = submembers.concat();
+      for (i = 0; i < this.members.length; i++) {
+         if (i == 4) continue;
+         var curMember = this.members[i];
+         if (curMember.empty()) continue;
+         allMembers.push(curMember);
+      }
+      //计算歌曲颜色和组合对各个成员的加成, 方便把异色卡放在权重小的位置
+      var membersRef = [];
+      for (i = 0; i < allMembers.length; i++) {
+         membersRef.push({
+            'index': i,
+            'buff': allMembers[i].getAttrBuffFactor(mapcolor, mapunit)
+         });
+      }
+      //定一个初始状态, 这里用的是取属性P最高的8个, 也许可以直接用当前的队伍?
+      membersRef.sort(function(a, b) {
+         var lhs = allMembers[a.index][mapcolor];
+         var rhs = allMembers[b.index][mapcolor];
+         if (lhs < rhs) return 1;
+         else if (lhs > rhs) return -1;
+         else return 0;
+      });
+      var curTeam = membersRef.splice(0, 8);
+      //对每个备选成员, 每次尝试替换队伍中8个成员的一个并自动配饰
+      //如果最大能得到的期望得分比现有队伍高, 则换上这个成员, 并在这基础上继续上述步骤
+      var sortByBuffDesc = function(a, b) {
+         var lhs = a.buff;
+         var rhs = b.buff;
+         if (lhs < rhs) return 1;
+         else if (lhs > rhs) return -1;
+         else return 0;
+      };
+      var getCurTeamBestStrength = function() {
+         var curTeamSorted = curTeam.concat();
+         curTeamSorted.sort(sortByBuffDesc);
+         for (var sortIndex = 0; sortIndex < 8; sortIndex++) {
+            me.members[weightSort[sortIndex]] = allMembers[curTeamSorted[sortIndex].index];
+         }
+         me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
+         me.calculateAttributeStrength(mapcolor, mapunit, friendcskill, weights);
+         me.calculateSkillStrength(maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup);
+         return me.averageScore;
+      };
+      var debugTeam = function() {
+         var ret = '{';
+         for (var i = 0; i < 8; i++) {
+            var member = allMembers[curTeam[i].index];
+            ret += member.cardid + '(' + member.skilllevel + ',' + member.maxcost + '),';
+         }
+         return ret + '}';
+      };
+      var maxAverageScore = getCurTeamBestStrength();
+      for (i = 0; i < membersRef.length; i++) {
+         var replacePos = -1;
+         for (j = 0; j < 8; j++) {
+            var tmp = curTeam[j];
+            curTeam[j] = membersRef[i];
+            var curScore = getCurTeamBestStrength();
+            if (curScore > maxAverageScore) {
+               maxAverageScore = curScore;
+               replacePos = j;
+            }
+            curTeam[j] = tmp;
+         }
+         if (replacePos >= 0) {
+            var tmp = curTeam[replacePos];
+            curTeam[replacePos] = membersRef[i];
+            membersRef[i] = tmp;
+            console.debug(debugTeam() + maxAverageScore);
+         }
+      }
+      //最后把得分最高的队伍组回来, 重新计算一次配饰作为最终结果
+      //把剩余的成员返回出去
+      curTeam.sort(sortByBuffDesc);
+      for (i = 0; i < 8; i++) {
+         me.members[weightSort[i]] = allMembers[curTeam[i].index];
+         allMembers[curTeam[i].index] = undefined;
+      }
+      me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
+      var resultSubMembers = [];
+      for (i = 0; i < allMembers.length; i++) {
+         if (allMembers[i] !== undefined) {
+            resultSubMembers.push(allMembers[i]);
+         }
+      }
+      return resultSubMembers;
+   };
    return cls;
 })();
 
@@ -2144,6 +2269,19 @@ var LLSaveData = (function () {
    };
    var getSubMemberV10 = function (data) {
       return data;
+   };
+   var SUB_MEMBER_ATTRS = ['cardid', 'mezame', 'skilllevel', 'maxcost'];
+   var shrinkSubMembers = function (submembers) {
+      var ret = [];
+      for (var i = 0; i < submembers.length; i++) {
+         var shrinked = {};
+         var curSubmember = submembers[i];
+         for (var j = 0; j < SUB_MEMBER_ATTRS.length; j++) {
+            shrinked[SUB_MEMBER_ATTRS[j]] = curSubmember[SUB_MEMBER_ATTRS[j]];
+         }
+         ret.push(shrinked);
+      }
+      return ret;
    };
    var recursiveMakeGemStockDataImpl = function (meta, current_sub, subtypes, callback) {
       if (!current_sub) {
@@ -2270,13 +2408,34 @@ var LLSaveData = (function () {
          'version': this.rawVersion,
          'team': (excludeTeam ? [] : this.teamMember),
          'gemstock': (excludeGemStock ? {} : this.gemStock),
-         'submember': (excludeSubMember ? [] : this.subMember)
+         'submember': (excludeSubMember ? [] : shrinkSubMembers(this.subMember))
       });
    };
    proto.mergeV10 = function (v10data) {
       this.subMember = getSubMemberV10(v10data);
    };
    return cls;
+})();
+
+var LLSaveLoadJsonMixin = (function () {
+   var loadJson = function(data) {
+      if (typeof(data) != 'string') return;
+      if (data == '') return;
+      try {
+         var json = JSON.parse(data);
+         this.loadData(json);
+      } catch (e) {
+         console.error('Failed to load json:');
+         console.error(data);
+      }
+   };
+   var saveJson = function() {
+      return JSON.stringify(this.saveData());
+   }
+   return function(obj) {
+      obj.loadJson = loadJson;
+      obj.saveJson = saveJson;
+   };
 })();
 
 var LLGemStockComponent = (function () {
@@ -2543,6 +2702,13 @@ var LLGemStockComponent = (function () {
    //    'min': min,
    //    'max': max,
    // }
+   //
+   // component controller:
+   // {
+   //    'loadData': function (data),
+   //    'saveData': function (),
+   //    :LLSaveLoadJsonMixin
+   // }
    var cls = function (id) {
       var data = new LLSaveData();
       var gui = buildStockGUI('技能宝石仓库', data.gemStock);
@@ -2551,20 +2717,237 @@ var LLGemStockComponent = (function () {
       this.saveData = function() { return gui.controller.ALL.serialize(); }
    };
    var proto = cls.prototype;
-   proto.loadJson = function(data) {
-      if (typeof(data) != 'string') return;
-      if (data == '') return;
-      try {
-         var json = JSON.parse(data);
-         this.loadData(json);
-      } catch (e) {
-         console.error('Failed to load json:');
-         console.error(data);
+   LLSaveLoadJsonMixin(proto);
+   return cls;
+})();
+
+var LLSwapper = (function () {
+   var cls = function () {
+      this.controller = undefined;
+      this.data = undefined;
+   };
+   var proto = cls.prototype;
+   proto.onSwap = function (controller) {
+      if (this.controller) {
+         var tmp = controller.finishSwapping(this.data);
+         this.controller.finishSwapping(tmp);
+         this.controller = undefined;
+         this.data = undefined;
+      } else {
+         this.controller = controller;
+         this.data = controller.startSwapping();
       }
    };
-   proto.saveJson = function() {
-      return JSON.stringify(this.saveData());
+   return cls;
+})();
+
+var LLSubMemberComponent = (function () {
+   function createElement(tag, options, subElements) {
+      var ret = document.createElement(tag);
+      if (options) {
+         for (var k in options) {
+            ret[k] = options[k];
+         }
+      }
+      if (subElements) {
+         for (var i = 0; i < subElements.length; i++) {
+            ret.appendChild(subElements[i]);
+         }
+      }
+      return ret;
    }
+   function createSimpleInputContainer(text, input) {
+      var label = createElement('label', {'className': 'col-xs-4 control-label', 'innerHTML': text});
+      var inputContainer = createElement('div', {'className': 'col-xs-8'}, [input]);
+      var group = createElement('div', {'className': 'form-group'}, [label, inputContainer]);
+      return group;
+   }
+   // controller:
+   // {
+   //    'onDelete': undefined function(),
+   //    'onSwap': undefined function(),
+   //    'getMember': function() return member,
+   //    'setMember': function(m),
+   //    'startSwapping': function() return member,
+   //    'finishSwapping': function(v) return member,
+   // }
+   function createMemberContainer(member, controller) {
+      var localMember;
+      var bSwapping = false;
+      var bDeleting = false;
+      var image = createElement('img');
+      var levelInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 1, 'max': 8, 'value': 1});
+      levelInput.addEventListener('change', function() {
+         localMember.skilllevel = parseInt(levelInput.value);
+      });
+      var slotInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 0, 'max': 8, 'value': 0});
+      slotInput.addEventListener('change', function() {
+         localMember.maxcost = parseInt(slotInput.value);
+      });
+      var deleteButton = createElement('button', {'className': 'btn btn-default btn-block', 'type': 'button', 'innerHTML': '删除'});
+      var swapButton = createElement('button', {'className': 'btn btn-default btn-block', 'type': 'button', 'innerHTML': '换位'});
+      var unDelete = function() {
+         deleteButton.innerHTML = '删除';
+         deleteButton.className = 'btn btn-default btn-block';
+         swapButton.innerHTML = '换位';
+         bDeleting = false;
+      };
+      deleteButton.addEventListener('click', function() {
+         if (bDeleting) {
+            unDelete();
+            if (controller.onDelete) controller.onDelete();
+         } else {
+            deleteButton.innerHTML = '确认';
+            deleteButton.className = 'btn btn-danger btn-block';
+            swapButton.innerHTML = '取消';
+            bDeleting = true;
+         }
+      });
+      swapButton.addEventListener('click', function() {
+         if (bDeleting) {
+            unDelete();
+         } else {
+            if (controller.onSwap) controller.onSwap();
+         }
+      });
+      controller.getMember = function() { return localMember; };
+      controller.setMember = function(m) {
+         if (localMember === m) return;
+         localMember = m;
+         if ((!localMember) || (!localMember.cardid) || (localMember.cardid == '0')) {
+            if (controller.onDelete) {
+               controller.onDelete();
+               return;
+            }
+         }
+         levelInput.value = m.skilllevel;
+         slotInput.value = m.maxcost;
+         LLUnit.changeavatare(image, m.cardid, parseInt(m.mezame));
+      };
+      controller.startSwapping = function() {
+         swapButton.innerHTML = '选择';
+         swapButton.className = 'btn btn-primary btn-block';
+         deleteButton.disabled = 'disabled';
+         levelInput.disabled = 'disabled';
+         slotInput.disabled = 'disabled';
+         bSwapping = true;
+         return this.getMember();
+      };
+      controller.finishSwapping = function(v) {
+         if (bSwapping) {
+            swapButton.innerHTML = '换位';
+            swapButton.className = 'btn btn-default btn-block';
+            deleteButton.disabled = '';
+            levelInput.disabled = '';
+            slotInput.disabled = '';
+            bSwapping = false;
+         }
+         var ret = this.getMember();
+         this.setMember(v);
+         return ret;
+      };
+      controller.setMember(member);
+      var imageContainer = createElement('td', {'className': 'text-center'}, [image]);
+      var levelInputContainer = createSimpleInputContainer('等级', levelInput);
+      var slotInputContainer = createSimpleInputContainer('槽数', slotInput);
+      var inputsContainer = createElement('td', {'className': 'form-horizontal'}, [levelInputContainer, slotInputContainer]);
+      var buttonContainer = createElement('td', {}, [deleteButton, swapButton]);
+      var tr = createElement('tr', {}, [imageContainer, inputsContainer, buttonContainer]);
+      var table = createElement('table', {}, [tr]);
+      var panel = createElement('div', {'className': 'col-xs-12 col-sm-6 col-md-4 col-lg-3 panel panel-default submember-container'}, [table]);
+      return panel;
+   }
+
+   // LLSubMemberComponent
+   // {
+   //    'add': function (member),
+   //    'remove': function (start, n),
+   //    'count': function (),
+   //    'empty': function (),
+   //    'setSwapper': function (swapper),
+   //    'setOnCountChange': function (callback(count)),
+   //    'loadData': function (data),
+   //    'saveData': function (),
+   //    :LLSaveLoadJsonMixin
+   // }
+   var cls = function (id) {
+      var element = document.getElementById(id);
+      var controllers = [];
+      var swapper;
+      var me = this;
+      var callCountChange = function () {
+         if (me.onCountChange) me.onCountChange(me.count());
+      };
+      var commonHandleDelete = function () {
+         for (var i = 0; i < controllers.length; i++) {
+            if (controllers[i] === this) {
+               controllers.splice(i, 1);
+               break;
+            }
+         }
+         this.removeElement();
+         callCountChange();
+      };
+      var commonHandleSwap = function () {
+         if (swapper && swapper.onSwap) {
+            swapper.onSwap(this);
+         }
+      };
+      this.add = function (member, skipCountChange) {
+         var controller = {};
+         var container = createMemberContainer(member, controller);
+         element.appendChild(container);
+         controllers.push(controller);
+         controller.onDelete = commonHandleDelete;
+         controller.onSwap = commonHandleSwap;
+         controller.removeElement = function() { element.removeChild(container); };
+         if (!skipCountChange) callCountChange();
+      };
+      this.remove = function (start, n) {
+         if (!n) return;
+         start = start || 0;
+         var end = start + n;
+         if (end > controllers.length) end = controllers.length;
+         if (end <= start) return;
+         for (var i = start; i < end; i++) {
+            controllers[i].removeElement();
+         }
+         controllers.splice(start, end-start);
+         callCountChange();
+      };
+      this.count = function () { return controllers.length; };
+      this.empty = function () { return controllers.length <= 0; };
+      this.setSwapper = function (sw) {
+         swapper = sw;
+      };
+      this.loadData = function (data) {
+         var i = 0;
+         for (; i < data.length && i < controllers.length; i++) {
+            controllers[i].setMember(data[i]);
+         }
+         if (i < data.length) {
+            for (; i < data.length; i++) {
+               this.add(data[i], true);
+            }
+            callCountChange();
+         }
+         if (i < controllers.length) {
+            this.remove(i, controllers.length - i);
+         }
+      };
+      this.saveData = function () {
+         var ret = [];
+         for (var i = 0; i < controllers.length; i++) {
+            ret.push(controllers[i].getMember());
+         }
+         return ret;
+      };
+   };
+   var proto = cls.prototype;
+   LLSaveLoadJsonMixin(proto);
+   proto.setOnCountChange = function (callback) {
+      this.onCountChange = callback;
+   };
    return cls;
 })();
 
