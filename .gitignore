@@ -21,5 +21,11 @@ static/newcard
 static/newcard300
 static/newhead
 
+success.json
+newcardsjson.txt
+newsongsjson.txt
+
 .idea
 .DS_Store
+
+*.db_
