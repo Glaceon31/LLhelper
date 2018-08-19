@@ -44,6 +44,7 @@
    var comp_submember = 0;
    var comp_swapper = 0;
    var unit_member_controller = [];
+   var comp_resultmic = 0;
 
    function getUnitMember(pos) {
       var props = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost'];
@@ -83,6 +84,7 @@
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
+      comp_resultmic = new LLMicDisplayComponent('resultmic');
       init();
 
       comp_gemstock = new LLGemStockComponent('sisreserves');
@@ -622,10 +624,7 @@
       document.getElementById('cardstrength'+String(minCardStrengthIndex)).style.color = 'red';
 
       llteam.calculateMic();
-      var micDisplayValue = llteam.micNumber;
-      var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
-
-      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + (llteam.micPoint / 100).toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')';
+      comp_resultmic.set(llteam.micNumber, llteam.equivalentURLevel);
 
       document.getElementById('result').style.display = ""
       document.getElementById("result").scrollIntoView()
@@ -1058,7 +1057,7 @@
 </tr>
 </table>
 卡组强度:<nospan id="resultstrength"></nospan><br>
-卡组援力:<nospan id="resultmic"></nospan><br>
+<div id="resultmic"></div>
 期望得分:<nospan id="averagescore"></nospan><br>
 
 期望回复:<nospan id="averageheal"></nospan><br>

@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 ### Run on Development Environment
 ```sh
-FLASK_APP=app.py FLASK_ENV=devlopment python2 -m flask run
+FLASK_APP=app.py FLASK_ENV=development python2 -m flask run
 ```
 
 ### Run on Production Environment

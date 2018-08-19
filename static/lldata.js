@@ -21,8 +21,9 @@
  *     +- LLCardSelector
  *   LLGemStockComponent
  *   LLSubMemberComponent
+ *   LLMicDisplayComponent
  *
- * v0.8.0
+ * v0.9.0
  * By ben1222
  */
 
@@ -217,12 +218,8 @@ var LLComponentBase = (function () {
       this.exist = false;
       this.visible = false;
       if (id) {
-         if (typeof(id) == 'string') {
-            this.id = id;
-            this.element = document.getElementById(id);
-         } else {
-            this.element = id;
-         }
+         if (typeof(id) == 'string') this.id = id;
+         this.element = LLUnit.getElement(id);
          if (this.element) {
             this.exist = true;
             if (this.element.style.display != 'none') {
@@ -505,11 +502,17 @@ var LLUnit = {
       }
    },
 
-   healNumberToString: function (n) {
-      var ret = n.toFixed(2);
-      while (ret[ret.length-1] == '0') ret = ret.substring(0, ret.length-1);
-      if (ret[ret.length-1] == '.') ret = ret.substring(0, ret.length-1);
+   numberToString: function (n, precision) {
+      var ret = n.toFixed(precision);
+      var pos = ret.length - 1;
+      while (ret[pos] == '0') pos--;
+      if (ret[pos] == '.') pos--;
+      if (pos != ret.length - 1) ret = ret.substring(0, pos+1);
       return ret;
+   },
+
+   healNumberToString: function (n) {
+      return LLUnit.numberToString(n, 2);
    },
 
    cardtoskilltype: function(c){
@@ -725,6 +728,39 @@ var LLUnit = {
    isStrengthSupported: function (card) {
       if (card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
       return true;
+   },
+
+   createElement: function (tag, options, subElements, eventHandlers) {
+      var ret = document.createElement(tag);
+      if (options) {
+         for (var k in options) {
+            ret[k] = options[k];
+         }
+      }
+      if (subElements) {
+         for (var i = 0; i < subElements.length; i++) {
+            var curSubElement = subElements[i];
+            if (typeof(curSubElement) == 'string') {
+               ret.appendChild(document.createTextNode(curSubElement));
+            } else {
+               ret.appendChild(curSubElement);
+            }
+         }
+      }
+      if (eventHandlers) {
+         for (var e in eventHandlers) {
+            ret.addEventListener(e, eventHandlers[e]);
+         }
+      }
+      return ret;
+   },
+
+   getElement: function (id) {
+      if (typeof(id) == 'string') {
+         return document.getElementById(id);
+      } else {
+         return id;
+      }
    }
 };
 
@@ -1343,7 +1379,7 @@ var LLSkill = (function () {
 
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
-   var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
+   var MIC_RATIO = {'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0};
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
       v = v || {};
@@ -1508,16 +1544,16 @@ var LLTeam = (function() {
    var MAX_SCORE = 10000000;
    var MAX_SCORE_TEXT = '1000w+';
    var MIC_BOUNDARIES = [
-      [0, 187],      // 1
-      [234, 455],    // 2
-      [463, 681],    // 3
-      [682, 1122],   // 4
-      [1129, 1563],  // 5
-      [1605, 2313],  // 6
-      [2324, 3440],  // 7
-      [3452, 5000],  // 8
-      [5005, 7100],  // 9
-      [7200, 7200]   // 10
+      0,     // 1
+      90,    // 2
+      180,   // 3
+      270,   // 4
+      450,   // 5
+      630,   // 6
+      930,   // 7
+      1380,  // 8
+      2010,  // 9
+      2880   // 10
    ];
    var armCombinationList = [];
    var getArmCombinationList = function (gems) {
@@ -1811,17 +1847,14 @@ var LLTeam = (function() {
       for (i = 0; i < 9; i++) {
          micPoint += this.members[i].getMicPoint();
       }
-      for (i = 0; i < 10; i++) {
-         if (micPoint >= MIC_BOUNDARIES[i][0] && micPoint <= MIC_BOUNDARIES[i][1]) {
+      for (i = 9; i >= 0; i--) {
+         if (micPoint >= MIC_BOUNDARIES[i]) {
             this.micNumber = i+1;
-            break;
-         } else if (micPoint < MIC_BOUNDARIES[i][0]) {
-            this.micNumber = i+0.5;
             break;
          }
       }
-      if (i == 10) this.micNumber = 10.5;
-      this.micPoint = micPoint;
+      if (i < 0) this.micNumber = 0;
+      this.equivalentURLevel = micPoint/40;
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    proto.autoArmGem = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock) {
@@ -1985,7 +2018,7 @@ var LLTeam = (function() {
       }
       var dp = [{}];
       dp[0][curState] = {'strength': 0, 'prev': '', 'comb': []};
-      var maxStrengthBuff = 0;
+      var maxStrengthBuff = -1;
       var addDPState = function (curDP, memberIndex, state, strength, prev, comb) {
          var nextState = state.split('');
          for (var i = 0; i < nextState.length; i++) {
@@ -2047,7 +2080,7 @@ var LLTeam = (function() {
       }
       // 找到最优组合并沿着路径获取每个成员的最优宝石分配
       // dp[9]里应该只有一个状态(全是'-')
-      maxStrengthBuff = 0;
+      maxStrengthBuff = -1;
       var maxStrengthState;
       for (var i in dp[9]) {
          if (dp[9][i].strength > maxStrengthBuff) {
@@ -2439,6 +2472,7 @@ var LLSaveLoadJsonMixin = (function () {
 })();
 
 var LLGemStockComponent = (function () {
+   var createElement = LLUnit.createElement;
    var textMapping = {
       'SADD_200': '吻 (C1/200)',
       'SADD_450': '香水 (C2/450)',
@@ -2471,30 +2505,17 @@ var LLGemStockComponent = (function () {
       arrowSpan.className = (subGroupComp.visible ? 'tri-down' : 'tri-right');
    }
    function createListGroup(subItems) {
-      var group = document.createElement('div');
-      group.className = 'list-group';
-      for (var i in subItems) {
-         group.appendChild(subItems[i]);
-      }
-      return group;
+      return createElement('div', {'className': 'list-group'}, subItems);
    }
    function createListGroupItem(text, val, controller, subGroup) {
-      var item = document.createElement('div');
+      var item;
+      var textSpan = createElement('span', {'className': 'gem-text', 'innerHTML': (textMapping[text] ? textMapping[text] : text)});
 
-      var textSpan = document.createElement('span');
-      textSpan.className = 'gem-text';
-      textSpan.innerHTML = (textMapping[text] ? textMapping[text] : text);
-
-      var gemCountInput = document.createElement('input');
-      gemCountInput.type = 'text';
-      gemCountInput.size = 2;
-      gemCountInput.className = 'gem-count';
-      gemCountInput.addEventListener('click', function() {
+      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function () {
          event.cancelBubble = true;
-      });
-      gemCountInput.addEventListener('change', function() {
+      }, 'change': function () {
          if (controller.onchange) controller.onchange(gemCountInput.value);
-      });
+      }});
       controller.get = function() { return gemCountInput.value; };
       controller.set = function(v) {
          gemCountInput.value = v;
@@ -2507,29 +2528,18 @@ var LLGemStockComponent = (function () {
       controller.set(val);
 
       if (subGroup) {
-         var arrowSpan = document.createElement('span');
-         arrowSpan.className = 'tri-down';
-
-         var subGroupDiv = document.createElement('div');
-         subGroupDiv.className = 'list-group-item subtype-padding';
-         subGroupDiv.appendChild(subGroup);
+         var arrowSpan = createElement('span', {'className': 'tri-down'});
+         var subGroupDiv = createElement('div', {'className': 'list-group-item subtype-padding'}, [subGroup]);
          var subGroupComp = new LLComponentBase(subGroupDiv);
 
-         item.className = 'list-group-item';
-         item.addEventListener(
-            'click',
-            function() { toggleSubGroup(arrowSpan, subGroupComp); }
-         );
-         item.appendChild(arrowSpan);
-         item.appendChild(textSpan);
-         item.appendChild(gemCountInput);
          controller.fold = function() { toggleSubGroup(arrowSpan, subGroupComp, 0); };
          controller.unfold = function() { toggleSubGroup(arrowSpan, subGroupComp, 1); };
+         item = createElement('div', {'className': 'list-group-item'}, [arrowSpan, textSpan, gemCountInput], {'click': function () {
+            toggleSubGroup(arrowSpan, subGroupComp); 
+         }});
          return [item, subGroupDiv];
       } else {
-         item.className = 'list-group-item leaf-gem';
-         item.appendChild(textSpan);
-         item.appendChild(gemCountInput);
+         item = createElement('div', {'className': 'list-group-item leaf-gem'}, [textSpan, gemCountInput]);
          return [item];
       }
    }
@@ -2712,7 +2722,7 @@ var LLGemStockComponent = (function () {
    var cls = function (id) {
       var data = new LLSaveData();
       var gui = buildStockGUI('技能宝石仓库', data.gemStock);
-      document.getElementById(id).appendChild(createListGroup(gui.items));
+      LLUnit.getElement(id).appendChild(createListGroup(gui.items));
       this.loadData = function(data) { gui.controller.ALL.deserialize(data); };
       this.saveData = function() { return gui.controller.ALL.serialize(); }
    };
@@ -2742,20 +2752,7 @@ var LLSwapper = (function () {
 })();
 
 var LLSubMemberComponent = (function () {
-   function createElement(tag, options, subElements) {
-      var ret = document.createElement(tag);
-      if (options) {
-         for (var k in options) {
-            ret[k] = options[k];
-         }
-      }
-      if (subElements) {
-         for (var i = 0; i < subElements.length; i++) {
-            ret.appendChild(subElements[i]);
-         }
-      }
-      return ret;
-   }
+   var createElement = LLUnit.createElement;
    function createSimpleInputContainer(text, input) {
       var label = createElement('label', {'className': 'col-xs-4 control-label', 'innerHTML': text});
       var inputContainer = createElement('div', {'className': 'col-xs-8'}, [input]);
@@ -2871,7 +2868,7 @@ var LLSubMemberComponent = (function () {
    //    :LLSaveLoadJsonMixin
    // }
    var cls = function (id) {
-      var element = document.getElementById(id);
+      var element = LLUnit.getElement(id);
       var controllers = [];
       var swapper;
       var me = this;
@@ -2947,6 +2944,89 @@ var LLSubMemberComponent = (function () {
    LLSaveLoadJsonMixin(proto);
    proto.setOnCountChange = function (callback) {
       this.onCountChange = callback;
+   };
+   return cls;
+})();
+
+var LLMicDisplayComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var detailMicData = [
+      ['#话筒数', '#数值', '#UR技能等级和'],
+      ['1', '0', '0'],
+      ['2', '90', '2.25'],
+      ['3', '180', '4.5'],
+      ['4', '270', '6.75'],
+      ['5', '450', '11.25'],
+      ['6', '630', '15.75'],
+      ['7', '930', '23.35'],
+      ['8', '1380', '34.5'],
+      ['9', '2010', '50.25'],
+      ['10', '2880', '72'],
+      ['#稀有度', '#数值', '#等效UR技能等级'],
+      ['UR', '40', '1'],
+      ['SSR', '24', '0.6'],
+      ['SR', '11', '0.275'],
+      ['R或特典', '5', '0.125']
+   ];
+   function createSimpleTable (data) {
+      var rowElements = [];
+      for (var i = 0; i < data.length; i++) {
+         var row = data[i];
+         var cellElements = [];
+         for (var j = 0; j < row.length; j++) {
+            var cell = row[j];
+            var tag = 'td';
+            var text = cell;
+            if (cell[0] == '#') {
+               tag = 'th';
+               text = cell.substr(1);
+            }
+            cellElements.push(createElement(tag, {'innerHTML': text}));
+         }
+         rowElements.push(createElement('tr', undefined, cellElements));
+      }
+      var tbodyElement = createElement('tbody', undefined, rowElements);
+      var tableElement = createElement('table', {'className': 'table-bordered table-condensed'}, [tbodyElement]);
+      return tableElement;
+   }
+   function createMicResult (controller) {
+      var detailContainer = createElement('div');
+      var detailContainerComponent = 0;
+      var detailLink = createElement('a', {'innerHTML': '等效UR等级: ', 'href': 'javascript:;'}, undefined, {'click': function () {
+         if (!detailContainerComponent) {
+            detailContainer.appendChild(createSimpleTable(detailMicData));
+            detailContainerComponent = new LLComponentBase(detailContainer);
+         } else {
+            detailContainerComponent.toggleVisible();
+         }
+      }});
+      detailLink.style.cursor = 'help';
+      var resultMic = createElement('span');
+      var resultURLevel = createElement('span');
+      var resultContainer = createElement('div', undefined, [
+         '卡组援力:',
+         resultMic,
+         ' (',
+         detailLink,
+         resultURLevel,
+         ')',
+         detailContainer
+      ]);
+      controller.set = function (mic, urlevel) {
+         resultMic.innerHTML = mic;
+         resultURLevel.innerHTML = LLUnit.numberToString(urlevel, 3);
+      };
+      return resultContainer;
+   };
+   // LLMicDisplayComponent
+   // {
+   //    'set': function (mic, urlevel),
+   // }
+   var cls = function (id) {
+      var element = LLUnit.getElement(id);
+      var controller = {};
+      LLUnit.getElement(id).appendChild(createMicResult(controller));
+      this.set = controller.set;
    };
    return cls;
 })();
