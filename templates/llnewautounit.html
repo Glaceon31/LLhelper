@@ -35,118 +35,88 @@
    kizuna["SR"] = [250, 500]
    kizuna["SSR"] = [375, 750]
    kizuna["UR"] = [500, 1000]
-   unitgradechr = [[],
-                  ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-                  ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-                  ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-                  ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-                  ["高坂穂乃果","南ことり","小泉花陽"],
-                  ["園田海未","星空凛","東條希"],
-                  ["絢瀬絵里","西木野真姫","矢澤にこ"],
-                  ["高海千歌","渡辺曜","黒澤ルビィ"],
-                  ["松浦果南","黒澤ダイヤ","国木田花丸"],
-                  ["桜内梨子","津島善子","小原鞠莉"]]
-
 
    LLCardData.briefKeys.push('minslot');
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
    var comp_gemstock = 0;
+   var comp_submember = 0;
+   var comp_swapper = 0;
+   var unit_member_controller = [];
+   var comp_resultmic = 0;
+
+   function getUnitMember(pos) {
+      var props = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost'];
+      var ret = {};
+      for (var i = 0; i < props.length; i++) {
+         ret[props[i]] = document.getElementById(props[i] + String(pos)).value;
+      }
+      return ret;
+   }
+   function setUnitMember(member, pos) {
+      var props = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost'];
+      var ret = {};
+      for (var i = 0; i < props.length; i++) {
+         if (member[props[i]] !== undefined) {
+            document.getElementById(props[i] + String(pos)).value = member[props[i]];
+         }
+      }
+      calslot(pos);
+      LLUnit.changeavatarn(pos);
+      if (pos==4) LLUnit.changecenter();
+   }
+   function onStartSwapping() {
+      var pos = this.pos;
+      document.getElementById('pos'+String(pos)).value = '选择';
+      return getUnitMember(pos);
+   }
+   function onFinishSwapping(member) {
+      var pos = this.pos;
+      document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1);
+      var ret = getUnitMember(pos);
+      setUnitMember(member, pos);
+      return ret;
+   }
 
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       // init components
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
+      comp_resultmic = new LLMicDisplayComponent('resultmic');
       init();
+
+      comp_gemstock = new LLGemStockComponent('sisreserves');
+
+      var subMembersOperation = new LLComponentBase('submembersoperation');
+      comp_submember = new LLSubMemberComponent('submembers');
+      comp_swapper = new LLSwapper();
+      comp_submember.setSwapper(comp_swapper);
+      comp_submember.setOnCountChange(function (count) {
+         if (count > 0) subMembersOperation.show();
+         else subMembersOperation.hide();
+      });
+
+      for (var i = 0; i < 9; i++) {
+         unit_member_controller.push({
+            'startSwapping': onStartSwapping,
+            'finishSwapping': onFinishSwapping,
+            'pos': i,
+         });
+      }
 
       // load cookie
       comp_cardselector.loadCookie('llnewautounit_cardselector');
-
-      comp_gemstock = new LLGemStockComponent('sisreserves');
       comp_gemstock.loadJson(localStorage.getItem('llnewautounit_gemstock'));
+      comp_submember.loadJson(localStorage.getItem('llnewautounit_submember'));
 
       // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
-   songweight=new Array();
-   songweightsort=new Array()
-
-   function threetonumber(three){
-      var result = three
-      if (result == '0') {
-         return 0;
-      }
-      if (result[0] == '0') {
-         result = result[1]+result[2]
-      }
-      if (result[0] == '0') {
-         result = result[1]
-      }
-      return result
-   }
-
-   pos = -1
-   function savesubmemberNO(i){
-		sublength=submember.length
-		submember[sublength]={}
-		var savesublist=['cardid','mezame','main','smile','pure','cool','skilllevel','maxcost']
-		for(var j in savesublist)
-			submember[sublength][savesublist[j]]=submember[i][savesublist[j]]
-   }
    function changepos(i){
-      if (pos==-1){
-         document.getElementById('pos'+String(i)).value = '选择' 
-         pos = i
-      }
-      else{
-         document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost']
-		 if(i>8 && pos>8){
-			var swapsubmemberlist = ['cardid','mezame','main','smile','pure','cool','skilllevel','maxcost']
-			savesubmemberNO(i-9)
-			for(var j in swapsubmemberlist){
-				submember[i-9][swapsubmemberlist[j]]=submember[pos-9][swapsubmemberlist[j]]
-				submember[pos-9][swapsubmemberlist[j]]=submember[sublength][swapsubmemberlist[j]]
-			}
-			submember.splice(sublength,1)
-			refreshsubmemberlist()
-		 }
-		 else if(i>8 && pos<=8){
-			savesubmemberNO(i-9)
-			arrageunitmembertosub(pos,i-9)
-			arragesubmembertounit(sublength,pos)
-			submember.splice(sublength,1)
-			if(submember[i-9]['cardid']=="0") submember.splice(i-9,1)
-			refreshsubmemberlist()
-		 }
-		 else if(i<=8 && pos>8){
-			savesubmemberNO(pos-9)
-			arrageunitmembertosub(i,pos-9)
-			arragesubmembertounit(sublength,i)
-			submember.splice(sublength,1)
-			if(submember[pos-9]['cardid']=="0") submember.splice(pos-9,1)
-			refreshsubmemberlist()
-		 }
-		 else {
-         for (j in swaplist){
-            at = swaplist[j]
-            tmp = document.getElementById(at+String(pos)).value
-            document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
-            document.getElementById(at+String(i)).value = tmp
-         } 
-		calslot(pos)
-		calslot(i)
-		LLUnit.changeavatarn(pos)
-         LLUnit.changeavatarn(i)
-		}
-         
-		 if(pos==4 || i==4) LLUnit.changecenter()
-         pos = -1 
-      }
+      comp_swapper.onSwap(unit_member_controller[i]);
    }
 
    function changemapcolor(attr) {
@@ -213,8 +183,8 @@
    	setCookie("mezame"+"unit", mezame, -1)
       comp_cardselector.deleteCookie('llnewautounit_cardselector');
       localStorage.removeItem('llnewautounit_gemstock');
+      localStorage.removeItem('llnewautounit_submember');
    	window.location.href="/llnewautounit"
-	refreshsubmemberlist()
    }
 
    function makeSaveData() {
@@ -225,15 +195,7 @@
             member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
          }
       }
-      var submemberlist=[]
-      var savesubmemberatt=['cardid','mezame','skilllevel','maxcost']
-      for (var i in submember){
-         submemberlist[i]={}
-         for (var j in savesubmemberatt){
-            submemberlist[i][savesubmemberatt[j]]=String(submember[i][savesubmemberatt[j]])
-         }
-      }
-      return new LLSaveData({'version': 102, 'team': member, 'gemstock': comp_gemstock.saveData(), 'submember': submemberlist});
+      return new LLSaveData({'version': 102, 'team': member, 'gemstock': comp_gemstock.saveData(), 'submember': comp_submember.saveData()});
    }
 
    function loadSaveData(data, loadTeam, loadGemStock, loadSubMember) {
@@ -280,15 +242,12 @@
                         cur.cool = (intMezame ? card.cool2 : card.cool);
                         cur[cur.main] += kizuna[card.rarity][intMezame];
                      }
-                     submember[index] = cur;
                   }));
-               } else {
-                  submember[index] = cur;
                }
             })(i);
          }
          LoadingUtil.start(requests).then(function () {
-            refreshsubmemberlist();
+            comp_submember.loadData(loadedSubMember);
          }, defaultHandleFailedRequest);
       }
    }
@@ -375,10 +334,8 @@
       document.getElementById("songsearch").value = ""
       // above codes may select songs/cards/filters according to cookies, so refresh it...
       llsong.onSongFilterChange();
-	document.getElementById("submembersoperation").style.display="none"
    }
-   
-   
+
    function saveToCookie(){
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
@@ -394,9 +351,9 @@
    	setCookie("language"+"unit", language, 1)
       comp_cardselector.saveCookie('llnewautounit_cardselector');
       localStorage.setItem('llnewautounit_gemstock', comp_gemstock.saveJson());
+      localStorage.setItem('llnewautounit_submember', comp_submember.saveJson());
    }
    //////////
-   submember=new Array();
 	function addselectsub(){
 		var cardid=document.getElementById("cardchoice").value;
 		var subunit={}
@@ -410,41 +367,9 @@
 		subunit["mezame"]=parseInt(mezame)
 		subunit["cardid"]=cardid;
 		subunit["maxcost"]=comp_cardselector.cards[cardid].minslot;
-		submember.push(subunit)
-		refreshsubmemberlist()
+        comp_submember.add(subunit);
 	}
    }
-   function refreshsubmemberlist(){
-	//	submemberhtml="<h3>备选队员</h3>"
-		if(submember.length>0) document.getElementById("submembersoperation").style.display="block"
-		else document.getElementById("submembersoperation").style.display="none"
-		submemberhtml="<table border='1' style='text-align:center'>"
-		for(var j=0;j<submember.length;j++){
-			submemberhtml+="<td>"+'<div id='+"sublist"+String(j)+'></div>'+"</td>"
-		}
-		document.getElementById("submembers").innerHTML=submemberhtml
-		for(var j=0;j<submember.length;j++){
-			var subunithtml;
-			subunithtml="<table border='1' style='text-align:center'><td><img src="+getimagepath(submember[j]["cardid"],'avatar',parseInt(submember[j]["mezame"]))+"></td></tr>"
-			subunithtml+="<td>"+'等级'+'<input type="text" id="submemlv'+String(j)+'" size="3" value="'+String(submember[j]["skilllevel"])+'" onkeyup="changesublv('+j+')">'+"</td></tr>"
-			subunithtml+="<td>"+'槽数'+'<input type="text" id="submemslot'+String(j)+'" size="3" value='+String(submember[j]["maxcost"])+' onkeyup="changesubslot('+j+')">'+"</td></tr>"
-			subunithtml+="<td>"+'<input type="button" onclick="Delsubmem('+j+')" value="删除" />'+'<input type="button" id=pos'+String(j+9)+' onclick="changepos('+String(j+9)+')" value="换位" />'+"</td>"
-			document.getElementById("sublist"+String(j)).innerHTML=subunithtml
-		}
-   }
-function Delsubmem(j){
-	//删除submember中某元素
-	var sublisthtml;
-	submember.splice(j,1)
-	refreshsubmemberlist()
-}
-function changesublv(n){
-	submember[n]["skilllevel"]=parseInt(document.getElementById("submemlv"+String(n)).value)
-}
-function changesubslot(n){
-	submember[n]["maxcost"]=parseInt(document.getElementById("submemslot"+String(n)).value)
-}
-   ///////////
    function autoarm(){
       if(document.getElementById('autoarm0').checked){
          document.getElementById("sisreserves").style.display = '';
@@ -453,216 +378,24 @@ function changesubslot(n){
          document.getElementById("sisreserves").style.display = 'none';
       }
    }
-   ////////
 
-	function fillunit(){
-		if(submember.length<8){
-			for(var i=0;i<submember.length;i++){
-				if(i<4) arragesubmembertounit(i,i)
-				else arragesubmembertounit(i,i+1)
-			}
-		}
-		else for(var i=0;i<8;i++){
-			if(i<4) arragesubmembertounit(i,i)
-			else arragesubmembertounit(i,i+1)
-		}
-		submember.splice(0,8)
-		refreshsubmemberlist()
-	}
-	function getallmembers(){
-		var subcopyListstr=["main","cardid"]
-		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
-		for(var i=0;i<9;i++){
-			if(i==4) continue;
-			var subunit={}
-			var cardid = threetonumber(document.getElementById('cardid'+String(i)).value)
-			if ((cardid == 0) || (cardid == "") || (cardid == "0"))
-				continue;
-			subunit["main"]=document.getElementById("main"+String(i)).value
-			subunit["cardid"]=document.getElementById("cardid"+String(i)).value
-			for(var j in subcopyList)
-				subunit[subcopyList[j]]=parseInt(document.getElementById(subcopyList[j]+String(i)).value)
-			submember.push(subunit)
-		}
-		{
-			var subunit={}
-			var cardid = threetonumber(document.getElementById('cardid4').value)
-			subunit["main"]=document.getElementById("main4").value
-			subunit["cardid"]=document.getElementById("cardid4").value
-			for(var j in subcopyList)
-				subunit[subcopyList[j]]=parseInt(document.getElementById(subcopyList[j]+String(4)).value)
-			submember.push(subunit)
-		}
-	}
-   //计算所有加成，和最高属性
-   function setsubmemAddition(){
-      var mainp=document.getElementById("map").value
-      var mapsong=llsong.getSelectedSong();
-      for (var memi in submember) {
-         groupbonus = samegroup(mapsong,comp_cardselector.cards[submember[memi]["cardid"]].jpname)
-         colorbonus = (mainp == submember[memi]['main'])
-         submember[memi]["addition"]=1.21
-         if (!groupbonus && !colorbonus)
-            submember[memi]["addition"]=1
-         else if (!groupbonus || !colorbonus)
-            submember[memi]["addition"]=1.1
+   function fillunit(){
+      if (comp_submember.empty()) return;
+      var i;
+      var emptypos = [];
+      for (i = 0; i < 9; i++) {
+         if (i == 4) continue;
+         var member = getUnitMember(i);
+         if ((!member.cardid) || member.cardid == '0') emptypos.push(i);
       }
+      if (emptypos.length == 0) return;
+      var submembers = comp_submember.saveData();
+      for (i = 0; i < emptypos.length && i < submembers.length; i++) {
+         setUnitMember(submembers[i], emptypos[i]);
+      }
+      comp_submember.remove(0, i);
    }
-	function getMaxeight(){
-      var mainp=document.getElementById("map").value
-		unitmembers=new Array()
-		subunitmembers=new Array()
-		for(var k=0;k<submember.length-1;k++){
-			subunitmembers.push(k);
-		}
-		for(var i=0;i<8;i++){
-			var maxmainp=0;
-			var maxselect=0
-			for(var j=0;j<subunitmembers.length;j++){
-				if(maxmainp<submember[subunitmembers[j]][mainp]){
-					maxmainp=submember[subunitmembers[j]][mainp]
-					maxselect=j
-				}
-			}
-			unitmembers[i]=subunitmembers[maxselect];
-			subunitmembers.splice(maxselect,1);
-		}
-	}
-	
-	//先排序权重，随歌曲而动,从大到小
-	
-	function orderposbyweight(){
-		weightsum=0;
-		var songweight0=new Array()
-		for(var i=0;i<9;i++){
-			songweight[i]=parseFloat(document.getElementById("weight"+String(i)).value)
-			songweight0[i]=songweight[i]
-			weightsum+=songweight[i]
-		}
-		
-		for(var i=0;i<8;i++){
-			mweight=0
-			for(var j=0;j<9;j++){
-				if(j==4) continue
-				if(mweight<songweight0[j]){
-					mweight=songweight0[j]
-					songweightsort[i]=j
-				}
-			}
-			songweight0[songweightsort[i]]=0
-		}
-	}
-	
-	//再排序加成，随计算而动，从大到小
-	function ordermembyaddition(){
-		unitorder=new Array();
-		var n=0;
-		for(var i=0;i<8;i++){
-			if(submember[unitmembers[i]]["addition"]>1.15) {
-				unitorder[n]=unitmembers[i]
-				n++
-			}
-		}
-		for(var i=0;i<8;i++){
-			if(submember[unitmembers[i]]["addition"]>1.05 && submember[unitmembers[i]]["addition"]<1.15) {
-				unitorder[n]=unitmembers[i]
-				n++
-			}
-		}
-		for(var i=0;i<8;i++){
-			if(submember[unitmembers[i]]["addition"]<1.05) {
-				unitorder[n]=unitmembers[i]
-				n++
-			}
-		}
-	}
-	//安排位置，随计算而动
-	function arrageunitmembertosub(unitNO,subNO){
-		var subcopyListstr=["main","cardid"]
-		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
-		for(var j in subcopyList){
-			submember[subNO][subcopyList[j]]=parseInt(document.getElementById(subcopyList[j]+String(unitNO)).value)
-		}
-		submember[subNO]["main"]=document.getElementById("main"+String(unitNO)).value
-		submember[subNO]["cardid"]=document.getElementById("cardid"+String(unitNO)).value
-		refreshsubmemberlist()
-	}
-	function arragesubmembertounit(subNO,unitNO){
-		var subcopyListstr=["main","cardid"]
-		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
-		for(var j in subcopyList){
-			document.getElementById(subcopyList[j]+String(unitNO)).value=String(submember[subNO][subcopyList[j]])
-			//var testq=document.getElementById(subcopyList[j]+String(posi)).value
-		}
-		document.getElementById("main"+String(unitNO)).value=submember[subNO]["main"]
-		document.getElementById("cardid"+String(unitNO)).value=submember[subNO]["cardid"]
-		LLUnit.changeavatarn(unitNO)
-	}
-	
-	function arrangepos(){
-		additionrate=0
-		var subcopyListstr=["main","cardid"]
-		var subcopyList=["smile","pure","cool","skilllevel","mezame","maxcost"]
-		for(var i=0;i<8;i++){
-			var posi=songweightsort[i]
-			var memi=unitorder[i]
-			for(var j in subcopyList){
-				document.getElementById(subcopyList[j]+String(posi)).value=String(submember[memi][subcopyList[j]])
-				var testq=document.getElementById(subcopyList[j]+String(posi)).value
-			}
-			document.getElementById("main"+String(posi)).value=submember[memi]["main"]
-			document.getElementById("cardid"+String(posi)).value=submember[memi]["cardid"]
-			LLUnit.changeavatarn(posi)
-			additionrate+=(submember[memi]["addition"]*songweight[posi]/1.21)
-			//refreshsubmemberlist();/////=========delete
-		}
-		additionrate+=submember[submember.length-1]["addition"]*songweight[4]/1.21
-		additionrate/=weightsum
-	}
-	function swapmember(i,j){
-		k=subunitmembers[i]
-		subunitmembers[i]=unitmembers[j]
-		unitmembers[j]=k
-	}
-	var gettotalstrength;
-	function autounit(cards){
-		var curtotalstrength=0;
-		orderposbyweight()
-		getallmembers()
-		setsubmemAddition()
-		getMaxeight()
-		//
-		ordermembyaddition()
-		arrangepos()
-		refreshsubmemberlist();/////////////////////===del
-		calculate(cards, false)
-		curtotalstrength=gettotalstrength;
-		///////=====
-		for(var i=0;i<subunitmembers.length;i++){
-			var maxaddition=0;
-			var replaceselect=-1;
-			for(var j=0;j<8;j++){
-				swapmember(i,j)
-				ordermembyaddition()
-				arrangepos()
-				calculate(cards, false)
-				if(maxaddition<(gettotalstrength-curtotalstrength)){
-					maxaddition=(gettotalstrength-curtotalstrength)
-					replaceselect=j
-				}
-				swapmember(i,j)
-			}
-			if(replaceselect!=(-1)){
-				swapmember(i,replaceselect)
-				curtotalstrength+=maxaddition
-			}
-		}
-		///==========
-		ordermembyaddition()
-		arrangepos()
-		calculate(cards, false)
-	}
-   ////////*******************
+
    function showErrorResult(text) {
       document.getElementById('errorresult').innerHTML = text;
       document.getElementById('errorresult').style.display = '';
@@ -696,52 +429,21 @@ function changesubslot(n){
             requests.push(LLCardData.getDetailedData(cardid));
          }
       }
-      for (var i = 0; i < submember.length; i++) {
-         var cardid = submember[i].cardid;
+      var subMembers = comp_submember.saveData();
+      for (var i = 0; i < subMembers.length; i++) {
+         var cardid = subMembers[i].cardid;
          if (cardid) {
             requests.push(LLCardData.getDetailedData(cardid));
          }
       }
       LoadingUtil.start(requests, LoadingUtil.cardDetailMerger).then(function (cards) {
-         if(document.getElementById('autoarm0').checked){
-		autounit(cards)
-		submember.splice(submember.length-1,1)
-		var premax=submember.length
-		for(var i=0;i<8;i++){
-			var maxmemnum=0
-			for(var j in unitmembers){
-				if(maxmemnum<unitmembers[j] && unitmembers[j]<premax)
-					maxmemnum=unitmembers[j]
-			}
-			submember.splice(maxmemnum,1)
-			premax=maxmemnum
-		}
-		for(var i=0;i<9;i++)
-			LLUnit.changeavatarn(i)
-		refreshsubmemberlist()
-         }
-         /////////////////////
          calculate(cards, true);
          document.getElementById("result").scrollIntoView()
       }, defaultHandleFailedRequest);
       return true;
    }
 
-   function samegroup(song, jpname){
-      if (song['muse'] == 1)
-         for (i in unitgradechr[4])
-            if (jpname == unitgradechr[4][i])
-               return true
-      if (song['aqours'] == 1)
-         for (i in unitgradechr[5])
-            if (jpname == unitgradechr[5][i])
-               return true
-      return false
-   }
-
    function calculate(cards, calc_distribution) {
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet', 'maxcost'];
-      var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
       var sel_float = [];
@@ -765,12 +467,7 @@ function changesubslot(n){
       var mainatt = mapcenter['map']
 
       for (var i = 0; i < 9; i++) {
-         for (var j = 0; j < int_element.length; j++) {
-            member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
-         }
-         for (var j = 0; j < float_element.length; j++) {
-            member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
-         }
+         member[i] = getUnitMember(i);
          member[i]['card'] = cards[member[i]['cardid']];
          var llsisgems = [];
          llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
@@ -790,7 +487,7 @@ function changesubslot(n){
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
-         weights.push(member[i].weight);
+         weights.push(parseFloat(document.getElementById('weight'+i).value));
       }
 
       var llteam = new LLTeam(llmembers);
@@ -809,10 +506,18 @@ function changesubslot(n){
          songunit = 5;
       }
       if (document.getElementById('autoarm0').checked){
-         // autoarm
+         // autounit
          var saveData = makeSaveData();
-         llteam.autoArmGem(mainatt, songunit, mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup, friendcskill, weights, saveData.gemStock);
+         var subMembers = [];
+         for (var i = 0; i < saveData.subMember.length; i++) {
+            var member = saveData.subMember[i];
+            member.card = cards[member.cardid];
+            member.gems = [];
+            subMembers.push(new LLMember(member));
+         }
+         var resultSubMembers = llteam.autoUnit(mainatt, songunit, mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup, friendcskill, weights, saveData.gemStock, subMembers);
          for (var i = 0; i < 9; i++) {
+            setUnitMember(llteam.members[i].raw, i);
             var curGems = llteam.members[i].gems;
             var sumSADD = 0;
             var sumSMUL = 0;
@@ -846,6 +551,7 @@ function changesubslot(n){
             document.getElementById("gemnonet"+String(i)).value=String(sumNONET);
             calslot(i);
          }
+         comp_submember.loadData(resultSubMembers.map(x => x.raw));
       }
       llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
       llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
@@ -883,7 +589,6 @@ function changesubslot(n){
          document.getElementById('simresult100').innerHTML = llteam.minScore;
          document.getElementById('distributionresult').style.display = '';
       } else {
-         gettotalstrength = llteam.averageScore;
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
          document.getElementById('distributionresult').style.display = 'none';
          hideErrorResult();
@@ -919,10 +624,7 @@ function changesubslot(n){
       document.getElementById('cardstrength'+String(minCardStrengthIndex)).style.color = 'red';
 
       llteam.calculateMic();
-      var micDisplayValue = llteam.micNumber;
-      var micDisplayString = micDisplayValue % 1 === 0.0 ? micDisplayValue.toLocaleString() : Math.floor(micDisplayValue).toLocaleString() + ' 或 ' + (Math.floor(micDisplayValue) + 1)
-
-      document.getElementById('resultmic').innerHTML = micDisplayString + ' (' + (llteam.micPoint / 100).toLocaleString() + (micDisplayValue % 1 === 0.0 ? '' : ', 该数值对应的援力暂时未知, 欢迎反馈') + ')';
+      comp_resultmic.set(llteam.micNumber, llteam.equivalentURLevel);
 
       document.getElementById('result').style.display = ""
       document.getElementById("result").scrollIntoView()
@@ -1014,6 +716,7 @@ function changesubslot(n){
 <div id="submembers">
 </div>
 
+<div style="clear:both"></div>
 <h3>队伍属性</h3>
 <div class="col-xs-12 col-md-9" style="overflow-x:auto">
 <table border='1'>
@@ -1354,7 +1057,7 @@ function changesubslot(n){
 </tr>
 </table>
 卡组强度:<nospan id="resultstrength"></nospan><br>
-卡组援力:<nospan id="resultmic"></nospan><br>
+<div id="resultmic"></div>
 期望得分:<nospan id="averagescore"></nospan><br>
 
 期望回复:<nospan id="averageheal"></nospan><br>

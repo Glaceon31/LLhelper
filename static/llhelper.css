@@ -50,4 +50,27 @@
 .subtype-padding .list-group {
    margin-bottom: 0px;
 }
-
+.submember-container {
+   padding: 2px;
+   margin-bottom: 5px;
+}
+.submember-container .form-group {
+   margin: 0px;
+}
+.submember-container .control-label {
+   padding-left: 0px;
+   padding-right: 0px;
+}
+.submember-container .btn {
+   margin-top: 0px;
+}
+.submember-container input.form-control {
+   padding-left: 2px;
+   padding-right: 2px;
+}
+.submember-container .form-horizontal {
+   width: 50%;
+}
+.submember-container table {
+   width: 100%;
+}

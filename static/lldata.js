@@ -9,6 +9,8 @@
  *   LLMember
  *   LLTeam
  *   LLSaveData
+ *   LLSaveLoadJsonMixin
+ *   LLSwapper
  *
  * components:
  *   LLComponentBase
@@ -18,8 +20,10 @@
  *     +- LLSkillContainer
  *     +- LLCardSelector
  *   LLGemStockComponent
+ *   LLSubMemberComponent
+ *   LLMicDisplayComponent
  *
- * v0.7.0
+ * v0.9.0
  * By ben1222
  */
 
@@ -214,12 +218,8 @@ var LLComponentBase = (function () {
       this.exist = false;
       this.visible = false;
       if (id) {
-         if (typeof(id) == 'string') {
-            this.id = id;
-            this.element = document.getElementById(id);
-         } else {
-            this.element = id;
-         }
+         if (typeof(id) == 'string') this.id = id;
+         this.element = LLUnit.getElement(id);
          if (this.element) {
             this.exist = true;
             if (this.element.style.display != 'none') {
@@ -502,11 +502,17 @@ var LLUnit = {
       }
    },
 
-   healNumberToString: function (n) {
-      var ret = n.toFixed(2);
-      while (ret[ret.length-1] == '0') ret = ret.substring(0, ret.length-1);
-      if (ret[ret.length-1] == '.') ret = ret.substring(0, ret.length-1);
+   numberToString: function (n, precision) {
+      var ret = n.toFixed(precision);
+      var pos = ret.length - 1;
+      while (ret[pos] == '0') pos--;
+      if (ret[pos] == '.') pos--;
+      if (pos != ret.length - 1) ret = ret.substring(0, pos+1);
       return ret;
+   },
+
+   healNumberToString: function (n) {
+      return LLUnit.numberToString(n, 2);
    },
 
    cardtoskilltype: function(c){
@@ -580,7 +586,7 @@ var LLUnit = {
    },
 
    // getimagepath require twintailosu.js
-   changeavatar: function (elementid, cardid, mezame) {
+   changeavatare: function (element, cardid, mezame) {
       var path;
       if ((!cardid) || cardid == "0")
          path = '/static/null.png'
@@ -588,12 +594,15 @@ var LLUnit = {
          path = getimagepath(cardid,'avatar',0)
       else
          path = getimagepath(cardid,'avatar',1)
-      var element = document.getElementById(elementid);
       if (element.src != path) {
          // avoid showing last image before new image is loaded
          element.src = '';
       }
       element.src = path;
+   },
+
+   changeavatar: function (elementid, cardid, mezame) {
+      LLUnit.changeavatare(document.getElementById(elementid), cardid, mezame);
    },
 
    changeavatarn: function (n) {
@@ -719,6 +728,39 @@ var LLUnit = {
    isStrengthSupported: function (card) {
       if (card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
       return true;
+   },
+
+   createElement: function (tag, options, subElements, eventHandlers) {
+      var ret = document.createElement(tag);
+      if (options) {
+         for (var k in options) {
+            ret[k] = options[k];
+         }
+      }
+      if (subElements) {
+         for (var i = 0; i < subElements.length; i++) {
+            var curSubElement = subElements[i];
+            if (typeof(curSubElement) == 'string') {
+               ret.appendChild(document.createTextNode(curSubElement));
+            } else {
+               ret.appendChild(curSubElement);
+            }
+         }
+      }
+      if (eventHandlers) {
+         for (var e in eventHandlers) {
+            ret.addEventListener(e, eventHandlers[e]);
+         }
+      }
+      return ret;
+   },
+
+   getElement: function (id) {
+      if (typeof(id) == 'string') {
+         return document.getElementById(id);
+      } else {
+         return id;
+      }
    }
 };
 
@@ -1337,7 +1379,7 @@ var LLSkill = (function () {
 
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
-   var MIC_RATIO = {'UR': 100, 'SSR': 59, 'SR': 29, 'R': 13, 'N': 0};
+   var MIC_RATIO = {'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0};
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    var cls = function (v) {
       v = v || {};
@@ -1362,6 +1404,7 @@ var LLMember = (function() {
       } else {
          this.gems = v.gems;
       }
+      this.raw = v;
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    var proto = cls.prototype;
@@ -1370,6 +1413,9 @@ var LLMember = (function() {
          if (this.gems[i].isSkillGem()) return 1;
       }
       return 0;
+   };
+   proto.empty = function () {
+      return (!this.cardid) || (this.cardid == '0');
    };
    proto.calcDisplayAttr = function (mapcolor) {
       //显示属性=(基本属性+绊)*单体百分比宝石加成+数值宝石加成
@@ -1442,6 +1488,12 @@ var LLMember = (function() {
       this.cumulativeAttrStrength = cumulativeAttrStrength;
       return this.finalAttr[mapcolor];
    };
+   proto.getAttrBuffFactor = function (mapcolor, mapunit) {
+      var buff = 1;
+      if (this.card.attribute == mapcolor) buff *= 1.1;
+      if (isInUnitGroup(mapunit, this.card.jpname)) buff *= 1.1;
+      return buff;
+   };
    proto.getAttrDebuffFactor = function (mapcolor, mapunit, weight, totalweight) {
       var debuff = 1;
       if (this.card.attribute != mapcolor) debuff *= 1.1;
@@ -1492,16 +1544,16 @@ var LLTeam = (function() {
    var MAX_SCORE = 10000000;
    var MAX_SCORE_TEXT = '1000w+';
    var MIC_BOUNDARIES = [
-      [0, 187],      // 1
-      [234, 455],    // 2
-      [463, 681],    // 3
-      [682, 1122],   // 4
-      [1129, 1563],  // 5
-      [1605, 2313],  // 6
-      [2324, 3440],  // 7
-      [3452, 5000],  // 8
-      [5005, 7100],  // 9
-      [7200, 7200]   // 10
+      0,     // 1
+      90,    // 2
+      180,   // 3
+      270,   // 4
+      450,   // 5
+      630,   // 6
+      930,   // 7
+      1380,  // 8
+      2010,  // 9
+      2880   // 10
    ];
    var armCombinationList = [];
    var getArmCombinationList = function (gems) {
@@ -1795,17 +1847,14 @@ var LLTeam = (function() {
       for (i = 0; i < 9; i++) {
          micPoint += this.members[i].getMicPoint();
       }
-      for (i = 0; i < 10; i++) {
-         if (micPoint >= MIC_BOUNDARIES[i][0] && micPoint <= MIC_BOUNDARIES[i][1]) {
+      for (i = 9; i >= 0; i--) {
+         if (micPoint >= MIC_BOUNDARIES[i]) {
             this.micNumber = i+1;
-            break;
-         } else if (micPoint < MIC_BOUNDARIES[i][0]) {
-            this.micNumber = i+0.5;
             break;
          }
       }
-      if (i == 10) this.micNumber = 10.5;
-      this.micPoint = micPoint;
+      if (i < 0) this.micNumber = 0;
+      this.equivalentURLevel = micPoint/40;
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    proto.autoArmGem = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock) {
@@ -1969,7 +2018,7 @@ var LLTeam = (function() {
       }
       var dp = [{}];
       dp[0][curState] = {'strength': 0, 'prev': '', 'comb': []};
-      var maxStrengthBuff = 0;
+      var maxStrengthBuff = -1;
       var addDPState = function (curDP, memberIndex, state, strength, prev, comb) {
          var nextState = state.split('');
          for (var i = 0; i < nextState.length; i++) {
@@ -2031,7 +2080,7 @@ var LLTeam = (function() {
       }
       // 找到最优组合并沿着路径获取每个成员的最优宝石分配
       // dp[9]里应该只有一个状态(全是'-')
-      maxStrengthBuff = 0;
+      maxStrengthBuff = -1;
       var maxStrengthState;
       for (var i in dp[9]) {
          if (dp[9][i].strength > maxStrengthBuff) {
@@ -2050,6 +2099,115 @@ var LLTeam = (function() {
          this.members[i].gems = curGems;
          maxStrengthState = curDPState.prev;
       }
+   };
+   proto.autoUnit = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock, submembers) {
+      var me = this;
+      //排序权重, 不包括主唱位, 从大到小
+      var totalWeight = getTotalWeight(weights);
+      var visitedWeight = [0, 0, 0, 0, 1, 0, 0, 0, 0];
+      var weightSort = [];
+      var i, j;
+      for (i = 0; i < 8; i++) {
+         var maxWeight = 0;
+         var maxWeightPos = -1;
+         for (j = 0; j < 9; j++) {
+            if (visitedWeight[j]) continue;
+            if (maxWeight < weights[j]) {
+               maxWeight = weights[j];
+               maxWeightPos = j;
+            }
+         }
+         weightSort.push(maxWeightPos);
+         visitedWeight[maxWeightPos] = 1;
+      }
+      //把除了主唱的所有成员放到一起
+      var allMembers = submembers.concat();
+      for (i = 0; i < this.members.length; i++) {
+         if (i == 4) continue;
+         var curMember = this.members[i];
+         if (curMember.empty()) continue;
+         allMembers.push(curMember);
+      }
+      //计算歌曲颜色和组合对各个成员的加成, 方便把异色卡放在权重小的位置
+      var membersRef = [];
+      for (i = 0; i < allMembers.length; i++) {
+         membersRef.push({
+            'index': i,
+            'buff': allMembers[i].getAttrBuffFactor(mapcolor, mapunit)
+         });
+      }
+      //定一个初始状态, 这里用的是取属性P最高的8个, 也许可以直接用当前的队伍?
+      membersRef.sort(function(a, b) {
+         var lhs = allMembers[a.index][mapcolor];
+         var rhs = allMembers[b.index][mapcolor];
+         if (lhs < rhs) return 1;
+         else if (lhs > rhs) return -1;
+         else return 0;
+      });
+      var curTeam = membersRef.splice(0, 8);
+      //对每个备选成员, 每次尝试替换队伍中8个成员的一个并自动配饰
+      //如果最大能得到的期望得分比现有队伍高, 则换上这个成员, 并在这基础上继续上述步骤
+      var sortByBuffDesc = function(a, b) {
+         var lhs = a.buff;
+         var rhs = b.buff;
+         if (lhs < rhs) return 1;
+         else if (lhs > rhs) return -1;
+         else return 0;
+      };
+      var getCurTeamBestStrength = function() {
+         var curTeamSorted = curTeam.concat();
+         curTeamSorted.sort(sortByBuffDesc);
+         for (var sortIndex = 0; sortIndex < 8; sortIndex++) {
+            me.members[weightSort[sortIndex]] = allMembers[curTeamSorted[sortIndex].index];
+         }
+         me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
+         me.calculateAttributeStrength(mapcolor, mapunit, friendcskill, weights);
+         me.calculateSkillStrength(maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup);
+         return me.averageScore;
+      };
+      var debugTeam = function() {
+         var ret = '{';
+         for (var i = 0; i < 8; i++) {
+            var member = allMembers[curTeam[i].index];
+            ret += member.cardid + '(' + member.skilllevel + ',' + member.maxcost + '),';
+         }
+         return ret + '}';
+      };
+      var maxAverageScore = getCurTeamBestStrength();
+      for (i = 0; i < membersRef.length; i++) {
+         var replacePos = -1;
+         for (j = 0; j < 8; j++) {
+            var tmp = curTeam[j];
+            curTeam[j] = membersRef[i];
+            var curScore = getCurTeamBestStrength();
+            if (curScore > maxAverageScore) {
+               maxAverageScore = curScore;
+               replacePos = j;
+            }
+            curTeam[j] = tmp;
+         }
+         if (replacePos >= 0) {
+            var tmp = curTeam[replacePos];
+            curTeam[replacePos] = membersRef[i];
+            membersRef[i] = tmp;
+            console.debug(debugTeam() + maxAverageScore);
+         }
+      }
+      //最后把得分最高的队伍组回来, 重新计算一次配饰作为最终结果
+      //把剩余的成员返回出去
+      curTeam.sort(sortByBuffDesc);
+      for (i = 0; i < 8; i++) {
+         me.members[weightSort[i]] = allMembers[curTeam[i].index];
+         allMembers[curTeam[i].index] = undefined;
+      }
+      me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
+      var resultSubMembers = [];
+      for (i = 0; i < allMembers.length; i++) {
+         if (allMembers[i] !== undefined) {
+            resultSubMembers.push(allMembers[i]);
+         }
+      }
+      return resultSubMembers;
    };
    return cls;
 })();
@@ -2144,6 +2302,19 @@ var LLSaveData = (function () {
    };
    var getSubMemberV10 = function (data) {
       return data;
+   };
+   var SUB_MEMBER_ATTRS = ['cardid', 'mezame', 'skilllevel', 'maxcost'];
+   var shrinkSubMembers = function (submembers) {
+      var ret = [];
+      for (var i = 0; i < submembers.length; i++) {
+         var shrinked = {};
+         var curSubmember = submembers[i];
+         for (var j = 0; j < SUB_MEMBER_ATTRS.length; j++) {
+            shrinked[SUB_MEMBER_ATTRS[j]] = curSubmember[SUB_MEMBER_ATTRS[j]];
+         }
+         ret.push(shrinked);
+      }
+      return ret;
    };
    var recursiveMakeGemStockDataImpl = function (meta, current_sub, subtypes, callback) {
       if (!current_sub) {
@@ -2270,7 +2441,7 @@ var LLSaveData = (function () {
          'version': this.rawVersion,
          'team': (excludeTeam ? [] : this.teamMember),
          'gemstock': (excludeGemStock ? {} : this.gemStock),
-         'submember': (excludeSubMember ? [] : this.subMember)
+         'submember': (excludeSubMember ? [] : shrinkSubMembers(this.subMember))
       });
    };
    proto.mergeV10 = function (v10data) {
@@ -2279,7 +2450,29 @@ var LLSaveData = (function () {
    return cls;
 })();
 
+var LLSaveLoadJsonMixin = (function () {
+   var loadJson = function(data) {
+      if (typeof(data) != 'string') return;
+      if (data == '') return;
+      try {
+         var json = JSON.parse(data);
+         this.loadData(json);
+      } catch (e) {
+         console.error('Failed to load json:');
+         console.error(data);
+      }
+   };
+   var saveJson = function() {
+      return JSON.stringify(this.saveData());
+   }
+   return function(obj) {
+      obj.loadJson = loadJson;
+      obj.saveJson = saveJson;
+   };
+})();
+
 var LLGemStockComponent = (function () {
+   var createElement = LLUnit.createElement;
    var textMapping = {
       'SADD_200': '吻 (C1/200)',
       'SADD_450': '香水 (C2/450)',
@@ -2312,30 +2505,17 @@ var LLGemStockComponent = (function () {
       arrowSpan.className = (subGroupComp.visible ? 'tri-down' : 'tri-right');
    }
    function createListGroup(subItems) {
-      var group = document.createElement('div');
-      group.className = 'list-group';
-      for (var i in subItems) {
-         group.appendChild(subItems[i]);
-      }
-      return group;
+      return createElement('div', {'className': 'list-group'}, subItems);
    }
    function createListGroupItem(text, val, controller, subGroup) {
-      var item = document.createElement('div');
+      var item;
+      var textSpan = createElement('span', {'className': 'gem-text', 'innerHTML': (textMapping[text] ? textMapping[text] : text)});
 
-      var textSpan = document.createElement('span');
-      textSpan.className = 'gem-text';
-      textSpan.innerHTML = (textMapping[text] ? textMapping[text] : text);
-
-      var gemCountInput = document.createElement('input');
-      gemCountInput.type = 'text';
-      gemCountInput.size = 2;
-      gemCountInput.className = 'gem-count';
-      gemCountInput.addEventListener('click', function() {
+      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function () {
          event.cancelBubble = true;
-      });
-      gemCountInput.addEventListener('change', function() {
+      }, 'change': function () {
          if (controller.onchange) controller.onchange(gemCountInput.value);
-      });
+      }});
       controller.get = function() { return gemCountInput.value; };
       controller.set = function(v) {
          gemCountInput.value = v;
@@ -2348,29 +2528,18 @@ var LLGemStockComponent = (function () {
       controller.set(val);
 
       if (subGroup) {
-         var arrowSpan = document.createElement('span');
-         arrowSpan.className = 'tri-down';
-
-         var subGroupDiv = document.createElement('div');
-         subGroupDiv.className = 'list-group-item subtype-padding';
-         subGroupDiv.appendChild(subGroup);
+         var arrowSpan = createElement('span', {'className': 'tri-down'});
+         var subGroupDiv = createElement('div', {'className': 'list-group-item subtype-padding'}, [subGroup]);
          var subGroupComp = new LLComponentBase(subGroupDiv);
 
-         item.className = 'list-group-item';
-         item.addEventListener(
-            'click',
-            function() { toggleSubGroup(arrowSpan, subGroupComp); }
-         );
-         item.appendChild(arrowSpan);
-         item.appendChild(textSpan);
-         item.appendChild(gemCountInput);
          controller.fold = function() { toggleSubGroup(arrowSpan, subGroupComp, 0); };
          controller.unfold = function() { toggleSubGroup(arrowSpan, subGroupComp, 1); };
+         item = createElement('div', {'className': 'list-group-item'}, [arrowSpan, textSpan, gemCountInput], {'click': function () {
+            toggleSubGroup(arrowSpan, subGroupComp); 
+         }});
          return [item, subGroupDiv];
       } else {
-         item.className = 'list-group-item leaf-gem';
-         item.appendChild(textSpan);
-         item.appendChild(gemCountInput);
+         item = createElement('div', {'className': 'list-group-item leaf-gem'}, [textSpan, gemCountInput]);
          return [item];
       }
    }
@@ -2543,28 +2712,322 @@ var LLGemStockComponent = (function () {
    //    'min': min,
    //    'max': max,
    // }
+   //
+   // component controller:
+   // {
+   //    'loadData': function (data),
+   //    'saveData': function (),
+   //    :LLSaveLoadJsonMixin
+   // }
    var cls = function (id) {
       var data = new LLSaveData();
       var gui = buildStockGUI('技能宝石仓库', data.gemStock);
-      document.getElementById(id).appendChild(createListGroup(gui.items));
+      LLUnit.getElement(id).appendChild(createListGroup(gui.items));
       this.loadData = function(data) { gui.controller.ALL.deserialize(data); };
       this.saveData = function() { return gui.controller.ALL.serialize(); }
    };
    var proto = cls.prototype;
-   proto.loadJson = function(data) {
-      if (typeof(data) != 'string') return;
-      if (data == '') return;
-      try {
-         var json = JSON.parse(data);
-         this.loadData(json);
-      } catch (e) {
-         console.error('Failed to load json:');
-         console.error(data);
+   LLSaveLoadJsonMixin(proto);
+   return cls;
+})();
+
+var LLSwapper = (function () {
+   var cls = function () {
+      this.controller = undefined;
+      this.data = undefined;
+   };
+   var proto = cls.prototype;
+   proto.onSwap = function (controller) {
+      if (this.controller) {
+         var tmp = controller.finishSwapping(this.data);
+         this.controller.finishSwapping(tmp);
+         this.controller = undefined;
+         this.data = undefined;
+      } else {
+         this.controller = controller;
+         this.data = controller.startSwapping();
       }
    };
-   proto.saveJson = function() {
-      return JSON.stringify(this.saveData());
+   return cls;
+})();
+
+var LLSubMemberComponent = (function () {
+   var createElement = LLUnit.createElement;
+   function createSimpleInputContainer(text, input) {
+      var label = createElement('label', {'className': 'col-xs-4 control-label', 'innerHTML': text});
+      var inputContainer = createElement('div', {'className': 'col-xs-8'}, [input]);
+      var group = createElement('div', {'className': 'form-group'}, [label, inputContainer]);
+      return group;
    }
+   // controller:
+   // {
+   //    'onDelete': undefined function(),
+   //    'onSwap': undefined function(),
+   //    'getMember': function() return member,
+   //    'setMember': function(m),
+   //    'startSwapping': function() return member,
+   //    'finishSwapping': function(v) return member,
+   // }
+   function createMemberContainer(member, controller) {
+      var localMember;
+      var bSwapping = false;
+      var bDeleting = false;
+      var image = createElement('img');
+      var levelInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 1, 'max': 8, 'value': 1});
+      levelInput.addEventListener('change', function() {
+         localMember.skilllevel = parseInt(levelInput.value);
+      });
+      var slotInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 0, 'max': 8, 'value': 0});
+      slotInput.addEventListener('change', function() {
+         localMember.maxcost = parseInt(slotInput.value);
+      });
+      var deleteButton = createElement('button', {'className': 'btn btn-default btn-block', 'type': 'button', 'innerHTML': '删除'});
+      var swapButton = createElement('button', {'className': 'btn btn-default btn-block', 'type': 'button', 'innerHTML': '换位'});
+      var unDelete = function() {
+         deleteButton.innerHTML = '删除';
+         deleteButton.className = 'btn btn-default btn-block';
+         swapButton.innerHTML = '换位';
+         bDeleting = false;
+      };
+      deleteButton.addEventListener('click', function() {
+         if (bDeleting) {
+            unDelete();
+            if (controller.onDelete) controller.onDelete();
+         } else {
+            deleteButton.innerHTML = '确认';
+            deleteButton.className = 'btn btn-danger btn-block';
+            swapButton.innerHTML = '取消';
+            bDeleting = true;
+         }
+      });
+      swapButton.addEventListener('click', function() {
+         if (bDeleting) {
+            unDelete();
+         } else {
+            if (controller.onSwap) controller.onSwap();
+         }
+      });
+      controller.getMember = function() { return localMember; };
+      controller.setMember = function(m) {
+         if (localMember === m) return;
+         localMember = m;
+         if ((!localMember) || (!localMember.cardid) || (localMember.cardid == '0')) {
+            if (controller.onDelete) {
+               controller.onDelete();
+               return;
+            }
+         }
+         levelInput.value = m.skilllevel;
+         slotInput.value = m.maxcost;
+         LLUnit.changeavatare(image, m.cardid, parseInt(m.mezame));
+      };
+      controller.startSwapping = function() {
+         swapButton.innerHTML = '选择';
+         swapButton.className = 'btn btn-primary btn-block';
+         deleteButton.disabled = 'disabled';
+         levelInput.disabled = 'disabled';
+         slotInput.disabled = 'disabled';
+         bSwapping = true;
+         return this.getMember();
+      };
+      controller.finishSwapping = function(v) {
+         if (bSwapping) {
+            swapButton.innerHTML = '换位';
+            swapButton.className = 'btn btn-default btn-block';
+            deleteButton.disabled = '';
+            levelInput.disabled = '';
+            slotInput.disabled = '';
+            bSwapping = false;
+         }
+         var ret = this.getMember();
+         this.setMember(v);
+         return ret;
+      };
+      controller.setMember(member);
+      var imageContainer = createElement('td', {'className': 'text-center'}, [image]);
+      var levelInputContainer = createSimpleInputContainer('等级', levelInput);
+      var slotInputContainer = createSimpleInputContainer('槽数', slotInput);
+      var inputsContainer = createElement('td', {'className': 'form-horizontal'}, [levelInputContainer, slotInputContainer]);
+      var buttonContainer = createElement('td', {}, [deleteButton, swapButton]);
+      var tr = createElement('tr', {}, [imageContainer, inputsContainer, buttonContainer]);
+      var table = createElement('table', {}, [tr]);
+      var panel = createElement('div', {'className': 'col-xs-12 col-sm-6 col-md-4 col-lg-3 panel panel-default submember-container'}, [table]);
+      return panel;
+   }
+
+   // LLSubMemberComponent
+   // {
+   //    'add': function (member),
+   //    'remove': function (start, n),
+   //    'count': function (),
+   //    'empty': function (),
+   //    'setSwapper': function (swapper),
+   //    'setOnCountChange': function (callback(count)),
+   //    'loadData': function (data),
+   //    'saveData': function (),
+   //    :LLSaveLoadJsonMixin
+   // }
+   var cls = function (id) {
+      var element = LLUnit.getElement(id);
+      var controllers = [];
+      var swapper;
+      var me = this;
+      var callCountChange = function () {
+         if (me.onCountChange) me.onCountChange(me.count());
+      };
+      var commonHandleDelete = function () {
+         for (var i = 0; i < controllers.length; i++) {
+            if (controllers[i] === this) {
+               controllers.splice(i, 1);
+               break;
+            }
+         }
+         this.removeElement();
+         callCountChange();
+      };
+      var commonHandleSwap = function () {
+         if (swapper && swapper.onSwap) {
+            swapper.onSwap(this);
+         }
+      };
+      this.add = function (member, skipCountChange) {
+         var controller = {};
+         var container = createMemberContainer(member, controller);
+         element.appendChild(container);
+         controllers.push(controller);
+         controller.onDelete = commonHandleDelete;
+         controller.onSwap = commonHandleSwap;
+         controller.removeElement = function() { element.removeChild(container); };
+         if (!skipCountChange) callCountChange();
+      };
+      this.remove = function (start, n) {
+         if (!n) return;
+         start = start || 0;
+         var end = start + n;
+         if (end > controllers.length) end = controllers.length;
+         if (end <= start) return;
+         for (var i = start; i < end; i++) {
+            controllers[i].removeElement();
+         }
+         controllers.splice(start, end-start);
+         callCountChange();
+      };
+      this.count = function () { return controllers.length; };
+      this.empty = function () { return controllers.length <= 0; };
+      this.setSwapper = function (sw) {
+         swapper = sw;
+      };
+      this.loadData = function (data) {
+         var i = 0;
+         for (; i < data.length && i < controllers.length; i++) {
+            controllers[i].setMember(data[i]);
+         }
+         if (i < data.length) {
+            for (; i < data.length; i++) {
+               this.add(data[i], true);
+            }
+            callCountChange();
+         }
+         if (i < controllers.length) {
+            this.remove(i, controllers.length - i);
+         }
+      };
+      this.saveData = function () {
+         var ret = [];
+         for (var i = 0; i < controllers.length; i++) {
+            ret.push(controllers[i].getMember());
+         }
+         return ret;
+      };
+   };
+   var proto = cls.prototype;
+   LLSaveLoadJsonMixin(proto);
+   proto.setOnCountChange = function (callback) {
+      this.onCountChange = callback;
+   };
+   return cls;
+})();
+
+var LLMicDisplayComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var detailMicData = [
+      ['#话筒数', '#数值', '#UR技能等级和'],
+      ['1', '0', '0'],
+      ['2', '90', '2.25'],
+      ['3', '180', '4.5'],
+      ['4', '270', '6.75'],
+      ['5', '450', '11.25'],
+      ['6', '630', '15.75'],
+      ['7', '930', '23.35'],
+      ['8', '1380', '34.5'],
+      ['9', '2010', '50.25'],
+      ['10', '2880', '72'],
+      ['#稀有度', '#数值', '#等效UR技能等级'],
+      ['UR', '40', '1'],
+      ['SSR', '24', '0.6'],
+      ['SR', '11', '0.275'],
+      ['R或特典', '5', '0.125']
+   ];
+   function createSimpleTable (data) {
+      var rowElements = [];
+      for (var i = 0; i < data.length; i++) {
+         var row = data[i];
+         var cellElements = [];
+         for (var j = 0; j < row.length; j++) {
+            var cell = row[j];
+            var tag = 'td';
+            var text = cell;
+            if (cell[0] == '#') {
+               tag = 'th';
+               text = cell.substr(1);
+            }
+            cellElements.push(createElement(tag, {'innerHTML': text}));
+         }
+         rowElements.push(createElement('tr', undefined, cellElements));
+      }
+      var tbodyElement = createElement('tbody', undefined, rowElements);
+      var tableElement = createElement('table', {'className': 'table-bordered table-condensed'}, [tbodyElement]);
+      return tableElement;
+   }
+   function createMicResult (controller) {
+      var detailContainer = createElement('div');
+      var detailContainerComponent = 0;
+      var detailLink = createElement('a', {'innerHTML': '等效UR等级: ', 'href': 'javascript:;'}, undefined, {'click': function () {
+         if (!detailContainerComponent) {
+            detailContainer.appendChild(createSimpleTable(detailMicData));
+            detailContainerComponent = new LLComponentBase(detailContainer);
+         } else {
+            detailContainerComponent.toggleVisible();
+         }
+      }});
+      detailLink.style.cursor = 'help';
+      var resultMic = createElement('span');
+      var resultURLevel = createElement('span');
+      var resultContainer = createElement('div', undefined, [
+         '卡组援力:',
+         resultMic,
+         ' (',
+         detailLink,
+         resultURLevel,
+         ')',
+         detailContainer
+      ]);
+      controller.set = function (mic, urlevel) {
+         resultMic.innerHTML = mic;
+         resultURLevel.innerHTML = LLUnit.numberToString(urlevel, 3);
+      };
+      return resultContainer;
+   };
+   // LLMicDisplayComponent
+   // {
+   //    'set': function (mic, urlevel),
+   // }
+   var cls = function (id) {
+      var element = LLUnit.getElement(id);
+      var controller = {};
+      LLUnit.getElement(id).appendChild(createMicResult(controller));
+      this.set = controller.set;
+   };
    return cls;
 })();
 

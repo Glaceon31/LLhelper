@@ -105,9 +105,9 @@ def main():
             updatedLives.append(liveId)
             print('Getting position information for live #%d' % liveId)
     with open(FILENAME_SONG_LIST_JSON, 'w') as f:
-        json.dump(songs, f)
+        json.dump(songs, f, sort_keys=True)
     with open(FILENAME_SUCCESSFUL_LOG, 'w') as f:
-        json.dump(prevLoadedLives + updatedLives, f)
+        json.dump(prevLoadedLives + updatedLives, f, sort_keys=True)
     print('Newly updated %s' % repr(updatedLives))
  
 if __name__ == '__main__':

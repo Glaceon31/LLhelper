@@ -1,0 +1,160 @@
+{% extends "layout.html" %}
+
+{% set category="测试" %}
+{% set category_link="/#test" %}
+{% set title="测试" %}
+
+{% block additional_header %}
+   <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+{% endblock %}
+
+{% block script %}
+   <script>
+   var testSet = [];
+   var currentTestId = -1;
+   function addTestItem(item) {
+      testSet.push(item);
+
+      var resultElement = LLUnit.createElement('td', {'innerHTML': 'Not started'});
+      var performanceElement = LLUnit.createElement('td');
+
+      var setResult = function (result) {
+         item.finishTime = window.performance.now();
+         if (result) {
+            resultElement.innerHTML = 'Fail: ' + result;
+            resultElement.className = 'danger';
+            item.fail = 1;
+         } else {
+            resultElement.innerHTML = 'Success';
+            resultElement.className = 'success';
+            item.success = 1;
+         }
+         performanceElement.innerHTML = (item.finishTime - item.startTime).toFixed(3);
+      };
+
+      item.start = function () {
+         resultElement.innerHTML = 'Running';
+         resultElement.className = 'info';
+         var resultClass = '';
+         var resultText = '';
+         var defer = $.Deferred();
+         try {
+            item.startTime = window.performance.now();
+            var ret = item.run();
+            if (ret.then) {
+               ret.then(function (r) {
+                  setResult(r);
+                  defer.resolve(r);
+               }, function (r) {
+                  setResult(r || 'Reject');
+                  defer.resolve(r);
+               });
+            } else {
+               setResult(ret);
+               defer.resolve(ret);
+            }
+         } catch (e) {
+            console.log(e);
+            setResult('Exception: ' + e.message);
+            defer.resolve(e);
+         }
+         return defer;
+      };
+
+      var testRow = LLUnit.createElement('tr', undefined, [
+         LLUnit.createElement('td', {'innerHTML': testSet.length}),
+         LLUnit.createElement('td', {'innerHTML': item.name}),
+         resultElement,
+         performanceElement
+      ]);
+      document.getElementById('test-list').appendChild(testRow);
+      return item;
+   }
+
+   var defer_onload = $.Deferred();
+   var defer_test_load = $.Deferred();
+   var defer_test_load_card_detail = $.Deferred();
+   var cardDetails = 0;
+
+   function handleFailedLoading(e) {
+      defer_test_load.reject(e);
+      document.getElementById('loadingbox').style.display = 'none';
+   }
+
+   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+      defer_test_load.resolve();
+      // done
+      document.getElementById('loadingbox').style.display = 'none';
+
+      // init tests
+      addTestItem({'name': 'Load card detail', 'run': function () {
+         var ids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726];
+         var requests = [];
+         for (var i = 0; i < ids.length; i++) {
+            requests.push(LLCardData.getDetailedData(ids[i]));
+         }
+         return LoadingUtil.start(requests).then(function (cards) {
+            cardDetails = cards;
+            defer_test_load_card_detail.resolve();
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Calculate', 'run': function () {
+         return 'TODO';
+      }});
+
+      // run tests
+      var defers = [];
+      for (var i = 1; i < testSet.length; i++) {
+         defers.push(testSet[i].start());
+      }
+      LoadingUtil.startImpl(defers, 'test-running-box', 'test-running-box-progress').then(function () {
+         var nSuccess = 0;
+         var nFail = 0;
+         var nNotStart = 0;
+         for (var i = 0; i < testSet.length; i++) {
+            if (testSet[i].success) nSuccess++;
+            else if (testSet[i].fail) nFail++;
+            else nNotStart++;
+         }
+         document.getElementById('test-result').innerHTML = '测试结果: 成功: ' + nSuccess + ', 失败: ' + nFail + ', 未启动: ' + nNotStart;
+      });
+   }, handleFailedLoading);
+
+   </script>
+{% endblock %}
+
+{% block body_onload %}
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
+{% endblock %}
+
+{% block main %}
+<table class='table table-hover'>
+   <thead>
+      <tr>
+         <th>#</th>
+         <th>测试名称</th>
+         <th>结果</th>
+         <th>耗时(ms)</th>
+      </tr>
+   </thead>
+   <tbody id='test-list'>
+   </tbody>
+</table>
+<h3 id='test-running-box' style='display:none'>
+测试中... <span id='test-running-box-progress'></span>
+</h3>
+<h3 id='test-result'>
+</h3>
+
+{% include 'components/loadingbox.html' %}
+{% endblock %}
+
+{% block back_script %}
+<script>
+   addTestItem({'name': '载入页面', 'run': function () { return defer_test_load; }}).start();
+</script>
+{% endblock %}
