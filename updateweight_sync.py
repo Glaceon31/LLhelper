@@ -99,11 +99,14 @@ def main():
         with open(FILENAME_SUCCESSFUL_LOG, 'r') as f:
             prevLoadedLives = json.load(f)
             print('* %d live maps have previously loaded, skipping...' % len(prevLoadedLives))
-    for liveId in [int(liveId) for liveId in songs.keys()]:
-        if liveId not in prevLoadedLives:
-            songs[str(liveId)]["positionweight"] = getPositionWeight(liveId)
-            updatedLives.append(liveId)
-            print('Getting position information for live #%d' % liveId)
+    for songId in [int(songId) for songId in songs.keys()]:
+        for liveDifficulty in difficultyKeys:
+            if liveDifficulty in songs[str(songId)]:
+                liveId = int(songs[str(songId)][liveDifficulty]['liveid'])
+                if liveId not in prevLoadedLives:
+                    songs[str(songId)][liveDifficulty]["positionweight"] = getPositionWeight(liveId)
+                    updatedLives.append(liveId)
+                    print('Getting position information for live #%d' % liveId)
     with open(FILENAME_SONG_LIST_JSON, 'w') as f:
         json.dump(songs, f, sort_keys=True)
     with open(FILENAME_SUCCESSFUL_LOG, 'w') as f:
