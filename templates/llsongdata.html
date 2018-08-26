@@ -177,26 +177,35 @@
 <label class="control-label">搜索</label><input class="form-control" type="text" id="songsearch" value=""></input>
 </div>
 <div class="form-group">
-<label class="control-label">筛选</label><select class="form-control" id="songdiff" name="songdiff">
-		<option value="">难度</option>
-		<option value="easy">包含容易(Easy)难度</option>
-		<option value="normal">包含普通(Normal)难度</option>
-		<option value="hard">包含困难(Hard)难度</option>
-		<option value="expert">包含专家(Expert)难度</option>
-		<option value="master">包含大师(Master)难度</option>
-		<option value="arcade">包含Master Arcade难度</option>
-	</select>
-	<select class="form-control" id="songatt" name="songatt">
-		<option value="">属性</option>
-		<option value="smile">Smile</option>
-		<option value="pure">Pure</option>
-		<option value="cool">Cool</option>
-	</select>
-	<select class="form-control" id="songunit" name="songunit">
-		<option value="">组合</option>
-		<option value="muse">μ's</option>
-		<option value="aqours">Aqours</option>
-	</select>
+<label class="control-label">筛选</label>
+    <div class="row">
+        <div class="col-md-6">
+            <select class="form-control" id="songdiff" name="songdiff">
+        		<option value="">难度</option>
+        		<option value="easy">包含容易难度（Easy）</option>
+        		<option value="normal">包含普通难度（Normal）</option>
+        		<option value="hard">包含困难难度（Hard）</option>
+        		<option value="expert">包含专家难度（Expert）</option>
+        		<option value="master">包含大师难度（Master）</option>
+        		<option value="arcade">包含街机大师难度（Master Arcade）</option>
+        	</select>
+    	</div>
+        <div class="col-md-3">
+        	<select class="form-control" id="songatt" name="songatt">
+        		<option value="">属性</option>
+        		<option value="smile">Smile</option>
+        		<option value="pure">Pure</option>
+        		<option value="cool">Cool</option>
+        	</select>
+    	</div>
+    	<div class="col-md-3">
+        	<select class="form-control" id="songunit" name="songunit">
+        		<option value="">组合</option>
+        		<option value="muse">μ's</option>
+        		<option value="aqours">Aqours</option>
+        	</select>
+    	</div>
+	</div>
 </div>
    <!--
 	<select id="songcnhave" name="songcnhave" onchange="changesongselect();changediffinfo()">
@@ -247,7 +256,7 @@
 <label class="control-label">歌曲</label><select class="form-control" id="songchoice" name="songchoice">
 		<option value=""> </option>
 </select>
-<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言" class="form-control btn  btn-default" />
 </div>
 <div class="form-group">
 <label class="control-label">难度</label><select class="form-control" id="diffchoice" name="diffchoice">
