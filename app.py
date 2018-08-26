@@ -127,6 +127,13 @@ app.register_blueprint(legacy_app, url_prefix="/legacy")
 from llunit import *
 from lldatamodify import *
 
+def development_test():
+    return render_template('test.html')
+
+# require Flask >= v1.0
+if app.debug == True:
+    app.add_url_rule('/test', 'development_test', development_test)
+
 if __name__ == "__main__":
     app.run()
 
