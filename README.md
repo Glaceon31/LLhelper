@@ -9,13 +9,33 @@ pip install -r requirements.txt
 ```
 
 ### Run on Development Environment
+
 ```sh
 FLASK_APP=app.py FLASK_ENV=development python2 -m flask run
 ```
 
 ### Run on Production Environment
+
 ```sh
 FLASK_APP=app.py FLASK_RUN_PORT={PORT} python2 -m flask run
+```
+
+### PM2 Script Example
+
+```json
+{
+    "apps": [{
+        "name": "skufes-llhelper",
+        "script": "app.py",
+        "env": {
+            "LLHELPER_RUN_PORT": 8080
+        },
+        "interperter": "python2",
+        "watch": false,
+        "cron_restart": "5 * * * *",
+        "cwd": "LLHelper"
+    }]
+}
 ```
 
 ## Test
