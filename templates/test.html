@@ -74,6 +74,19 @@
       return item;
    }
 
+   function loadCards(cardIds) {
+      var requests = [];
+      for (var i = 0; i < cardIds.length; i++) {
+         requests.push(LLCardData.getDetailedData(cardIds[i]));
+      }
+      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
+   }
+
+   function assertEqual(a, b) {
+      if (a == b) return;
+      throw 'assertEqual fail: ' + a + ' == ' + b;
+   }
+
    var defer_onload = $.Deferred();
    var defer_test_load = $.Deferred();
    var defer_test_load_card_detail = $.Deferred();
@@ -92,18 +105,73 @@
       // init tests
       addTestItem({'name': 'Load card detail', 'run': function () {
          var ids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726];
-         var requests = [];
-         for (var i = 0; i < ids.length; i++) {
-            requests.push(LLCardData.getDetailedData(ids[i]));
-         }
-         return LoadingUtil.start(requests).then(function (cards) {
+         return loadCards(ids).then(function (cards) {
             cardDetails = cards;
             defer_test_load_card_detail.resolve();
             return 0;
          });
       }});
-      addTestItem({'name': 'Calculate', 'run': function () {
-         return 'TODO';
+      addTestItem({'name': 'Basic calculate', 'run': function () {
+         var ids = [955, 980, 459, 127, 1002, 648, 317, 378, 957];
+         var mezames = [1, 1, 1, 0, 1, 1, 1, 0, 1];
+         var skillLevels = [4, 4, 1, 1, 1, 1, 2, 1, 1];
+         var mainatt = 'pure';
+         var gems = [
+            [LLSisGem.SCORE_250],
+            [LLSisGem.SCORE_250],
+            [LLSisGem.SADD_200],
+            [LLSisGem.AMUL_24],
+            [LLSisGem.SMUL_10, LLSisGem.SMUL_16],
+            [LLSisGem.AMUL_18],
+            [LLSisGem.AMUL_18],
+            [LLSisGem.AMUL_24],
+            [LLSisGem.SMUL_10, LLSisGem.SMUL_16]
+         ];
+         var weights = [15.5, 26, 51.5, 55, 52.25, 58.25, 58.5, 26.75, 21.5];
+         return loadCards(ids).then(function (cards) {
+            var members = [];
+            for (var i = 0; i < 9; i++) {
+               var id = ids[i];
+               var mezame = mezames[i];
+               var member = {
+                  'cardid': id,
+                  'smile': (mezame ? cards[id].smile2 : cards[id].smile),
+                  'pure': (mezame ? cards[id].pure2 : cards[id].pure),
+                  'cool': (mezame ? cards[id].cool2 : cards[id].cool),
+                  'skilllevel': skillLevels[i],
+                  'maxcost': 0,
+                  'gems': [],
+                  'card': cards[id]
+               };
+               member[cards[id].attribute] += kizuna[cards[id].rarity][mezame];
+               for (var j in gems[i]) {
+                  member.gems.push(new LLSisGem(gems[i][j], {'color': mainatt}));
+               }
+               members.push(new LLMember(member));
+            }
+            var llteam = new LLTeam(members);
+            var friendcskill = {
+              "Csecondskillattribute": 0,
+              "Csecondskilllimit": 4,
+              "Cskillattribute": 'pure',
+              "Cskillpercentage": 0,
+              "attribute": 'pure'
+            };
+            var songunit = 4; // muse
+            llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
+            llteam.calculateSkillStrength(117, 359, 341, 0, 0, 0);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 37910);
+            assertEqual(llteam.finalAttr.pure, 59698);
+            assertEqual(llteam.finalAttr.cool, 32990);
+            assertEqual(llteam.bonusAttr.smile, 0);
+            assertEqual(llteam.bonusAttr.pure, 7337);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 67734);
+            assertEqual(llteam.totalAttrStrength, 57788);
+            assertEqual(llteam.totalSkillStrength, 9946);
+            return 0;
+         });
       }});
 
       // run tests
