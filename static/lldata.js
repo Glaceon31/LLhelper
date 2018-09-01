@@ -2511,8 +2511,9 @@ var LLGemStockComponent = (function () {
       var item;
       var textSpan = createElement('span', {'className': 'gem-text', 'innerHTML': (textMapping[text] ? textMapping[text] : text)});
 
-      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function () {
-         event.cancelBubble = true;
+      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function (e) {
+         var curEvent = window.event || e;
+         curEvent.cancelBubble = true;
       }, 'change': function () {
          if (controller.onchange) controller.onchange(gemCountInput.value);
       }});
