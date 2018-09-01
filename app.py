@@ -5,7 +5,11 @@ from flask import Flask, render_template, redirect, session, request, send_file
 import string
 import random
 import json
+import sys
 from lldata import LLData
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 app = Flask(__name__)
 app.secret_key = "hatsune miku"
