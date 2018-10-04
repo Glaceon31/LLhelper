@@ -3,7 +3,9 @@
  *   LoadingUtil
  *   LLData
  *     (instance) LLCardData
+ *   LLConst
  *   LLUnit
+ *   LLMap
  *   LLSisGem
  *   LLSkill
  *   LLMember
@@ -213,7 +215,7 @@ var LLComponentBase = (function () {
     *    deserialize
     *    on
     */
-   var cls = function (id, options) {
+   function LLComponentBase_cls(id, options) {
       this.id = undefined;
       this.exist = false;
       this.visible = false;
@@ -235,6 +237,7 @@ var LLComponentBase = (function () {
          }
       }
    };
+   var cls = LLComponentBase_cls;
    var proto = cls.prototype;
    proto.show = function () {
       if (!this.exist) return;
@@ -285,7 +288,7 @@ var LLValuedComponent = (function() {
     *    serialize (override)
     *    deserialize (override)
     */
-   var cls = function (id, options) {
+   function LLValuedComponent_cls(id, options) {
       LLComponentBase.call(this, id, options);
       if (!this.exist) {
          this.value = undefined;
@@ -313,6 +316,7 @@ var LLValuedComponent = (function() {
          me.set(me.element[me.valueKey]);
       });
    };
+   var cls = LLValuedComponent_cls;
    cls.prototype = new LLComponentBase();
    cls.prototype.constructor = cls;
    var proto = cls.prototype;
@@ -344,7 +348,7 @@ var LLSelectComponent = (function() {
     *    setOptions
     *    filterOptions
     */
-   var cls = function (id, options) {
+   function LLSelectComponent_cls(id, options) {
       LLValuedComponent.call(this, id, options);
       if (!this.exist) {
          this.options = undefined;
@@ -360,6 +364,7 @@ var LLSelectComponent = (function() {
       }
       this.options = opts;
    };
+   var cls = LLSelectComponent_cls;
    cls.prototype = new LLValuedComponent();
    cls.prototype.constructor = cls;
    var proto = cls.prototype;
@@ -417,9 +422,10 @@ var LLComponentCollection = (function() {
     *    loadCookie(key) (require getCookie)
     *    deleteCookie(key) (require setCookie)
     */
-   var cls = function () {
+   function LLComponentCollection_cls() {
       this.components = {};
    };
+   var cls = LLComponentCollection_cls;
    var proto = cls.prototype;
    proto.add = function (name, component) {
       this.components[name] = component;
@@ -463,6 +469,80 @@ var LLComponentCollection = (function() {
       setCookie(key, '', -1);
    };
    return cls;
+})();
+
+var LLConst = (function () {
+   var KEYS = {
+      'MEMBER_HONOKA': 1,
+      'MEMBER_ELI': 2,
+      'MEMBER_KOTORI': 3,
+      'MEMBER_UMI': 4,
+      'MEMBER_RIN': 5,
+      'MEMBER_MAKI': 6,
+      'MEMBER_NOZOMI': 7,
+      'MEMBER_HANAYO': 8,
+      'MEMBER_NICO': 9,
+
+      'MEMBER_CHIKA': 101,
+      'MEMBER_RIKO': 102,
+      'MEMBER_KANAN': 103,
+      'MEMBER_DIA': 104,
+      'MEMBER_YOU': 105,
+      'MEMBER_YOSHIKO': 106,
+      'MEMBER_HANAMARU': 107,
+      'MEMBER_MARI': 108,
+      'MEMBER_RUBY': 109,
+
+      'GROUP_UNKNOWN': 0,
+      'GROUP_GRADE1': 1,
+      'GROUP_GRADE2': 2,
+      'GROUP_GRADE3': 3,
+      'GROUP_MUSE': 4,
+      'GROUP_AQOURS': 5,
+      'GROUP_PRINTEMPS': 6,
+      'GROUP_LILYWHITE': 7,
+      'GROUP_BIBI': 8,
+      'GROUP_CYARON': 9,
+      'GROUP_AZALEA': 10,
+      'GROUP_GUILTYKISS': 11,
+   };
+   var MEMBER_DATA = {};
+   MEMBER_DATA[KEYS.MEMBER_HONOKA] = {'name': '高坂穂乃果', 'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS]};
+   MEMBER_DATA[KEYS.MEMBER_ELI] =    {'name': '絢瀬絵里',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI]};
+   MEMBER_DATA[KEYS.MEMBER_KOTORI] = {'name': '南ことり',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS]};
+   MEMBER_DATA[KEYS.MEMBER_UMI] =    {'name': '園田海未',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_LILYWHITE]};
+   MEMBER_DATA[KEYS.MEMBER_RIN] =    {'name': '星空凛',     'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_LILYWHITE]};
+   MEMBER_DATA[KEYS.MEMBER_MAKI] =   {'name': '西木野真姫', 'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_BIBI]};
+   MEMBER_DATA[KEYS.MEMBER_NOZOMI] = {'name': '東條希',     'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_LILYWHITE]};
+   MEMBER_DATA[KEYS.MEMBER_HANAYO] = {'name': '小泉花陽',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_PRINTEMPS]};
+   MEMBER_DATA[KEYS.MEMBER_NICO] =   {'name': '矢澤にこ',   'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI]};
+
+   MEMBER_DATA[KEYS.MEMBER_CHIKA] =    {'name': '高海千歌',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON]};
+   MEMBER_DATA[KEYS.MEMBER_RIKO] =     {'name': '桜内梨子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_GUILTYKISS]};
+   MEMBER_DATA[KEYS.MEMBER_KANAN] =    {'name': '松浦果南',   'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA]};
+   MEMBER_DATA[KEYS.MEMBER_DIA] =      {'name': '黒澤ダイヤ', 'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA]};
+   MEMBER_DATA[KEYS.MEMBER_YOU] =      {'name': '渡辺曜',     'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON]};
+   MEMBER_DATA[KEYS.MEMBER_YOSHIKO] =  {'name': '津島善子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_GUILTYKISS]};
+   MEMBER_DATA[KEYS.MEMBER_HANAMARU] = {'name': '国木田花丸', 'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_AZALEA]};
+   MEMBER_DATA[KEYS.MEMBER_MARI] =     {'name': '小原鞠莉',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_GUILTYKISS]};
+   MEMBER_DATA[KEYS.MEMBER_RUBY] =     {'name': '黒澤ルビィ', 'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_CYARON]};
+
+   var GROUP_DATA = {};
+   GROUP_DATA[KEYS.GROUP_UNKNOWN] = {'name': '<Unknown>'};
+   GROUP_DATA[KEYS.GROUP_GRADE1] = {'name': '一年级'};
+   GROUP_DATA[KEYS.GROUP_GRADE2] = {'name': '二年级'};
+   GROUP_DATA[KEYS.GROUP_GRADE3] = {'name': '三年级'};
+   GROUP_DATA[KEYS.GROUP_MUSE] =   {'name': "μ's"};
+   GROUP_DATA[KEYS.GROUP_AQOURS] = {'name': 'Aqours'};
+   GROUP_DATA[KEYS.GROUP_PRINTEMPS] =  {'name': 'Printemps'};
+   GROUP_DATA[KEYS.GROUP_LILYWHITE] =  {'name': 'lilywhite'};
+   GROUP_DATA[KEYS.GROUP_BIBI] =       {'name': 'BiBi'};
+   GROUP_DATA[KEYS.GROUP_CYARON] =     {'name': 'CYaRon!'};
+   GROUP_DATA[KEYS.GROUP_AZALEA] =     {'name': 'AZALEA'};
+   GROUP_DATA[KEYS.GROUP_GUILTYKISS] = {'name': 'Guilty Kiss'};
+
+   var ret = KEYS;
+   return ret;
 })();
 
 /*
@@ -770,7 +850,7 @@ var LLUnit = {
  *   LLCardSelector
  */
 var LLSkillContainer = (function() {
-   var cls = function (options) {
+   function LLSkillContainer_cls(options) {
       LLComponentCollection.call(this);
       this.skillLevel = 0; // base 0, range 0-7
       this.cardData = undefined;
@@ -796,6 +876,7 @@ var LLSkillContainer = (function() {
       this.setCardData(options.cardData, true);
       this.render();
    };
+   var cls = LLSkillContainer_cls;
    cls.prototype = new LLComponentCollection();
    cls.prototype.constructor = cls;
    var proto = cls.prototype;
@@ -873,7 +954,7 @@ var LLCardSelector = (function() {
       ["松浦果南","黒澤ダイヤ","国木田花丸"],
       ["桜内梨子","津島善子","小原鞠莉"]
    ];
-   var cls = function (cards, options) {
+   function LLCardSelector_cls(cards, options) {
       LLComponentCollection.call(this);
 
       // init variables
@@ -968,6 +1049,7 @@ var LLCardSelector = (function() {
       this.freezeCardFilter = 0;
       this.handleCardFilter();
    };
+   var cls = LLCardSelector_cls;
    cls.prototype = new LLComponentCollection();
    cls.prototype.constructor = cls;
    var doFilter = function (me, option) {
@@ -1043,11 +1125,153 @@ var LLCardSelector = (function() {
 
 /*
  * strength calculation helper
+ *   LLMap
  *   LLSisGem
  *   LLSkill
  *   LLMember
  *   LLTeam
  */
+var LLMap = (function () {
+   var DEFAULT_EXPERT = {
+      'positionweight': [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75],
+      'combo': 500,
+      'time': 110,
+      'star': 65
+   };
+   var DEFAULT_MASTER = {
+      'positionweight': [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5],
+      'combo': 700,
+      'time': 110,
+      'star': 65
+   };
+   var DEFAULT_SONG_MUSE = {
+      'attribute': '',
+      'muse': 1,
+      'aqours': 0,
+      'expert': DEFAULT_EXPERT,
+      'master': DEFAULT_MASTER
+   };
+   // properties:
+   //   attribute: {'smile'|'pure'|'cool'}
+   //   muse: {0|1}
+   //   aqours: {0|1}
+   //   weights: [w1, w2, ..., w9]
+   //   totalWeight: sum(weights)
+   //   friendCSkill:
+   //     attribute: {'smile'|'pure'|'cool'} (add to)
+   //     Cskillattribute: {'smile'|'pure'|'cool'} (add from)
+   //     Cskillpercentage: percentage
+   //     Csecondskilllimit: {GROUP_}
+   //     Csecondskillattribute: percentage
+   //   combo: int
+   //   star: int
+   //   time: float
+   //   perfect: int
+   //   starPerfect: int
+   //   tapup: percentage
+   //   skillup: percentage
+   //   songUnit: {GROUP_MUSE|GROUP_AQOURS|GROUP_UNKNOWN}
+   function LLMap_cls(options) {
+      if (options.song) {
+         this.setSong(options.song, options.diff);
+      } else {
+         this.setSong(DEFAULT_SONG_MUSE, 'expert');
+      }
+      if (options.friendCSkill) {
+         this.friendCSkill = options.friendCSkill;
+      } else {
+         // no friend cskill
+         this.setFriendCSkill('smile', 'smile', 0, LLConst.GROUP_MUSE, 0);
+      }
+      this.setMapBuff();
+   };
+   var cls = LLMap_cls;
+   var proto = cls.prototype;
+   proto.setSong = function (song, diff) {
+      if (!song) {
+         console.error('No song data');
+         return;
+      }
+      // only return when difficulty is given but not found it in song data
+      var songdiff = (diff === undefined ? {} : song[diff]);
+      if (!songdiff) {
+         console.error('The song has no difficulty of ' + diff);
+         return;
+      }
+      this.attribute = song.attribute || '';
+      this.muse = song.muse || 0;
+      this.aqours = song.aqours || 0;
+      this.updateSongUnit();
+      // when difficulty is not given, use 0 for difficulty-specific data
+      this.setSongDifficultyData(songdiff.combo, songdiff.star, songdiff.time);
+      this.setWeights(songdiff.positionweight || [0, 0, 0, 0, 0, 0, 0, 0, 0]);
+   };
+   proto.setGroup = function (group) {
+      if (group == 'muse') {
+         this.muse = 1;
+         this.aqours = 0;
+      } else if (group == 'aqours') {
+         this.muse = 0;
+         this.aqours = 1;
+      } else {
+         console.error('Unknown group: ' + group);
+         this.muse = 0;
+         this.aqours = 0;
+      }
+      this.updateSongUnit();
+   };
+   proto.setWeights = function (weights) {
+      var w = [];
+      var total = 0;
+      if (weights && weights.length == 9) {
+         for (var i = 0; i < 9; i++) {
+            var curWeight = parseFloat(weights[i]);
+            w.push(curWeight);
+            total += curWeight;
+         }
+      } else {
+         if (weights !== undefined) {
+            console.error('Invalid weight data:');
+            console.log(weights);
+         }
+         w = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      }
+      this.weights = w;
+      this.totalWeight = total;
+   };
+   proto.setFriendCSkill = function (addToAttribute, addFromAttribute, percentage, groupLimit, groupPercentage) {
+      this.friendCSkill = {
+         'attribute': addToAttribute,
+         'Cskillattribute': addFromAttribute,
+         'Cskillpercentage': parseInt(percentage || 0),
+         'Csecondskilllimit': parseInt(groupLimit || LLConst.GROUP_UNKNOWN),
+         'Csecondskillattribute': parseInt(groupPercentage || 0)
+      };
+   };
+   proto.setSongDifficultyData = function (combo, star, time, perfect, starPerfect) {
+      this.combo = parseInt(combo || 0);
+      this.star = parseInt(star || 0);
+      this.time = parseFloat(time || 0);
+      // 95% perfect
+      this.perfect = parseInt(perfect === undefined ? (this.combo * 19 / 20) : perfect || 0);
+      this.starPerfect = parseInt(starPerfect || 0);
+   };
+   proto.setMapBuff = function (tapup, skillup) {
+      this.tapup = parseFloat(tapup || 0);
+      this.skillup = parseFloat(skillup || 0);
+   };
+   proto.updateSongUnit = function () {
+      if (this.muse) {
+         this.songUnit = LLConst.GROUP_MUSE;
+      } else if (this.aqours) {
+         this.songUnit = LLConst.GROUP_AQOURS;
+      } else {
+         this.songUnit = LLConst.GROUP_UNKNOWN;
+      }
+   };
+   return cls;
+})();
+
 var LLSisGem = (function () {
    var EFFECT_RANGE = {
       'SELF': 1,
@@ -1090,7 +1314,7 @@ var LLSisGem = (function () {
       "黒澤ルビィ": 'pure'
    };
    var EPSILON = 1e-8;
-   var cls = function (type, options) {
+   function LLSisGem_cls(type, options) {
       // options: {grade:(1~3), member:(member name), color:({smile|pure|cool}), unit:({muse|aqours})}
       if (type < 0 || type >= GEM_TYPE_DATA.length) throw 'Unknown type: ' + type;
       this.type = type;
@@ -1109,6 +1333,7 @@ var LLSisGem = (function () {
       if (data.per_color && options.color) this.color = options.color;
       if (data.per_unit && options.unit) this.unit = options.unit;
    };
+   var cls = LLSisGem_cls;
    (function (obj) {
       var keys = [];
       for (var i = 0; i < GEM_TYPE_DATA.length; i++) {
@@ -1217,7 +1442,7 @@ var LLSisGem = (function () {
 })();
 
 var LLSkill = (function () {
-   var cls = function (card, level, buff) {
+   function LLSkill_cls(card, level, buff) {
       this.card = card;
       this.level = level;
       var skilldetails = card.skilldetail || [];
@@ -1239,6 +1464,7 @@ var LLSkill = (function () {
       this.setScoreGem(buff.gemskill);
       this.setSkillPossibilityUp(buff.skillup);
    };
+   var cls = LLSkill_cls;
    var eTriggerType = {
       'TIME': 1,
       'NOTE': 3,
@@ -1381,7 +1607,7 @@ var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
    var MIC_RATIO = {'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0};
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
-   var cls = function (v) {
+   function LLMember_cls(v) {
       v = v || {};
       var i;
       for (i = 0; i < int_attr.length; i++) {
@@ -1406,6 +1632,7 @@ var LLMember = (function() {
       }
       this.raw = v;
    };
+   var cls = LLMember_cls;
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
    var proto = cls.prototype;
    proto.hasSkillGem = function () {
@@ -1502,8 +1729,8 @@ var LLMember = (function() {
       debuff = (weight/totalweight)*debuff;
       return debuff;
    };
-   proto.calcAttrDebuff = function (mapcolor, mapunit, weight, totalweight, teamattr) {
-      var attrDebuff = Math.round(this.getAttrDebuffFactor(mapcolor, mapunit, weight, totalweight) * teamattr);
+   proto.calcAttrDebuff = function (mapdata, pos, teamattr) {
+      var attrDebuff = Math.round(this.getAttrDebuffFactor(mapdata.attribute, mapdata.songUnit, mapdata.weights[pos], mapdata.totalWeight) * teamattr);
       this.attrDebuff = attrDebuff;
       return attrDebuff;
    };
@@ -1536,11 +1763,12 @@ var LLMember = (function() {
 })();
 
 var LLTeam = (function() {
-   var cls = function (members) {
+   function LLTeam_cls(members) {
       if (members === undefined) throw("Missing members");
       if (members.length != 9) throw("Expect 9 members");
       this.members = members;
    };
+   var cls = LLTeam_cls;
    var MAX_SCORE = 10000000;
    var MAX_SCORE_TEXT = '1000w+';
    var MIC_BOUNDARIES = [
@@ -1586,10 +1814,10 @@ var LLTeam = (function() {
       }
       return totalWeight;
    };
-   proto.calculateAttributeStrength = function (mapcolor, mapunit, friendcskill, weights) {
+   proto.calculateAttributeStrength = function (mapdata) {
+      var mapcolor = mapdata.attribute;
       //((基本属性+绊)*百分比宝石加成+数值宝石加成)*主唱技能加成
       var teamgem = [];
-      var totalWeight = getTotalWeight(weights);
       var i, j;
       var unitMemberCount = {'muse':{}, 'aqours':{}};
       for (i = 0; i < 9; i++) {
@@ -1620,7 +1848,7 @@ var LLTeam = (function() {
       }
       //全体宝石和主唱技能加成
       var cskills = [this.members[4].card];
-      if (friendcskill) cskills.push(friendcskill);
+      if (mapdata.friendCSkill) cskills.push(mapdata.friendCSkill);
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          curMember.calcAttrWithGem(mapcolor, teamgem);
@@ -1648,7 +1876,7 @@ var LLTeam = (function() {
       var totalAttrStrength = 0;
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
-         curMember.calcAttrDebuff(mapcolor, mapunit, weights[i], totalWeight, finalAttr[mapcolor]);
+         curMember.calcAttrDebuff(mapdata, i, finalAttr[mapcolor]);
          attrDebuff.push(curMember.attrDebuff);
          totalAttrStrength += attrStrength[i] - attrDebuff[i];
       }
@@ -1657,7 +1885,7 @@ var LLTeam = (function() {
       this.finalAttr = finalAttr;
       this.bonusAttr = bonusAttr;
       // total
-      this.totalWeight = totalWeight;
+      this.totalWeight = mapdata.totalWeight;
       this.totalAttrStrength = totalAttrStrength;
       // TODO:判定宝石
    };
@@ -1687,27 +1915,27 @@ var LLTeam = (function() {
          env.score = sumScore;
       }
    };
-   proto.calculateSkillStrength = function (maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup) {
-      var comboMulti = LLUnit.comboMulti(mapcombo);
-      var accuracyMulti = 0.88+0.12*(mapperfect/mapcombo);
+   proto.calculateSkillStrength = function (mapdata) {
+      var comboMulti = LLUnit.comboMulti(mapdata.combo);
+      var accuracyMulti = 0.88+0.12*(mapdata.perfect/mapdata.combo);
       var scorePerStrength = 1.21/80*this.totalWeight*comboMulti*accuracyMulti;
-      var minScore = Math.round(this.totalAttrStrength * scorePerStrength * (1+parseFloat(tapup)/100));
+      var minScore = Math.round(this.totalAttrStrength * scorePerStrength * (1+mapdata.tapup/100));
 
       var avgSkills = [];
       var maxSkills = [];
       var i;
       for (i = 0; i < 9 ; i++) {
          var curMember = this.members[i]
-         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
-         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': skillup}));
+         avgSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': mapdata.skillup}));
+         maxSkills.push(new LLSkill(curMember.card, curMember.skilllevel-1, {'gemskill': curMember.hasSkillGem(), 'skillup': mapdata.skillup}));
       }
 
       var env = {
-         'time': maptime,
-         'combo': mapcombo,
+         'time': mapdata.time,
+         'combo': mapdata.combo,
          'score': minScore,
-         'perfect': mapperfect,
-         'starperfect': mapstarperfect,
+         'perfect': mapdata.perfect,
+         'starperfect': mapdata.starPerfect,
          'minscore': minScore
       };
       calcTeamSkills(avgSkills, env, true);
@@ -1857,17 +2085,17 @@ var LLTeam = (function() {
       this.equivalentURLevel = micPoint/40;
    };
    var isInUnitGroup = LLCardSelector.isInUnitGroup;
-   proto.autoArmGem = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock) {
+   proto.autoArmGem = function (mapdata, gemStock) {
+      var mapcolor = mapdata.attribute;
       // 计算主唱增益率以及异色异团惩罚率
       var cskills = [this.members[4].card];
-      if (friendcskill) cskills.push(friendcskill);
+      if (mapdata.friendCSkill) cskills.push(mapdata.friendCSkill);
       var cskillPercentages = [];
       var totalDebuffFactor = 0;
-      var totalWeight = getTotalWeight(weights);
       for (var i = 0; i < 9; i++) {
          var curMember = this.members[i];
          cskillPercentages.push(curMember.calcTotalCSkillPercentageForSameColor(mapcolor, cskills));
-         totalDebuffFactor += curMember.getAttrDebuffFactor(mapcolor, mapunit, weights[i], totalWeight);
+         totalDebuffFactor += curMember.getAttrDebuffFactor(mapcolor, mapdata.songUnit, mapdata.weights[i], mapdata.totalWeight);
       }
       // 需要爆分宝石/治愈宝石可能带来的强度, 所以强行放入宝石进行计算
       for (var i = 0; i < 9; i++) {
@@ -1876,8 +2104,8 @@ var LLTeam = (function() {
             curMember.gems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': curMember.card.attribute}));
          }
       }
-      this.calculateAttributeStrength(mapcolor, mapunit, friendcskill, weights);
-      this.calculateSkillStrength(maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup);
+      this.calculateAttributeStrength(mapdata);
+      this.calculateSkillStrength(mapdata);
       // 统计年级, 组合信息
       var gradeInfo = [];
       var gradeCount = [0, 0, 0];
@@ -1923,7 +2151,7 @@ var LLTeam = (function() {
                   curStrengthBuff = curSkill.strength * curGem.effect_value / (100+curGem.effect_value);
                }
                // 考虑技能概率提升带来的增益
-               curStrengthBuff *= (1 + parseInt(skillup||0)/100);
+               curStrengthBuff *= (1 + mapdata.skillup/100);
             } else {
                if (curGem.attr_add) {
                   if (curGem.isEffectRangeSelf()) {
@@ -1953,7 +2181,7 @@ var LLTeam = (function() {
                }
                //TODO: 判定宝石
                // 考虑点击得分提升带来的增益, 以及异色异团惩罚带来的减益
-               curStrengthBuff *= (1 + parseInt(tapup||0)/100) * (1 - totalDebuffFactor);
+               curStrengthBuff *= (1 + mapdata.tapup/100) * (1 - totalDebuffFactor);
             }
             var gemStockKey = curGem.getGemStockKeys().join('.');
             if (gemStockKeyToIndex[gemStockKey] === undefined) {
@@ -2100,10 +2328,11 @@ var LLTeam = (function() {
          maxStrengthState = curDPState.prev;
       }
    };
-   proto.autoUnit = function (mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock, submembers) {
+   proto.autoUnit = function (mapdata, gemStock, submembers) {
       var me = this;
+      var mapcolor = mapdata.attribute;
+      var weights = mapdata.weights
       //排序权重, 不包括主唱位, 从大到小
-      var totalWeight = getTotalWeight(weights);
       var visitedWeight = [0, 0, 0, 0, 1, 0, 0, 0, 0];
       var weightSort = [];
       var i, j;
@@ -2133,7 +2362,7 @@ var LLTeam = (function() {
       for (i = 0; i < allMembers.length; i++) {
          membersRef.push({
             'index': i,
-            'buff': allMembers[i].getAttrBuffFactor(mapcolor, mapunit)
+            'buff': allMembers[i].getAttrBuffFactor(mapcolor, mapdata.songUnit)
          });
       }
       //定一个初始状态, 这里用的是取属性P最高的8个, 也许可以直接用当前的队伍?
@@ -2160,9 +2389,9 @@ var LLTeam = (function() {
          for (var sortIndex = 0; sortIndex < 8; sortIndex++) {
             me.members[weightSort[sortIndex]] = allMembers[curTeamSorted[sortIndex].index];
          }
-         me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
-         me.calculateAttributeStrength(mapcolor, mapunit, friendcskill, weights);
-         me.calculateSkillStrength(maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup);
+         me.autoArmGem(mapdata, gemStock);
+         me.calculateAttributeStrength(mapdata);
+         me.calculateSkillStrength(mapdata);
          return me.averageScore;
       };
       var debugTeam = function() {
@@ -2200,7 +2429,7 @@ var LLTeam = (function() {
          me.members[weightSort[i]] = allMembers[curTeam[i].index];
          allMembers[curTeam[i].index] = undefined;
       }
-      me.autoArmGem(mapcolor, mapunit, maptime, mapcombo, mapperfect, mapstarperfect, tapup, skillup, friendcskill, weights, gemStock);
+      me.autoArmGem(mapdata, gemStock);
       var resultSubMembers = [];
       for (i = 0; i < allMembers.length; i++) {
          if (allMembers[i] !== undefined) {
@@ -2357,7 +2586,7 @@ var LLSaveData = (function () {
          }
       }
    };
-   var cls = function (data) {
+   function LLSaveData_cls(data) {
       this.rawData = data;
       this.rawVersion = checkSaveDataVersion(data);
       if (this.rawVersion == 0) {
@@ -2392,6 +2621,7 @@ var LLSaveData = (function () {
       }
       fillDefaultGemStock(this.gemStock, (this.hasGemStock ? 0 : 9));
    };
+   var cls = LLSaveData_cls;
    cls.checkSaveDataVersion = checkSaveDataVersion;
    cls.calculateSlot = calculateSlot;
    var proto = cls.prototype;
@@ -2720,23 +2950,25 @@ var LLGemStockComponent = (function () {
    //    'saveData': function (),
    //    :LLSaveLoadJsonMixin
    // }
-   var cls = function (id) {
+   function LLGemStockComponent_cls(id) {
       var data = new LLSaveData();
       var gui = buildStockGUI('技能宝石仓库', data.gemStock);
       LLUnit.getElement(id).appendChild(createListGroup(gui.items));
       this.loadData = function(data) { gui.controller.ALL.deserialize(data); };
       this.saveData = function() { return gui.controller.ALL.serialize(); }
    };
+   var cls = LLGemStockComponent_cls;
    var proto = cls.prototype;
    LLSaveLoadJsonMixin(proto);
    return cls;
 })();
 
 var LLSwapper = (function () {
-   var cls = function () {
+   function LLSwapper_cls() {
       this.controller = undefined;
       this.data = undefined;
    };
+   var cls = LLSwapper_cls;
    var proto = cls.prototype;
    proto.onSwap = function (controller) {
       if (this.controller) {
@@ -2868,7 +3100,7 @@ var LLSubMemberComponent = (function () {
    //    'saveData': function (),
    //    :LLSaveLoadJsonMixin
    // }
-   var cls = function (id) {
+   function LLSubMemberComponent_cls(id) {
       var element = LLUnit.getElement(id);
       var controllers = [];
       var swapper;
@@ -2941,6 +3173,7 @@ var LLSubMemberComponent = (function () {
          return ret;
       };
    };
+   var cls = LLSubMemberComponent_cls;
    var proto = cls.prototype;
    LLSaveLoadJsonMixin(proto);
    proto.setOnCountChange = function (callback) {
@@ -3023,12 +3256,13 @@ var LLMicDisplayComponent = (function () {
    // {
    //    'set': function (mic, urlevel),
    // }
-   var cls = function (id) {
+   function LLMicDisplayComponent_cls(id) {
       var element = LLUnit.getElement(id);
       var controller = {};
       LLUnit.getElement(id).appendChild(createMicResult(controller));
       this.set = controller.set;
    };
+   var cls = LLMicDisplayComponent_cls;
    return cls;
 })();
 
