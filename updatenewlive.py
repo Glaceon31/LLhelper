@@ -8,9 +8,14 @@ import gzip
 
 livejpdbpath = 'livenewjp.db_'
 livecndbpath = 'livecn.db_'
+json_file = 'newsongsjson.txt'
 #oldsongs = json.loads(open('songsjson.txt', 'rb').read())
-songs = json.loads(open('newsongsjson.txt', 'rb').read())
+songs = json.loads(open(json_file, 'rb').read())
 livejsonpath = 'livejson/'
+
+song_count_in_db = 0
+song_count_in_json = len(songs)
+song_count_new = 0
 
 attribute = ['','smile', 'pure', 'cool', '', 'all']
 difficulty = ['' ,'easy', 'normal', 'hard', 'expert', 'random', 'master']
@@ -32,31 +37,35 @@ live_setting_query_str = (
 )
 
 if __name__ == "__main__":
+	print 'Updating songs json: %s ...' % json_file
 	jpdbconn = sqlite3.connect(livejpdbpath)
 	cndbconn = sqlite3.connect(livecndbpath)
 	jptc = jpdbconn.execute('SELECT live_track_id,name,member_category FROM live_track_m;')
 	jptmp = jptc.fetchone()
 	while jptmp:
-		new = False
-		if not songs.has_key(str(jptmp[0])):
-			new = True
-			songs[str(jptmp[0])] = {}
-			song = songs[str(jptmp[0])]
+		song_count_in_db += 1
+		song_id = jptmp[0]
+		song_key = str(song_id)
+		if not songs.has_key(song_key):
+			print 'New song %d' % song_id
+			song_count_new += 1
+			songs[song_key] = {}
+			song = songs[song_key]
 			song['type'] = ''
 			song['totaltime'] = 0
 			song['bpm'] = 0
 			song['name'] = jptmp[1]
 			#song['cnhave'] = 0
-		song = songs[str(jptmp[0])]
+		song = songs[song_key]
 		song['jpname'] = jptmp[1]
-		song['id'] = jptmp[0]
+		song['id'] = song_id
 		if jptmp[2] == 1:
 			song['muse'] = 1
 			song['aqours'] = 0
 		else:
 			song['muse'] = 0
 			song['aqours'] = 1
-		livesetting = jpdbconn.execute(live_setting_query_str % str(jptmp[0]))
+		livesetting = jpdbconn.execute(live_setting_query_str % song_key)
 		livetmp = livesetting.fetchone()
 		while livetmp:
 			# AC charts
@@ -133,7 +142,8 @@ if __name__ == "__main__":
 		jptmp = jptc.fetchone()
 
 
-
-	output = open('newsongsjson.txt', 'wb')
+	output = open(json_file, 'wb')
 	output.write(json.dumps(songs, sort_keys=True))
 	output.close()
+
+	print 'Updated %s , song count = %d (old %d, new %d, db %d)' % (json_file, len(songs), song_count_in_json, song_count_new, song_count_in_db)

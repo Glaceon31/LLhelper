@@ -5,8 +5,9 @@ import hashlib
 import sqlite3
 import re
 
+json_file = 'newcardsjson.txt'
 
-cards = json.loads(open('newcardsjson.txt', 'rb').read())
+cards = json.loads(open(json_file, 'rb').read())
 avatarpath = 'static//llhead'
 cardpath = 'static//card'
 navipath = 'static//navi'
@@ -18,18 +19,9 @@ jpdbpath = 'unitnewjp.db_'
 cndbpath = 'unitcn.db_'
 navirepo = 'http://app.lovelivewiki.com/images/navis/'
 
-
-def tothree(cardid):
-    result = str(cardid)
-    while len(result) < 3:
-        result = '0'+result
-    return result
-
-def threetonumber(cardid):
-    result = str(cardid)
-    while result[0] == '0':
-        result = result[1:len(result)]
-    return result
+card_count_in_db = 0
+card_count_in_json = len(cards)
+card_count_new = 0
 
 attribute = ['','smile', 'pure', 'cool', '', 'all']
 rarity = ['','N','R','SR','UR','SSR']
@@ -43,6 +35,7 @@ def namechange(name):
         return name
 
 if __name__ == "__main__":
+    print 'Updating cards json: %s ...' % json_file
     jpdbconn = sqlite3.connect(jpdbpath)
     has_cndb = os.path.exists(cndbpath)
     if has_cndb:
@@ -52,19 +45,23 @@ if __name__ == "__main__":
     #cntc = cndbconn.execute('SELECT * FROM unit_m;')
     #cntmp = cntc.fetchone()
     while jptmp:#[0] < 30:
-        print jptmp[1]
-        if not cards.has_key(str(jptmp[1])):
-            cards[str(jptmp[1])] = {}
-            card = cards[str(jptmp[1])]
+        card_count_in_db += 1
+        card_id = jptmp[1]
+        card_key = str(card_id)
+        if not cards.has_key(card_key):
+            print 'New card %d' % card_id
+            card_count_new += 1
+            cards[card_key] = {}
+            card = cards[card_key]
             card['cnhave'] = 0
             card['series'] = ''
             card['jpseries'] = ''
             card['type'] = u'卡池卡'
         skillid = jptmp[13]
-        card = cards[str(jptmp[1])]
-        card['id'] = jptmp[1]
+        card = cards[card_key]
+        card['id'] = card_id
         if has_cndb:
-            cncard = cndbconn.execute('SELECT * FROM unit_m WHERE unit_number = '+str(jptmp[1])+';')
+            cncard = cndbconn.execute('SELECT * FROM unit_m WHERE unit_number = '+card_key+';')
             cntmp = cncard.fetchone()
         else:
             cntmp = 0
@@ -180,26 +177,11 @@ if __name__ == "__main__":
         '''
         jptmp = jptc.fetchone()
 
-    #dangerous code
-    '''
-    oldcards = json.loads(open('cardsjson.txt', 'rb').read())
-    for oldcard in oldcards:
-        cards[threetonumber(str(oldcard['id']))]['cnhave'] = oldcard['cnhave']
-        cards[threetonumber(str(oldcard['id']))]['type'] = oldcard['type']
 
-        sre = re.compile('\((.*?)\)')
-        cards[threetonumber(str(oldcard['id']))]['series'] = sre.findall(oldcard['name'])
-        cards[threetonumber(str(oldcard['id']))]['jpseries'] = sre.findall(oldcard['jpname'])
-    '''
-    #
-    
-
-
-    output = open('newcardsjson.txt', 'wb')
+    output = open(json_file, 'wb')
     output.write(json.dumps(cards, sort_keys=True))
     output.close()
 
+    print 'Updated %s , card count = %d (old %d, new %d, db %d)' % (json_file, len(cards), card_count_in_json, card_count_new, card_count_in_db)
 
 
-
-    
