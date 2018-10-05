@@ -14,8 +14,9 @@ sys.setdefaultencoding('utf-8')
 app = Flask(__name__)
 app.secret_key = "hatsune miku"
 
-g_llcarddata = LLData()
-g_llcarddata.loadJson('newcardsjson.txt')
+# file check interval: 60 seconds (only check when a request comes in and have not checked for 1 minute)
+# auto reload the data during file check when file last modify time is changed
+g_llcarddata = LLData('newcardsjson.txt', 60)
 
 ### activity ###
 @app.route("/activitypt")
