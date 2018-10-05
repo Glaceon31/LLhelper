@@ -295,7 +295,7 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
