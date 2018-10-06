@@ -46,6 +46,12 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+
+      var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
+         'saveData': makeSaveData,
+         'loadTeamMember': handleLoadTeamMember
+      });
+
       init();
 
       // load cookie
@@ -161,12 +167,10 @@
       window.location.href="/llsaveunit/"+unitjson;
    }
 
-   function handleLoadUnit(unit) {
-      var saveData = new LLSaveData(unit);
-      console.log(saveData);
+   function handleLoadTeamMember(teamMember) {
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
       for (var i = 0; i < 9; i++) {
-         var member = saveData.teamMember[i];
+         var member = teamMember[i];
          for (var j in attlist) {
             var att = attlist[j];
             var value = 0;
@@ -181,6 +185,12 @@
       }
       LLUnit.changecenter();
       precalcu();
+   }
+
+   function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
+      handleLoadTeamMember(saveData.teamMember);
    }
 
    function loadunit(){
@@ -295,7 +305,7 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
@@ -663,16 +673,6 @@
 <input type="submit" value="读取队伍" onclick="loadunit()">
 
 <div id="unit-storage" style="margin-top: 30px">
-  <h4>队伍列表</h4>
-  <div id="unit-storage-list" class="list-group">
-
-  </div>
-  <div class="input-group">
-    <input type="text" id="unit-storage-name" class="form-control" placeholder="给队伍取个名字" />
-    <span class="input-group-btn">
-      <a class="btn btn-default" id="unit-storage-save">保存到浏览器</a>
-    </span>
-  </div>
 </div>
 
 </div>
@@ -857,6 +857,3 @@
 </ul>
 {% endblock %}
 
-{% block back_script %}
-<script src="{{ url_for('static', filename='llnewunit/storage.js') }}?t=20180421_1"></script>
-{% endblock %}

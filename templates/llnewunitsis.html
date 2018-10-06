@@ -36,6 +36,13 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+
+      var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
+         'saveData': makeSaveData,
+         'loadTeamMember': handleLoadTeamMember,
+         'loadGemStock': function(data) { if (comp_gemstock) comp_gemstock.loadData(data); }
+      });
+
       init();
 
       // load cookie
@@ -159,12 +166,10 @@
       window.location.href="/llsaveunit/"+unitjson;
    }
 
-   function handleLoadUnit(unit) {
-      var saveData = new LLSaveData(unit);
-      console.log(saveData);
+   function handleLoadTeamMember(teamMember) {
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
       for (var i = 0; i < 9; i++) {
-         var member = saveData.teamMember[i];
+         var member = teamMember[i];
          if (!member) continue;
          for (var j in attlist) {
             var att = attlist[j];
@@ -180,6 +185,12 @@
       }
       LLUnit.changecenter();
       precalcu();
+   }
+
+   function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
+      handleLoadTeamMember(saveData.teamMember);
       if (saveData.hasGemStock) {
          comp_gemstock.loadData(saveData.gemStock);
       }
@@ -343,7 +354,7 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
@@ -761,6 +772,10 @@
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
+
+<div id="unit-storage" style="margin-top:30px">
+</div>
+
 </div>
 
 <div class="col-xs-12 col-md-3 gem-stock-list-group" id="sisreserves" style='display:none'>

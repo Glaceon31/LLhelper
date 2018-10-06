@@ -24,8 +24,9 @@
  *   LLGemStockComponent
  *   LLSubMemberComponent
  *   LLMicDisplayComponent
+ *   LLSaveStorageComponent
  *
- * v0.9.0
+ * v1.0.0
  * By ben1222
  */
 
@@ -473,6 +474,15 @@ var LLComponentCollection = (function() {
 
 var LLConst = (function () {
    var KEYS = {
+      '高坂穂乃果': 1,
+      '絢瀬絵里': 2,
+      '南ことり': 3,
+      '園田海未': 4,
+      '星空凛': 5,
+      '西木野真姫': 6,
+      '東條希': 7,
+      '小泉花陽': 8,
+      '矢澤にこ': 9,
       'MEMBER_HONOKA': 1,
       'MEMBER_ELI': 2,
       'MEMBER_KOTORI': 3,
@@ -483,6 +493,15 @@ var LLConst = (function () {
       'MEMBER_HANAYO': 8,
       'MEMBER_NICO': 9,
 
+      '高海千歌': 101,
+      '桜内梨子': 102,
+      '松浦果南': 103,
+      '黒澤ダイヤ': 104,
+      '渡辺曜': 105,
+      '津島善子': 106,
+      '国木田花丸': 107,
+      '小原鞠莉': 108,
+      '黒澤ルビィ': 109,
       'MEMBER_CHIKA': 101,
       'MEMBER_RIKO': 102,
       'MEMBER_KANAN': 103,
@@ -542,6 +561,42 @@ var LLConst = (function () {
    GROUP_DATA[KEYS.GROUP_GUILTYKISS] = {'name': 'Guilty Kiss'};
 
    var ret = KEYS;
+   ret.getGroupName = function (groupid) {
+      if (!GROUP_DATA[groupid]) return '<Unknown(' + groupid + ')>';
+      return GROUP_DATA[groupid].name;
+   };
+   ret.isMemberInGroup = function (member, group) {
+      if (group === undefined || group == '') return false;
+      var memberid = member;
+      var groupid = group;
+      if (typeof(memberid) != 'number') {
+         memberid = KEYS[memberid];
+         if (memberid === undefined) {
+            console.error('Not found member ' + member);
+            return false;
+         }
+      }
+      if (typeof(groupid) != 'number') {
+         groupid = parseInt(groupid);
+         if (groupid == 0) {
+            console.error('Unknown group ' + group);
+            return false;
+         }
+      }
+      if (!GROUP_DATA[groupid]) {
+         console.error('Not found group ' + groupid);
+         return false;
+      }
+      if (!MEMBER_DATA[memberid]) {
+         console.error('Not found member ' + memberid);
+         return false;
+      }
+      var groups = MEMBER_DATA[memberid].types;
+      for (var i = 0; i < groups.length; i++) {
+         if (groups[i] == groupid) return true;
+      }
+      return false;
+   };
    return ret;
 })();
 
@@ -766,19 +821,11 @@ var LLUnit = {
       return trigger_text + rate_text + effect_text;
    },
 
-   targetIdToName: {
-      1: '1年级',
-      2: '2年级',
-      3: '3年级',
-      4: "μ's",
-      5: 'Aqours',
-   },
-
    getTriggerTarget: function (targets) {
       if (!targets) return '(数据缺失)';
       var ret = '';
       for (var i = 0; i < targets.length; i++) {
-         ret += LLUnit.targetIdToName[parseInt(targets[i])];
+         ret += LLConst.getGroupName(parseInt(targets[i]));
       }
       return ret;
    },
@@ -930,7 +977,6 @@ var LLCardSelector = (function() {
     *    handleCardFilter()
     *    setLanguage(language)
     *    getCardId()
-    *    isInUnitGroup(unitgrade, character)
     *    addComponentAsFilter(name, component, filterfunction)
     *    serialize() (override)
     *    deserialize(v) (override)
@@ -940,20 +986,6 @@ var LLCardSelector = (function() {
       'pure': 'green',
       'cool': 'blue'
    };
-   var const_unitgradechr = [
-      [],
-      ["星空凛","西木野真姫","小泉花陽","津島善子","国木田花丸","黒澤ルビィ"],
-      ["高坂穂乃果","南ことり","園田海未","高海千歌","桜内梨子","渡辺曜"],
-      ["絢瀬絵里","東條希","矢澤にこ","松浦果南","黒澤ダイヤ","小原鞠莉"],
-      ["高坂穂乃果","絢瀬絵里","南ことり","園田海未","星空凛","西木野真姫","東條希","小泉花陽","矢澤にこ"],
-      ["高海千歌","桜内梨子","松浦果南","黒澤ダイヤ","渡辺曜","津島善子","国木田花丸","小原鞠莉","黒澤ルビィ"],
-      ["高坂穂乃果","南ことり","小泉花陽"],
-      ["園田海未","星空凛","東條希"],
-      ["絢瀬絵里","西木野真姫","矢澤にこ"],
-      ["高海千歌","渡辺曜","黒澤ルビィ"],
-      ["松浦果南","黒澤ダイヤ","国木田花丸"],
-      ["桜内梨子","津島善子","小原鞠莉"]
-   ];
    function LLCardSelector_cls(cards, options) {
       LLComponentCollection.call(this);
 
@@ -966,7 +998,6 @@ var LLCardSelector = (function() {
       this.filters = {};
       this.freezeCardFilter = 1;
       this.attcolor = const_attcolor;
-      this.unitgradechr = const_unitgradechr;
 
       // init components
       options = options || {
@@ -999,7 +1030,7 @@ var LLCardSelector = (function() {
       addSelect('skilltype', function (card, v) { return (v == '' || card.skilleffect == v); });
       addSelect('triggertype', function (card, v) { return (v == '' || card.triggertype == v); });
       addSelect('setname', function (card, v) { return (v == '' || card.jpseries == v); });
-      addSelect('unitgrade', function (card, v) { return (v == '' || me.isInUnitGroup(v, card.jpname)); });
+      addSelect('unitgrade', function (card, v) { return (v == '' || LLConst.isMemberInGroup(card.jpname, v)); });
       me.addComponentAsFilter('showncard', new LLValuedComponent(options.showncard), function (card, v) { return (v == true || card.rarity != 'N'); });
 
       // build card options for both language
@@ -1079,19 +1110,6 @@ var LLCardSelector = (function() {
    proto.getCardId = function () {
       return this.getComponent('cardchoice').get() || '';
    };
-   proto.isInUnitGroup = function (unitgrade, character) {
-      if (!unitgrade) return true;
-      var chrs = const_unitgradechr[parseInt(unitgrade)];
-      if (!chrs) {
-         console.error("Not found unit " + unitgrade + ", character " + character);
-         return true;
-      }
-      for (var i = 0; i < chrs.length; i++) {
-         if (chrs[i] == character) return true;
-      }
-      return false;
-   };
-   cls.isInUnitGroup = proto.isInUnitGroup;
    proto.addComponentAsFilter = function (name, comp, f) {
       var me = this;
       me.add(name, comp);
@@ -1633,7 +1651,6 @@ var LLMember = (function() {
       this.raw = v;
    };
    var cls = LLMember_cls;
-   var isInUnitGroup = LLCardSelector.isInUnitGroup;
    var proto = cls.prototype;
    proto.hasSkillGem = function () {
       for (var i = 0; i < this.gems.length; i++) {
@@ -1694,7 +1711,7 @@ var LLMember = (function() {
             }
             //副c技能
             if (cskill.Csecondskillattribute) {
-               if (isInUnitGroup(cskill.Csecondskilllimit, this.card.jpname)) {
+               if (LLConst.isMemberInGroup(this.card.jpname, cskill.Csecondskilllimit)) {
                   bonusAttr[cskill.attribute] += Math.ceil(baseAttr[cskill.attribute]*cskill.Csecondskillattribute/100);
                }
             }
@@ -1718,13 +1735,13 @@ var LLMember = (function() {
    proto.getAttrBuffFactor = function (mapcolor, mapunit) {
       var buff = 1;
       if (this.card.attribute == mapcolor) buff *= 1.1;
-      if (isInUnitGroup(mapunit, this.card.jpname)) buff *= 1.1;
+      if (LLConst.isMemberInGroup(this.card.jpname, mapunit)) buff *= 1.1;
       return buff;
    };
    proto.getAttrDebuffFactor = function (mapcolor, mapunit, weight, totalweight) {
       var debuff = 1;
       if (this.card.attribute != mapcolor) debuff *= 1.1;
-      if (!isInUnitGroup(mapunit, this.card.jpname)) debuff *= 1.1;
+      if (!LLConst.isMemberInGroup(this.card.jpname, mapunit)) debuff *= 1.1;
       debuff = 1-1/debuff;
       debuff = (weight/totalweight)*debuff;
       return debuff;
@@ -1752,7 +1769,7 @@ var LLMember = (function() {
             sumPercentage += parseInt(cskill.Cskillpercentage);
          }
          if (cskill.Csecondskillattribute && cskill.attribute == mapcolor) {
-            if (isInUnitGroup(cskill.Csecondskilllimit, this.card.jpname)) {
+            if (LLConst.isMemberInGroup(this.card.jpname, cskill.Csecondskilllimit)) {
                sumPercentage += parseInt(cskill.Csecondskillattribute);
             }
          }
@@ -1822,9 +1839,9 @@ var LLTeam = (function() {
       var unitMemberCount = {'muse':{}, 'aqours':{}};
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
-         if (isInUnitGroup(4, curMember.card.jpname)) {
+         if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_MUSE)) {
             unitMemberCount.muse[curMember.card.jpname] = 1;
-         } else if (isInUnitGroup(5, curMember.card.jpname)) {
+         } else if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_AQOURS)) {
             unitMemberCount.aqours[curMember.card.jpname] = 1;
          }
       }
@@ -2084,7 +2101,6 @@ var LLTeam = (function() {
       if (i < 0) this.micNumber = 0;
       this.equivalentURLevel = micPoint/40;
    };
-   var isInUnitGroup = LLCardSelector.isInUnitGroup;
    proto.autoArmGem = function (mapdata, gemStock) {
       var mapcolor = mapdata.attribute;
       // 计算主唱增益率以及异色异团惩罚率
@@ -2114,16 +2130,16 @@ var LLTeam = (function() {
       for (var i = 0; i < 9; i++) {
          var curMember = this.members[i];
          for (var j = 1; j <= 3; j++) {
-            if (isInUnitGroup(j, curMember.card.jpname)) {
+            if (LLConst.isMemberInGroup(curMember.card.jpname, j)) {
                gradeInfo.push(j);
                gradeCount[j]++;
                break;
             }
          }
-         if (isInUnitGroup(4, curMember.card.jpname)) {
+         if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_MUSE)) {
             unitInfo.push('muse');
             unitMemberCount.muse[curMember.card.jpname] = 1;
-         } else if (isInUnitGroup(5, curMember.card.jpname)) {
+         } else if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_AQOURS)) {
             unitInfo.push('aqours');
             unitMemberCount.aqours[curMember.card.jpname] = 1;
          }
@@ -2619,11 +2635,15 @@ var LLSaveData = (function () {
          this.hasGemStock = true;
          this.subMember = data.submember;
       }
-      fillDefaultGemStock(this.gemStock, (this.hasGemStock ? 0 : 9));
    };
    var cls = LLSaveData_cls;
    cls.checkSaveDataVersion = checkSaveDataVersion;
    cls.calculateSlot = calculateSlot;
+   cls.makeFullyExpandedGemStock = function() {
+      var ret = {};
+      fillDefaultGemStock(ret, 9);
+      return ret;
+   };
    var proto = cls.prototype;
    proto.getLegacyGemStock = function() {
       var mapping = [
@@ -2668,7 +2688,7 @@ var LLSaveData = (function () {
    };
    proto.serializeV102 = function(excludeTeam, excludeGemStock, excludeSubMember) {
       return JSON.stringify({
-         'version': this.rawVersion,
+         'version': 102,
          'team': (excludeTeam ? [] : this.teamMember),
          'gemstock': (excludeGemStock ? {} : this.gemStock),
          'submember': (excludeSubMember ? [] : shrinkSubMembers(this.subMember))
@@ -2951,8 +2971,8 @@ var LLGemStockComponent = (function () {
    //    :LLSaveLoadJsonMixin
    // }
    function LLGemStockComponent_cls(id) {
-      var data = new LLSaveData();
-      var gui = buildStockGUI('技能宝石仓库', data.gemStock);
+      var data = LLSaveData.makeFullyExpandedGemStock();
+      var gui = buildStockGUI('技能宝石仓库', data);
       LLUnit.getElement(id).appendChild(createListGroup(gui.items));
       this.loadData = function(data) { gui.controller.ALL.deserialize(data); };
       this.saveData = function() { return gui.controller.ALL.serialize(); }
@@ -3259,10 +3279,196 @@ var LLMicDisplayComponent = (function () {
    function LLMicDisplayComponent_cls(id) {
       var element = LLUnit.getElement(id);
       var controller = {};
-      LLUnit.getElement(id).appendChild(createMicResult(controller));
+      element.appendChild(createMicResult(controller));
       this.set = controller.set;
    };
    var cls = LLMicDisplayComponent_cls;
+   return cls;
+})();
+
+var LLSaveStorageComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var localStorageKey = 'llhelper_unit_storage__';
+   var toggleDisabledClass = 'btn btn-default disabled';
+   var toggleIncludedClass = 'btn btn-success';
+   var toggleExcludedClass = 'btn btn-default';
+
+  function loadStorageJSON() {
+    var json;
+    try {
+      json = JSON.parse(localStorage.getItem(localStorageKey));
+    } catch (e) {
+      json = {};
+    }
+    if (json == null || json === '') {
+      json = {};
+    }
+    return json;
+  }
+
+  function saveStorageJSON(json) {
+    localStorage.setItem(localStorageKey, JSON.stringify(json));
+  }
+
+   // controller
+   // {
+   //    'enabled': {true|false},
+   //    'include': {true|false},
+   // }
+   function createToggleButton(controller, text, enabled) {
+      controller.enabled = enabled;
+      controller.included = enabled;
+      var toggleClass = (enabled ? toggleIncludedClass : toggleDisabledClass);
+      var toggleButton = createElement('a', {'className': (enabled ? toggleIncludedClass : toggleDisabledClass), 'href': 'javascript:;', 'innerHTML': text}, undefined, {
+         'click': function () {
+            if (controller.enabled) {
+               controller.included = ! controller.included;
+               toggleButton.className = (controller.included ? toggleIncludedClass : toggleExcludedClass);
+            }
+         }
+      });
+      if (!enabled) {
+         toggleButton.style.color = '#fff';
+         toggleButton.style['background-color'] = '#777';
+      }
+      return toggleButton;
+   }
+
+   // controller
+   // {
+   //   'saveData': function() {return LLSaveData},
+   //   'loadTeamMember': function(team_member_data),
+   //   'loadGemStock': function(gem_stock_data),
+   //   'loadSubMember': function(sub_member_data),
+   //
+   //   'onSave': function(),
+   //   'onDelete': function(key),
+   //   'reload': function(),
+   //   'setInputValue': function(value),
+   // }
+   function createListItem(controller, key, data) {
+      var deleteButton = createElement('a', {'className': 'badge', 'href': 'javascript:;', 'innerHTML': '删除'}, undefined, {
+         'click': function() {
+            if (controller.onDelete) controller.onDelete(key);
+         }
+      });
+      var saveData = new LLSaveData(JSON.parse(data));
+      var teamMemberToggleController = {};
+      var teamMemberToggle = createToggleButton(teamMemberToggleController, '队', (saveData.teamMember.length == 9));
+      var gemStockToggleController = {};
+      var gemStockToggle = createToggleButton(gemStockToggleController, '宝', (Object.keys(saveData.gemStock).length > 0));
+      var subMemberToggleController = {};
+      var subMemberToggle = createToggleButton(subMemberToggleController, '备', (saveData.subMember.length > 0));
+
+      var toggleGroup = createElement('div', {'className': 'btn-group btn-group-xs', 'role': 'group'}, [teamMemberToggle, gemStockToggle, subMemberToggle]);
+
+      var loadButton = createElement('a', {'className': 'storage-text', 'href': 'javascript:;', 'innerHTML': key}, undefined, {
+         'click': function() {
+            console.log(saveData);
+            if (teamMemberToggleController.included && controller.loadTeamMember) controller.loadTeamMember(saveData.teamMember);
+            if (gemStockToggleController.included && controller.loadGemStock) controller.loadGemStock(saveData.gemStock);
+            if (subMemberToggleController.included && controller.loadSubMember) controller.loadSubMember(saveData.subMember);
+            if (controller.setInputValue) controller.setInputValue(key);
+         }
+      });
+      var listItem = createElement('li', {'className': 'list-group-item'}, [deleteButton, toggleGroup, loadButton]);
+      return listItem;
+   }
+
+   function createSaveStorage(controller) {
+      var nameInput = createElement('input', {'type': 'text', 'className': 'form-control', 'placeholder': '给队伍取个名字'});
+
+      var listContainer = createElement('div', {'className': 'list-group storage-list'});
+      var saveContainer = createElement('div', {'className': 'input-group'}, [
+         nameInput,
+         createElement('span', {'className': 'input-group-btn'}, [
+            createElement('a', {'className': 'btn btn-default', 'href': 'javascript:;', 'innerHTML': '保存到浏览器'}, undefined, {
+               'click': function() {
+                  if (controller.onSave) controller.onSave();
+               }
+            })
+         ])
+      ]);
+      var teamMemberToggleController = {};
+      var teamMemberToggle = createToggleButton(teamMemberToggleController, '队伍', (controller.loadTeamMember !== undefined));
+      var gemStockToggleController = {};
+      var gemStockToggle = createToggleButton(gemStockToggleController, '宝石仓库', (controller.loadGemStock !== undefined));
+      var subMemberToggleController = {};
+      var subMemberToggle = createToggleButton(subMemberToggleController, '备选成员', (controller.loadSubMember !== undefined));
+      var toSaveToggleGroup = createElement('div', {'className': 'btn-group btn-group-sm', 'role': 'group'}, [teamMemberToggle, gemStockToggle, subMemberToggle]);
+      var toSaveHint = createElement('span', {'innerHTML': '选择要保存的数据:'});
+
+      controller.onSave = function() {
+         if (controller.saveData) {
+            var data = controller.saveData();
+            var key = nameInput.value;
+            if (!key) {
+               var date = new Date();
+               key = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            }
+            var savedJson = loadStorageJSON();
+            savedJson[key] = data.serializeV102(!teamMemberToggleController.included, !gemStockToggleController.included, !subMemberToggleController.included);
+            saveStorageJSON(savedJson);
+            if (controller.reload) controller.reload(savedJson);
+         }
+      };
+
+      controller.onDelete = function(key) {
+         var savedJson = loadStorageJSON();
+         delete savedJson[key];
+         saveStorageJSON(savedJson);
+         if (controller.reload) controller.reload(savedJson);
+      };
+
+      controller.reload = function(savedJson) {
+         if (savedJson === undefined) savedJson = loadStorageJSON();
+         listContainer.innerHTML = '';
+         for (var key in savedJson) {
+            listContainer.appendChild(createListItem(controller, key, savedJson[key]));
+         }
+      };
+
+      controller.setInputValue = function(value) {
+         nameInput.value = value;
+      };
+
+      controller.reload();
+
+      var bodyItem = createElement('div', {'className': 'list-group-item storage-body'}, [listContainer, toSaveHint, toSaveToggleGroup, saveContainer]);
+      var bodyItemComponent = new LLComponentBase(bodyItem);
+      var arrowSpan = createElement('span', {'className': 'tri-down'});
+      var headerText = createElement('span', {'className': 'storage-text', 'innerHTML': '队伍列表'});
+      var refreshButton = createElement('a', {'className': 'badge', 'href': 'javascript:;', 'innerHTML': '刷新'}, undefined, {
+         'click': function(e) {
+            var curEvent = window.event || e;
+            curEvent.cancelBubble = true;
+            if (controller.reload) controller.reload();
+         }
+      });
+      var headerItem = createElement('div', {'className': 'list-group-item storage-header'}, [arrowSpan, headerText, refreshButton], {
+         'click': function() {
+            bodyItemComponent.toggleVisible();
+            arrowSpan.className = (bodyItemComponent.visible ? 'tri-down' : 'tri-right');
+         }
+      });
+      var container = createElement('div', {'className': 'list-group unit-storage'}, [headerItem, bodyItem]);
+      return container;
+   }
+   // LLSaveStorageComponent
+   // {
+   // }
+   function LLSaveStorageComponent_cls(id, saveloadhandler) {
+      var element = LLUnit.getElement(id);
+      var controller = {};
+      if (saveloadhandler) {
+         controller.saveData = saveloadhandler.saveData;
+         controller.loadTeamMember = saveloadhandler.loadTeamMember;
+         controller.loadGemStock = saveloadhandler.loadGemStock;
+         controller.loadSubMember = saveloadhandler.loadSubMember;
+      }
+      element.appendChild(createSaveStorage(controller));
+   };
+   var cls = LLSaveStorageComponent_cls;
    return cls;
 })();
 
