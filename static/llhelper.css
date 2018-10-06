@@ -19,11 +19,14 @@
    border-right: 4px solid transparent;
    border-left: 4px solid transparent;
 }
-.gem-stock-list-group .list-group-item {
+.gem-stock-list-group .list-group-item,
+.unit-storage .storage-header{
    padding-top: 4px;
    padding-bottom: 4px;
 }
-.gem-stock-list-group .list-group-item:hover {
+.gem-stock-list-group .list-group-item:hover,
+.unit-storage .storage-header:hover,
+.unit-storage .storage-list .list-group-item:hover{
    background-color: #eee;
 }
 .gem-stock-list-group .subtype-padding {
@@ -73,4 +76,37 @@
 }
 .submember-container table {
    width: 100%;
+}
+.unit-storage .storage-text {
+   padding-left: 4px;
+}
+.unit-storage .storage-body {
+   padding-left: 0px;
+   padding-right: 0px;
+   padding-top: 0px;
+   padding-bottom: 0px;
+}
+.unit-storage .storage-list {
+   overflow-y: auto;
+   max-height: 400px;
+   margin-bottom: 0px;
+}
+.unit-storage .storage-list .list-group-item {
+   padding-left: 0px;
+   padding-right: 4px;
+   padding-top: 0px;
+   padding-bottom: 0px;
+}
+.unit-storage .storage-list .storage-text {
+   padding-top: 4px;
+   padding-bottom: 4px;
+}
+.unit-storage .storage-list .btn-group .btn {
+   padding-left: 2px;
+   padding-right: 2px;
+   padding-top: 4px;
+   padding-bottom: 4px;
+}
+.unit-storage .storage-list .badge {
+   margin-top: 4px;
 }
