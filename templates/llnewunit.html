@@ -46,6 +46,12 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+
+      var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
+         'saveData': makeSaveData,
+         'loadTeamMember': handleLoadTeamMember
+      });
+
       init();
 
       // load cookie
@@ -161,12 +167,10 @@
       window.location.href="/llsaveunit/"+unitjson;
    }
 
-   function handleLoadUnit(unit) {
-      var saveData = new LLSaveData(unit);
-      console.log(saveData);
+   function handleLoadTeamMember(teamMember) {
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
       for (var i = 0; i < 9; i++) {
-         var member = saveData.teamMember[i];
+         var member = teamMember[i];
          for (var j in attlist) {
             var att = attlist[j];
             var value = 0;
@@ -181,6 +185,12 @@
       }
       LLUnit.changecenter();
       precalcu();
+   }
+
+   function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
+      handleLoadTeamMember(saveData.teamMember);
    }
 
    function loadunit(){
@@ -257,7 +267,6 @@
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
-      var sel_float = [];
       var atts = ['smile', 'pure', 'cool'];
       var member = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var mapcenter = {};
@@ -266,9 +275,6 @@
 
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
-      }
-      for (var i = 0; i < sel_float.length; i++) {
-         mapcenter[sel_float[i]] = parseFloat(document.getElementById(sel_float[i]).value);
       }
       for (var i = 0; i < sel_element.length; i++) {
          mapcenter[sel_element[i]] = document.getElementById(sel_element[i]).value;
@@ -299,30 +305,23 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
       }
 
+      var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
+      llmap.attribute = mainatt;
+      llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
+      llmap.setMapBuff(mapcenter.tapup, mapcenter.skillup);
+      llmap.setWeights(weights);
+      llmap.setFriendCSkill(mapcenter.bonus2, mapcenter.base2, mapcenter.percentage2, mapcenter.secondlimit2, mapcenter.secondpercentage2);
+
       var llteam = new LLTeam(llmembers);
-      var friendcskill = {
-        "Csecondskillattribute": parseInt(mapcenter.secondpercentage2),
-        "Csecondskilllimit": parseInt(mapcenter.secondlimit2),
-        "Cskillattribute": mapcenter.base2,
-        "Cskillpercentage": parseInt(mapcenter.percentage2),
-        "attribute": mapcenter.bonus2
-      };
-      var song = llsong.songs[document.getElementById('songchoice').value];
-      var songunit = 0;
-      if (song.muse) {
-         songunit = 4;
-      } else if (song.aqours) {
-         songunit = 5;
-      }
-      llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
-      llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
+      llteam.calculateAttributeStrength(llmap);
+      llteam.calculateSkillStrength(llmap);
 
       document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
@@ -674,16 +673,6 @@
 <input type="submit" value="读取队伍" onclick="loadunit()">
 
 <div id="unit-storage" style="margin-top: 30px">
-  <h4>队伍列表</h4>
-  <div id="unit-storage-list" class="list-group">
-
-  </div>
-  <div class="input-group">
-    <input type="text" id="unit-storage-name" class="form-control" placeholder="给队伍取个名字" />
-    <span class="input-group-btn">
-      <a class="btn btn-default" id="unit-storage-save">保存到浏览器</a>
-    </span>
-  </div>
 </div>
 
 </div>
@@ -868,6 +857,3 @@
 </ul>
 {% endblock %}
 
-{% block back_script %}
-<script src="{{ url_for('static', filename='llnewunit/storage.js') }}?t=20180421_1"></script>
-{% endblock %}

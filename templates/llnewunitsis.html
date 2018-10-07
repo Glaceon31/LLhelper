@@ -36,6 +36,13 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+
+      var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
+         'saveData': makeSaveData,
+         'loadTeamMember': handleLoadTeamMember,
+         'loadGemStock': function(data) { if (comp_gemstock) comp_gemstock.loadData(data); }
+      });
+
       init();
 
       // load cookie
@@ -159,12 +166,10 @@
       window.location.href="/llsaveunit/"+unitjson;
    }
 
-   function handleLoadUnit(unit) {
-      var saveData = new LLSaveData(unit);
-      console.log(saveData);
+   function handleLoadTeamMember(teamMember) {
       var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
       for (var i = 0; i < 9; i++) {
-         var member = saveData.teamMember[i];
+         var member = teamMember[i];
          if (!member) continue;
          for (var j in attlist) {
             var att = attlist[j];
@@ -180,6 +185,12 @@
       }
       LLUnit.changecenter();
       precalcu();
+   }
+
+   function handleLoadUnit(unit) {
+      var saveData = new LLSaveData(unit);
+      console.log(saveData);
+      handleLoadTeamMember(saveData.teamMember);
       if (saveData.hasGemStock) {
          comp_gemstock.loadData(saveData.gemStock);
       }
@@ -343,32 +354,25 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(member[i].weight);
       }
 
+      var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
+      llmap.attribute = mainatt;
+      llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
+      llmap.setMapBuff(mapcenter.tapup, mapcenter.skillup);
+      llmap.setWeights(weights);
+      llmap.setFriendCSkill(mapcenter.bonus2, mapcenter.base2, mapcenter.percentage2, mapcenter.secondlimit2, mapcenter.secondpercentage2);
+
       var llteam = new LLTeam(llmembers);
-      var friendcskill = {
-        "Csecondskillattribute": parseInt(mapcenter.secondpercentage2),
-        "Csecondskilllimit": parseInt(mapcenter.secondlimit2),
-        "Cskillattribute": mapcenter.base2,
-        "Cskillpercentage": parseInt(mapcenter.percentage2),
-        "attribute": mapcenter.bonus2
-      };
-      var song = llsong.songs[document.getElementById('songchoice').value];
-      var songunit = 0;
-      if (song.muse) {
-         songunit = 4;
-      } else if (song.aqours) {
-         songunit = 5;
-      }
       if (document.getElementById('autoarm0').checked){
          // autoarm
          var saveData = makeSaveData();
-         llteam.autoArmGem(mainatt, songunit, mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup, friendcskill, weights, saveData.gemStock);
+         llteam.autoArmGem(llmap, saveData.gemStock);
          for (var i = 0; i < 9; i++) {
             var curGems = llteam.members[i].gems;
             var sumSADD = 0;
@@ -404,8 +408,8 @@
             calslot(i);
          }
       }
-      llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
-      llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
+      llteam.calculateAttributeStrength(llmap);
+      llteam.calculateSkillStrength(llmap);
 
       document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
@@ -768,6 +772,10 @@
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
+
+<div id="unit-storage" style="margin-top:30px">
+</div>
+
 </div>
 
 <div class="col-xs-12 col-md-3 gem-stock-list-group" id="sisreserves" style='display:none'>

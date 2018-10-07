@@ -85,6 +85,13 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+      var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
+         'saveData': makeSaveData,
+         'loadTeamMember': handleLoadTeamMember,
+         'loadGemStock': function(data) { if (comp_gemstock) comp_gemstock.loadData(data); },
+         'loadSubMember': handleLoadSubMember
+      });
+
       init();
 
       comp_gemstock = new LLGemStockComponent('sisreserves');
@@ -198,26 +205,56 @@
       return new LLSaveData({'version': 102, 'team': member, 'gemstock': comp_gemstock.saveData(), 'submember': comp_submember.saveData()});
    }
 
+   function handleLoadTeamMember(teamMember) {
+      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
+      for (var i = 0; i < 9; i++) {
+         var member = teamMember[i];
+         for (var j in attlist) {
+            var att = attlist[j];
+            var value = 0;
+            if (member && member[att] !== undefined) value = member[att];
+            document.getElementById(att + i).value = value;
+         }
+         if (member && member.cardid) {
+            document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
+         }
+         LLUnit.changeavatarn(i);
+         calslot(i);
+      }
+      LLUnit.changecenter();
+      precalcu();
+   }
+
+   function handleLoadSubMember(subMember) {
+      var requests = [];
+      for (var i = 0; i < subMember.length; i++) {
+         (function(index){
+            // data has: 'cardid','mezame','skilllevel','maxcost'
+            var cur = subMember[index];
+            if ((!cur.maxcost) || (!cur.main)) {
+               requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
+                  if (!cur.maxcost) cur.maxcost = card.minslot;
+                  if (!cur.main) {
+                     var intMezame = parseInt(cur.mezame);
+                     cur.main = card.attribute;
+                     cur.smile = (intMezame ? card.smile2 : card.smile);
+                     cur.pure = (intMezame ? card.pure2 : card.pure);
+                     cur.cool = (intMezame ? card.cool2 : card.cool);
+                     cur[cur.main] += kizuna[card.rarity][intMezame];
+                  }
+               }));
+            }
+         })(i);
+      }
+      LoadingUtil.start(requests).then(function () {
+         comp_submember.loadData(subMember);
+      }, defaultHandleFailedRequest);
+   }
+
    function loadSaveData(data, loadTeam, loadGemStock, loadSubMember) {
       var saveData = new LLSaveData(data);
       if (loadTeam) {
-         var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
-         for (var i = 0; i < 9; i++) {
-            var member = saveData.teamMember[i];
-            for (var j in attlist) {
-               var att = attlist[j];
-               var value = 0;
-               if (member && member[att] !== undefined) value = member[att];
-               document.getElementById(att + i).value = value;
-            }
-            if (member && member.cardid) {
-               document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
-            }
-            LLUnit.changeavatarn(i);
-            calslot(i);
-         }
-         LLUnit.changecenter();
-         precalcu();
+         handleLoadTeamMember(saveData.teamMember);
       }
       if (loadGemStock) {
          if (saveData.hasGemStock) {
@@ -225,30 +262,7 @@
          }
       }
       if (loadSubMember) {
-         var loadedSubMember = saveData.subMember;
-         var requests = [];
-         for (var i = 0; i < loadedSubMember.length; i++) {
-            (function(index){
-               // data has: 'cardid','mezame','skilllevel','maxcost'
-               var cur = loadedSubMember[index];
-               if ((!cur.maxcost) || (!cur.main)) {
-                  requests.push(LLCardData.getDetailedData(cur.cardid).then(function (card) {
-                     if (!cur.maxcost) cur.maxcost = card.minslot;
-                     if (!cur.main) {
-                        var intMezame = parseInt(cur.mezame);
-                        cur.main = card.attribute;
-                        cur.smile = (intMezame ? card.smile2 : card.smile);
-                        cur.pure = (intMezame ? card.pure2 : card.pure);
-                        cur.cool = (intMezame ? card.cool2 : card.cool);
-                        cur[cur.main] += kizuna[card.rarity][intMezame];
-                     }
-                  }));
-               }
-            })(i);
-         }
-         LoadingUtil.start(requests).then(function () {
-            comp_submember.loadData(loadedSubMember);
-         }, defaultHandleFailedRequest);
+         handleLoadSubMember(saveData.subMember);
       }
    }
 
@@ -483,28 +497,21 @@
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
          if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLCardSelector.isInUnitGroup(4,member[i].card.jpname) ? 'muse' : 'aqours')}));
+            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
          weights.push(parseFloat(document.getElementById('weight'+i).value));
       }
 
+      var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
+      llmap.attribute = mainatt;
+      llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
+      llmap.setMapBuff(mapcenter.tapup, mapcenter.skillup);
+      llmap.setWeights(weights);
+      llmap.setFriendCSkill(mapcenter.bonus2, mapcenter.base2, mapcenter.percentage2, mapcenter.secondlimit2, mapcenter.secondpercentage2);
+
       var llteam = new LLTeam(llmembers);
-      var friendcskill = {
-        "Csecondskillattribute": parseInt(mapcenter.secondpercentage2),
-        "Csecondskilllimit": parseInt(mapcenter.secondlimit2),
-        "Cskillattribute": mapcenter.base2,
-        "Cskillpercentage": parseInt(mapcenter.percentage2),
-        "attribute": mapcenter.bonus2
-      };
-      var song = llsong.songs[document.getElementById('songchoice').value];
-      var songunit = 0;
-      if (song.muse) {
-         songunit = 4;
-      } else if (song.aqours) {
-         songunit = 5;
-      }
       if (document.getElementById('autoarm0').checked){
          // autounit
          var saveData = makeSaveData();
@@ -515,7 +522,7 @@
             member.gems = [];
             subMembers.push(new LLMember(member));
          }
-         var resultSubMembers = llteam.autoUnit(mainatt, songunit, mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup, friendcskill, weights, saveData.gemStock, subMembers);
+         var resultSubMembers = llteam.autoUnit(llmap, saveData.gemStock, subMembers);
          for (var i = 0; i < 9; i++) {
             setUnitMember(llteam.members[i].raw, i);
             var curGems = llteam.members[i].gems;
@@ -553,8 +560,8 @@
          }
          comp_submember.loadData(resultSubMembers.map(x => x.raw));
       }
-      llteam.calculateAttributeStrength(mainatt, songunit, friendcskill, weights);
-      llteam.calculateSkillStrength(mapcenter.time, mapcenter.combo, mapcenter.perfect, mapcenter.starperfect, mapcenter.tapup, mapcenter.skillup);
+      llteam.calculateAttributeStrength(llmap);
+      llteam.calculateSkillStrength(llmap);
 
       document.getElementById('resultsmile').innerHTML = llteam.finalAttr.smile + ' (+' + llteam.bonusAttr.smile + ')';
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
@@ -937,6 +944,10 @@
 <input type="button" value="保存队伍" onclick="saveunit()">
 <input type="file" name="file"/>
 <input type="submit" value="读取队伍" onclick="loadunit()">
+
+<div id="unit-storage" style="margin-top:30px">
+</div>
+
 </div>
 
 <div class="col-xs-12 col-md-3 gem-stock-list-group" id="sisreserves" style='display:none'>

@@ -20,10 +20,16 @@
 
       var resultElement = LLUnit.createElement('td', {'innerHTML': 'Not started'});
       var performanceElement = LLUnit.createElement('td');
+      var defer = $.Deferred();
+      item.defer = defer;
 
       var setResult = function (result) {
          item.finishTime = window.performance.now();
-         if (result) {
+         if (result == 'Skipped') {
+            resultElement.innerHTML = result;
+            resultElement.className = 'warning';
+            item.skip = 1;
+         } else if (result) {
             resultElement.innerHTML = 'Fail: ' + result;
             resultElement.className = 'danger';
             item.fail = 1;
@@ -36,31 +42,50 @@
       };
 
       item.start = function () {
-         resultElement.innerHTML = 'Running';
+         resultElement.innerHTML = 'Pending';
          resultElement.className = 'info';
          var resultClass = '';
          var resultText = '';
-         var defer = $.Deferred();
-         try {
-            item.startTime = window.performance.now();
-            var ret = item.run();
-            if (ret.then) {
-               ret.then(function (r) {
-                  setResult(r);
-                  defer.resolve(r);
-               }, function (r) {
-                  setResult(r || 'Reject');
-                  defer.resolve(r);
-               });
+         var afters = [];
+         if (item.after) {
+            if (item.after.length) {
+               for (var i = 0; i < item.after.length; i++) {
+                  var after = item.after[i];
+                  if (after.defer) afters.push(after.defer);
+                  else afters.push(after);
+               }
+            } else if (item.after.defer) {
+               afters.push(item.after.defer);
             } else {
-               setResult(ret);
-               defer.resolve(ret);
+               afters.push(item.after);
             }
-         } catch (e) {
-            console.log(e);
-            setResult('Exception: ' + e.message);
-            defer.resolve(e);
          }
+         $.when.apply($, afters).then(function () {
+            try {
+               resultElement.innerHTML = 'Running';
+               item.startTime = window.performance.now();
+               var ret = item.run();
+               if (ret.then) {
+                  ret.then(function (r) {
+                     setResult(r);
+                     defer.resolve(r);
+                  }, function (r) {
+                     setResult(r || 'Reject');
+                     defer.reject(r);
+                  });
+               } else {
+                  setResult(ret);
+                  defer.resolve(ret);
+               }
+            } catch (e) {
+               console.log(e);
+               setResult('Exception: ' + e.message);
+               defer.resolve(e);
+            }
+         }, function () {
+            setResult('Skipped');
+            defer.reject('Skipped');
+         });
          return defer;
       };
 
@@ -72,6 +97,139 @@
       ]);
       document.getElementById('test-list').appendChild(testRow);
       return item;
+   }
+
+   function loadCardsById(cardIds) {
+      var requests = [];
+      for (var i = 0; i < cardIds.length; i++) {
+         requests.push(LLCardData.getDetailedData(cardIds[i]));
+      }
+      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
+   }
+
+   function loadCardsByConfig(cardConfigs) {
+      var requests = [];
+      for (var i = 0; i < cardConfigs.length; i++) {
+         requests.push(LLCardData.getDetailedData(cardConfigs[i][0]));
+      }
+      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
+   }
+
+   function buildTeam(cards, cardConfigs, mapdata) {
+      var members = [];
+      for (var i = 0; i < 9; i++) {
+         var id = cardConfigs[i][0];
+         var mezame = cardConfigs[i][1];
+         var skillLevel = cardConfigs[i][2];
+         var maxcost = cardConfigs[i][3];
+         var gems = cardConfigs[i][4];
+         var member = {
+            'cardid': id,
+            'smile': (mezame ? cards[id].smile2 : cards[id].smile),
+            'pure': (mezame ? cards[id].pure2 : cards[id].pure),
+            'cool': (mezame ? cards[id].cool2 : cards[id].cool),
+            'skilllevel': skillLevel,
+            'maxcost': maxcost,
+            'gems': [],
+            'card': cards[id]
+         };
+         member[cards[id].attribute] += kizuna[cards[id].rarity][mezame];
+         for (var j in gems) {
+            member.gems.push(new LLSisGem(gems[j], {'color': mapdata.attribute}));
+         }
+         members.push(new LLMember(member));
+      }
+      var llteam = new LLTeam(members);
+      return llteam;
+   }
+
+   function buildSubMembers(cards, cardConfigs) {
+      var members = [];
+      for (var i = 9; i < cardConfigs.length; i++) {
+         var id = cardConfigs[i][0];
+         var mezame = cardConfigs[i][1];
+         var skillLevel = cardConfigs[i][2];
+         var maxcost = cardConfigs[i][3];
+         var member = {
+            'cardid': id,
+            'smile': (mezame ? cards[id].smile2 : cards[id].smile),
+            'pure': (mezame ? cards[id].pure2 : cards[id].pure),
+            'cool': (mezame ? cards[id].cool2 : cards[id].cool),
+            'skilllevel': skillLevel,
+            'maxcost': maxcost,
+            'gems': [],
+            'card': cards[id]
+         };
+         member[cards[id].attribute] += kizuna[cards[id].rarity][mezame];
+         members.push(new LLMember(member));
+      }
+      return members;
+   }
+
+   function getSmileTeam() {
+      // id, mezame, skilllevel, maxcost, gems
+      return [
+         [1115, 1, 2, 6, [LLSisGem.SMUL_16, LLSisGem.AMUL_18]],
+         [782, 0, 1, 4, [LLSisGem.AMUL_24]],
+         [937, 1, 2, 6, [LLSisGem.SMUL_16, LLSisGem.AMUL_18]],
+         [843, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.AMUL_18]],
+         [980, 1, 5, 4, [LLSisGem.SCORE_250]],
+         [476, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]],
+         [315, 1, 3, 5, [LLSisGem.SCORE_250, LLSisGem.SADD_200]],
+         [107, 1, 2, 4, [LLSisGem.SCORE_250]],
+         [955, 1, 4, 4, [LLSisGem.SCORE_250]]
+      ];
+   }
+
+   function getSmileSong(name) {
+      if (name == 'oyasuminasann') {
+         return {'song': {'aqours': 1, "attribute": "smile", "expert": {"combo": 427, "positionweight": ["39.75", "48.0", "65", "52.5", "29", "55.75", "58.75", "47.25", "41.75"], "star": 0, "time": "110"}, "muse": 0},
+         'diff': 'expert'};
+      }
+   }
+
+   function getFriendCSkill_muse_9_3(attribute) {
+      return {
+         'attribute': attribute,
+         'Cskillattribute': attribute,
+         'Cskillpercentage': 9,
+         'Csecondskilllimit': LLConst.GROUP_MUSE,
+         'Csecondskillattribute': 3
+      };
+   }
+
+   function getFriendCSkill_grade2_9_6(attribute) {
+      return {
+         'attribute': attribute,
+         'Cskillattribute': attribute,
+         'Cskillpercentage': 9,
+         'Csecondskilllimit': LLConst.GROUP_GRADE2,
+         'Csecondskillattribute': 6
+      };
+   }
+
+   function getGemStock_40AllGem() {
+      return {
+         'SADD_200': {'ALL': 9},
+         'SADD_450': {'ALL': 9},
+         'SMUL_10': {'ALL': 9},
+         'SMUL_16': {'ALL': 9},
+         'AMUL_18': {'ALL': 9},
+         'AMUL_24': {'ALL': 9},
+         'SCORE_250': {'ALL': 9},
+         'HEAL_480': {'ALL': 9},
+         'EMUL_33': {'ALL': 9},
+         'SADD_1400': {'ALL': 0},
+         'SMUL_28': {'ALL': 0},
+         'AMUL_40': {'ALL': 0},
+         'MEMBER_29': {'ALL': 0},
+         'NONET_42': {'ALL': 0}
+      };
+   }
+
+   function assertEqual(a, b) {
+      if (a == b) return;
+      throw 'assertEqual fail: ' + a + ' == ' + b;
    }
 
    var defer_onload = $.Deferred();
@@ -90,22 +248,144 @@
       document.getElementById('loadingbox').style.display = 'none';
 
       // init tests
-      addTestItem({'name': 'Load card detail', 'run': function () {
-         var ids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726];
-         var requests = [];
-         for (var i = 0; i < ids.length; i++) {
-            requests.push(LLCardData.getDetailedData(ids[i]));
-         }
-         return LoadingUtil.start(requests).then(function (cards) {
+      var test1 = addTestItem({'name': 'Load card detail', 'run': function () {
+         var ids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726,
+            1115, 782, 937, 843, 980, 107, 955, 459, 127, 1002, 648, 317, 957
+         ];
+         return loadCardsById(ids).then(function (cards) {
             cardDetails = cards;
             defer_test_load_card_detail.resolve();
             return 0;
          });
       }});
-      addTestItem({'name': 'Calculate', 'run': function () {
-         return 'TODO';
+      addTestItem({'name': 'Basic calculate', 'after': test1, 'run': function () {
+         var cardConfigs = [
+            [955, 1, 4, 4, [LLSisGem.SCORE_250]],
+            [980, 1, 4, 4, [LLSisGem.SCORE_250]],
+            [459, 1, 1, 1, [LLSisGem.SADD_200]],
+            [127, 0, 1, 4, [LLSisGem.AMUL_24]],
+            [1002, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]],
+            [648, 1, 1, 3, [LLSisGem.AMUL_18]],
+            [317, 1, 2, 3, [LLSisGem.AMUL_18]],
+            [378, 0, 1, 4, [LLSisGem.AMUL_24]],
+            [957, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]]
+         ];
+         var mapdata = new LLMap({
+            'song': {'aqours': 0, "attribute": "pure", "expert": {"combo": 359, "positionweight": ["15.5", "26.0", "51.5", "55.0", "52.25", "58.25", "58.5", "26.75", "21.5"], "star": "62", "time": "117"}, "muse": 1},
+            'diff': 'expert'
+         });
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 37910);
+            assertEqual(llteam.finalAttr.pure, 59698);
+            assertEqual(llteam.finalAttr.cool, 32990);
+            assertEqual(llteam.bonusAttr.smile, 0);
+            assertEqual(llteam.bonusAttr.pure, 7337);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 67734);
+            assertEqual(llteam.totalAttrStrength, 57788);
+            assertEqual(llteam.totalSkillStrength, 9946);
+            return 0;
+         });
       }});
 
+      addTestItem({'name': 'Smile team with smile song with friend', 'after': test1, 'run': function () {
+         var cardConfigs = getSmileTeam();
+         var song = getSmileSong('oyasuminasann');
+         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 78546);
+            assertEqual(llteam.finalAttr.pure, 37230);
+            assertEqual(llteam.finalAttr.cool, 36880);
+            assertEqual(llteam.bonusAttr.smile, 16200);
+            assertEqual(llteam.bonusAttr.pure, 0);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 89738);
+            assertEqual(llteam.totalAttrStrength, 72088);
+            assertEqual(llteam.totalSkillStrength, 17650);
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Smile team with smile song with friend - autoarm all gem', 'after': test1, 'run': function () {
+         var cardConfigs = getSmileTeam();
+         var song = getSmileSong('oyasuminasann');
+         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            llteam.autoArmGem(mapdata, {'ALL': 9});
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 81501);
+            assertEqual(llteam.finalAttr.pure, 37230);
+            assertEqual(llteam.finalAttr.cool, 36880);
+            assertEqual(llteam.bonusAttr.smile, 16778);
+            assertEqual(llteam.bonusAttr.pure, 0);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 90936);
+            assertEqual(llteam.totalAttrStrength, 74798);
+            assertEqual(llteam.totalSkillStrength, 16138);
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Smile team with smile song with friend - autoarm no gem', 'after': test1, 'run': function () {
+         var cardConfigs = getSmileTeam();
+         var song = getSmileSong('oyasuminasann');
+         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            llteam.autoArmGem(mapdata, {'ALL': 0});
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 67743);
+            assertEqual(llteam.finalAttr.pure, 37230);
+            assertEqual(llteam.finalAttr.cool, 36880);
+            assertEqual(llteam.bonusAttr.smile, 13963);
+            assertEqual(llteam.bonusAttr.pure, 0);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 69914);
+            assertEqual(llteam.totalAttrStrength, 62172);
+            assertEqual(llteam.totalSkillStrength, 7742);
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Smile team with smile song with friend - autounit 4.0 gem', 'after': test1, 'run': function () {
+         var cardConfigs = getSmileTeam();
+         cardConfigs.push([1065, 1, 1, 3, []]);
+         cardConfigs.push([378, 1, 4, 4, []]);
+         var song = getSmileSong('oyasuminasann');
+         song['friendCSkill'] = getFriendCSkill_grade2_9_6('smile');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, cardConfigs);
+            llteam.autoUnit(mapdata, getGemStock_40AllGem(), submembers);
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertEqual(llteam.finalAttr.smile, 76696);
+            assertEqual(llteam.finalAttr.pure, 39960);
+            assertEqual(llteam.finalAttr.cool, 36810);
+            assertEqual(llteam.bonusAttr.smile, 17038);
+            assertEqual(llteam.bonusAttr.pure, 0);
+            assertEqual(llteam.bonusAttr.cool, 0);
+            assertEqual(llteam.totalStrength, 91930);
+            assertEqual(llteam.totalAttrStrength, 70182);
+            assertEqual(llteam.totalSkillStrength, 21748);
+            return 0;
+         });
+      }});
       // run tests
       var defers = [];
       for (var i = 1; i < testSet.length; i++) {
