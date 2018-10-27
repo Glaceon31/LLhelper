@@ -526,25 +526,25 @@ var LLConst = (function () {
       'GROUP_GUILTYKISS': 11,
    };
    var MEMBER_DATA = {};
-   MEMBER_DATA[KEYS.MEMBER_HONOKA] = {'name': '高坂穂乃果', 'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS]};
-   MEMBER_DATA[KEYS.MEMBER_ELI] =    {'name': '絢瀬絵里',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI]};
-   MEMBER_DATA[KEYS.MEMBER_KOTORI] = {'name': '南ことり',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS]};
-   MEMBER_DATA[KEYS.MEMBER_UMI] =    {'name': '園田海未',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_LILYWHITE]};
-   MEMBER_DATA[KEYS.MEMBER_RIN] =    {'name': '星空凛',     'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_LILYWHITE]};
-   MEMBER_DATA[KEYS.MEMBER_MAKI] =   {'name': '西木野真姫', 'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_BIBI]};
-   MEMBER_DATA[KEYS.MEMBER_NOZOMI] = {'name': '東條希',     'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_LILYWHITE]};
-   MEMBER_DATA[KEYS.MEMBER_HANAYO] = {'name': '小泉花陽',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_PRINTEMPS]};
-   MEMBER_DATA[KEYS.MEMBER_NICO] =   {'name': '矢澤にこ',   'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI]};
+   MEMBER_DATA[KEYS.MEMBER_HONOKA] = {'name': '高坂穂乃果', 'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_ELI] =    {'name': '絢瀬絵里',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_KOTORI] = {'name': '南ことり',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_UMI] =    {'name': '園田海未',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_LILYWHITE], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_RIN] =    {'name': '星空凛',     'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_LILYWHITE], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_MAKI] =   {'name': '西木野真姫', 'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_BIBI], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_NOZOMI] = {'name': '東條希',     'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_LILYWHITE], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_HANAYO] = {'name': '小泉花陽',   'color': 'pure',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE1, KEYS.GROUP_PRINTEMPS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_NICO] =   {'name': '矢澤にこ',   'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI], 'member_gem': 1};
 
-   MEMBER_DATA[KEYS.MEMBER_CHIKA] =    {'name': '高海千歌',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON]};
-   MEMBER_DATA[KEYS.MEMBER_RIKO] =     {'name': '桜内梨子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_GUILTYKISS]};
-   MEMBER_DATA[KEYS.MEMBER_KANAN] =    {'name': '松浦果南',   'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA]};
-   MEMBER_DATA[KEYS.MEMBER_DIA] =      {'name': '黒澤ダイヤ', 'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA]};
-   MEMBER_DATA[KEYS.MEMBER_YOU] =      {'name': '渡辺曜',     'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON]};
-   MEMBER_DATA[KEYS.MEMBER_YOSHIKO] =  {'name': '津島善子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_GUILTYKISS]};
-   MEMBER_DATA[KEYS.MEMBER_HANAMARU] = {'name': '国木田花丸', 'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_AZALEA]};
-   MEMBER_DATA[KEYS.MEMBER_MARI] =     {'name': '小原鞠莉',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_GUILTYKISS]};
-   MEMBER_DATA[KEYS.MEMBER_RUBY] =     {'name': '黒澤ルビィ', 'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_CYARON]};
+   MEMBER_DATA[KEYS.MEMBER_CHIKA] =    {'name': '高海千歌',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_RIKO] =     {'name': '桜内梨子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_GUILTYKISS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_KANAN] =    {'name': '松浦果南',   'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_DIA] =      {'name': '黒澤ダイヤ', 'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_AZALEA], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_YOU] =      {'name': '渡辺曜',     'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE2, KEYS.GROUP_CYARON], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_YOSHIKO] =  {'name': '津島善子',   'color': 'cool',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_GUILTYKISS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_HANAMARU] = {'name': '国木田花丸', 'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_AZALEA], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_MARI] =     {'name': '小原鞠莉',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_GUILTYKISS], 'member_gem': 1};
+   MEMBER_DATA[KEYS.MEMBER_RUBY] =     {'name': '黒澤ルビィ', 'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_CYARON], 'member_gem': 1};
 
    var GROUP_DATA = {};
    GROUP_DATA[KEYS.GROUP_UNKNOWN] = {'name': '<Unknown>'};
@@ -560,6 +560,29 @@ var LLConst = (function () {
    GROUP_DATA[KEYS.GROUP_AZALEA] =     {'name': 'AZALEA'};
    GROUP_DATA[KEYS.GROUP_GUILTYKISS] = {'name': 'Guilty Kiss'};
 
+   var MEMBER_GEM_LIST = [];
+   for (var k in MEMBER_DATA) {
+      if (MEMBER_DATA[k].member_gem) MEMBER_GEM_LIST.push(MEMBER_DATA[k].name);
+   };
+
+   var NOT_FOUND_MEMBER = {};
+
+   var mGetMemberData = function (member) {
+      var memberid = member;
+      if (typeof(memberid) != 'number') {
+         memberid = KEYS[memberid];
+         if (memberid === undefined) {
+            //e.g. N card
+            if (!NOT_FOUND_MEMBER[member]) {
+               console.debug('Not found member ' + member);
+               NOT_FOUND_MEMBER[member] = 1;
+            }
+            return undefined;
+         }
+      }
+      return MEMBER_DATA[memberid];
+   };
+
    var ret = KEYS;
    ret.getGroupName = function (groupid) {
       if (!GROUP_DATA[groupid]) return '<Unknown(' + groupid + ')>';
@@ -567,15 +590,9 @@ var LLConst = (function () {
    };
    ret.isMemberInGroup = function (member, group) {
       if (group === undefined || group == '') return false;
-      var memberid = member;
+      var memberData = mGetMemberData(member);
+      if (!memberData) return false;
       var groupid = group;
-      if (typeof(memberid) != 'number') {
-         memberid = KEYS[memberid];
-         if (memberid === undefined) {
-            console.error('Not found member ' + member);
-            return false;
-         }
-      }
       if (typeof(groupid) != 'number') {
          groupid = parseInt(groupid);
          if (groupid == 0) {
@@ -584,18 +601,20 @@ var LLConst = (function () {
          }
       }
       if (!GROUP_DATA[groupid]) {
-         console.error('Not found group ' + groupid);
+         console.error('Not found group data for ' + groupid);
          return false;
       }
-      if (!MEMBER_DATA[memberid]) {
-         console.error('Not found member ' + memberid);
-         return false;
-      }
-      var groups = MEMBER_DATA[memberid].types;
+      var groups = memberData.types;
       for (var i = 0; i < groups.length; i++) {
          if (groups[i] == groupid) return true;
       }
       return false;
+   };
+   ret.getMemberGemList = function() { return MEMBER_GEM_LIST; };
+   ret.isMemberGemExist = function(member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return false;
+      return (memberData.member_gem ? true : false);
    };
    return ret;
 })();
@@ -1431,6 +1450,16 @@ var LLSisGem = (function () {
    proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
    proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
    proto.isSkillGem = function () { return this.skill_mul || this.heal_mul; };
+   proto.isValid = function () {
+      if (this.per_grade && !this.grade) return false;
+      if (this.per_member) {
+         if (!this.member) return false;
+         if (!LLConst.isMemberGemExist(this.member)) return false;
+      }
+      if (this.per_unit && !this.unit) return false;
+      if (this.per_color && !this.color) return false;
+      return true;
+   };
    proto.getGemStockKeys = function () {
       if (this.gemStockKeys !== undefined) return this.gemStockKeys;
       var ret = [GEM_TYPE_DATA[this.type].key];
@@ -1776,6 +1805,19 @@ var LLMember = (function() {
       }
       return sumPercentage;
    };
+   proto.getGrade = function () {
+      if (!this.card) throw "No card data";
+      if (this.grade !== undefined) return this.grade;
+      for (var i = 1; i <= 3; i++) {
+         if (LLConst.isMemberInGroup(this.card.jpname, i)) {
+            this.grade = i;
+            return i;
+         }
+      }
+      // N card and some special card has no grade
+      this.grade = 0;
+      return 0;
+   };
    return cls;
 })();
 
@@ -1801,23 +1843,32 @@ var LLTeam = (function() {
       2880   // 10
    ];
    var armCombinationList = [];
-   var getArmCombinationList = function (gems) {
+   var MAX_SLOT = 8;
+   var getArmCombinationList = function () {
       if (armCombinationList.length > 0) return armCombinationList;
-      for (var i = 0; i <= 8; i++) {
+      var i;
+      for (i = 0; i <= MAX_SLOT; i++) {
          armCombinationList.push([]);
       }
-      var gemTypeCount = gems.length;
+      var gemTypeKeys = LLSisGem.getGemTypeKeys();
+      var gemTypes = [];
+      var gemSlots = [];
+      for (i in gemTypeKeys) {
+         var t = LLSisGem[gemTypeKeys[i]];
+         gemTypes.push(t);
+         gemSlots.push(LLSisGem.getGemSlot(t));
+      }
       var dfs = function (gemList, usedSlot, nextGemIndex) {
-         if (nextGemIndex >= gemTypeCount) {
-            for (var i = usedSlot; i <= 8; i++) {
-               armCombinationList[i].push(gemList);
+         if (nextGemIndex >= gemTypes.length) {
+            for (var j = usedSlot; j <= MAX_SLOT; j++) {
+               armCombinationList[j].push(gemList);
             }
             return;
          }
          dfs(gemList, usedSlot, nextGemIndex+1);
-         var nextUsedSlot = usedSlot + gems[nextGemIndex].gem.slot
-         if (nextUsedSlot <= 8) {
-            dfs(gemList.concat(nextGemIndex), nextUsedSlot, nextGemIndex+1);
+         var nextUsedSlot = usedSlot + gemSlots[nextGemIndex];
+         if (nextUsedSlot <= MAX_SLOT) {
+            dfs(gemList.concat(gemTypes[nextGemIndex]), nextUsedSlot, nextGemIndex+1);
          }
       };
       dfs([], 0, 0);
@@ -2108,13 +2159,14 @@ var LLTeam = (function() {
       if (mapdata.friendCSkill) cskills.push(mapdata.friendCSkill);
       var cskillPercentages = [];
       var totalDebuffFactor = 0;
-      for (var i = 0; i < 9; i++) {
+      var i, j, k;
+      for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          cskillPercentages.push(curMember.calcTotalCSkillPercentageForSameColor(mapcolor, cskills));
          totalDebuffFactor += curMember.getAttrDebuffFactor(mapcolor, mapdata.songUnit, mapdata.weights[i], mapdata.totalWeight);
       }
       // 需要爆分宝石/治愈宝石可能带来的强度, 所以强行放入宝石进行计算
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          if (!curMember.hasSkillGem()) {
             curMember.gems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': curMember.card.attribute}));
@@ -2127,21 +2179,19 @@ var LLTeam = (function() {
       var gradeCount = [0, 0, 0];
       var unitInfo = [];
       var unitMemberCount = {'muse':{}, 'aqours':{}};
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
-         for (var j = 1; j <= 3; j++) {
-            if (LLConst.isMemberInGroup(curMember.card.jpname, j)) {
-               gradeInfo.push(j);
-               gradeCount[j]++;
-               break;
-            }
-         }
+         var curMemberGrade = curMember.getGrade();
+         gradeInfo.push(curMemberGrade);
+         gradeCount[curMemberGrade]++;
          if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_MUSE)) {
             unitInfo.push('muse');
             unitMemberCount.muse[curMember.card.jpname] = 1;
          } else if (LLConst.isMemberInGroup(curMember.card.jpname, LLConst.GROUP_AQOURS)) {
             unitInfo.push('aqours');
             unitMemberCount.aqours[curMember.card.jpname] = 1;
+         } else {
+            unitInfo.push('');
          }
       }
       var allMuse = (Object.keys(unitMemberCount.muse).length == 9);
@@ -2151,12 +2201,13 @@ var LLTeam = (function() {
       var gemStockKeyToIndex = {};
       var powerUps = [];
       var gemTypes = LLSisGem.getGemTypeKeys();
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
-         var curPowerUps = [];
+         var curPowerUps = {};
          var gemOption = {'grade': gradeInfo[i], 'color': mapcolor, 'member': curMember.card.jpname, 'unit': unitInfo[i]};
-         for (var j = 0; j < gemTypes.length; j++) {
+         for (j = 0; j < gemTypes.length; j++) {
             var curGem = new LLSisGem(LLSisGem[gemTypes[j]], gemOption);
+            if (!curGem.isValid()) continue;
             var curStrengthBuff = 0;
             if (curGem.isSkillGem()) {
                var curSkill = this.avgSkills[i];
@@ -2199,29 +2250,32 @@ var LLTeam = (function() {
                // 考虑点击得分提升带来的增益, 以及异色异团惩罚带来的减益
                curStrengthBuff *= (1 + mapdata.tapup/100) * (1 - totalDebuffFactor);
             }
+            if (curStrengthBuff == 0) continue;
             var gemStockKey = curGem.getGemStockKeys().join('.');
             if (gemStockKeyToIndex[gemStockKey] === undefined) {
                gemStockKeyToIndex[gemStockKey] = gemStockSubset.length;
                gemStockSubset.push(curGem.getGemStockCount(gemStock));
             }
-            curPowerUps.push({'gem': curGem, 'strength': curStrengthBuff, 'stockindex': gemStockKeyToIndex[gemStockKey]});
+            curPowerUps[curGem.type] = {'gem': curGem, 'strength': curStrengthBuff, 'stockindex': gemStockKeyToIndex[gemStockKey]};
          }
          powerUps.push(curPowerUps);
       }
       // 假设宝石库存充足的情况下, 计算宝石对每个成员带来的最大强度
-      var combList = getArmCombinationList(powerUps[0]);
+      var combList = getArmCombinationList();
       var maxStrengthBuffForMember = [];
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curCombList = combList[this.members[i].maxcost];
          var curPowerUps = powerUps[i];
          var curMaxStrengthBuff = 0;
          var curMaxStrengthBuffComb = [];
-         for (var j = 0; j < curCombList.length; j++) {
+         for (j = 0; j < curCombList.length; j++) {
             var curComb = curCombList[j];
             var sumStrengthBuff = 0;
-            for (var k = 0; k < curComb.length; k++) {
+            for (k = 0; k < curComb.length; k++) {
+               if (!curPowerUps[curComb[k]]) break;
                sumStrengthBuff += curPowerUps[curComb[k]].strength;
             }
+            if (k < curComb.length) continue;
             if (sumStrengthBuff > curMaxStrengthBuff) {
                curMaxStrengthBuff = sumStrengthBuff;
                curMaxStrengthBuffComb = curComb;
@@ -2231,19 +2285,19 @@ var LLTeam = (function() {
       }
       // gemStockRequests[i][j]: 统计第(i+1)~第9个成员(下标i~8)对第j种宝石的总需求量
       var gemStockRequests = [];
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curRequests = [];
          var curPowerUps = powerUps[i];
-         for (var j = 0; j < gemStockSubset.length; j++) {
+         for (j = 0; j < gemStockSubset.length; j++) {
             curRequests.push(0);
          }
-         for (var j = 0; j < curPowerUps.length; j++) {
+         for (j in curPowerUps) {
             curRequests[curPowerUps[j].stockindex] = 1;
          }
          gemStockRequests.push(curRequests);
       }
-      for (var i = 7; i >= 0; i--) {
-         for (var j = 0; j < gemStockSubset.length; j++) {
+      for (i = 7; i >= 0; i--) {
+         for (j = 0; j < gemStockSubset.length; j++) {
             gemStockRequests[i][j] += gemStockRequests[i+1][j];
          }
       }
@@ -2253,7 +2307,7 @@ var LLTeam = (function() {
       // member_index==0: 初始状态
       // cur_state, prev_state: 状态用字符串表示, 每个字符用0~9或者-, 表示剩余宝石数, -表示库存充足
       var curState = '';
-      for (var i = 0; i < gemStockSubset.length; i++) {
+      for (i = 0; i < gemStockSubset.length; i++) {
          if (gemStockSubset[i] >= gemStockRequests[0][i]) {
             curState = curState + '-';
          } else {
@@ -2279,13 +2333,13 @@ var LLTeam = (function() {
          curDP[nextStateStr] = {'strength': strength, 'prev': prev, 'comb': comb};
          if (strength > maxStrengthBuff) maxStrengthBuff = strength;
       };
-      for (var i = 0; i < 9; i++) {
+      for (i = 0; i < 9; i++) {
          var curMaxStrengthBuffStrength = maxStrengthBuffForMember[i].strength;
          var curMaxStrengthBuffComb = maxStrengthBuffForMember[i].comb;
          var curCombList = combList[this.members[i].maxcost];
          var curPowerUps = powerUps[i];
          var remainingMaxStrengthBuff = 0;
-         for (var j = i; j < 9; j++) {
+         for (j = i; j < 9; j++) {
             remainingMaxStrengthBuff += maxStrengthBuffForMember[j].strength;
          }
          var lastDP = dp[i];
@@ -2295,7 +2349,7 @@ var LLTeam = (function() {
             if (lastDPState.strength + remainingMaxStrengthBuff < maxStrengthBuff) continue;
             // 检查当前成员最大加成所需的宝石是否充足, 如果充足就用这个配置
             var enoughGem = 1;
-            for (var j = 0; enoughGem && j < curMaxStrengthBuffComb.length; j++) {
+            for (j = 0; enoughGem && j < curMaxStrengthBuffComb.length; j++) {
                if (lastState.charAt(curPowerUps[curMaxStrengthBuffComb[j]].stockindex) != '-') enoughGem = 0;
             }
             if (enoughGem) {
@@ -2303,13 +2357,13 @@ var LLTeam = (function() {
                continue;
             }
             // 尝试该槽数下所有可行的宝石组合
-            for (var j = 0; j < curCombList.length; j++) {
+            for (j = 0; j < curCombList.length; j++) {
                var curComb = curCombList[j];
                var nextState = lastState.split('');
                var sumStrengthBuff = 0;
-               var k;
                for (k = 0; k < curComb.length; k++) {
                   var powerUp = curPowerUps[curComb[k]];
+                  if (!powerUp) break;
                   if (nextState[powerUp.stockindex] == '0') break;
                   if (nextState[powerUp.stockindex] != '-') {
                      nextState[powerUp.stockindex] = String(parseInt(nextState[powerUp.stockindex])-1);
@@ -2326,18 +2380,18 @@ var LLTeam = (function() {
       // dp[9]里应该只有一个状态(全是'-')
       maxStrengthBuff = -1;
       var maxStrengthState;
-      for (var i in dp[9]) {
+      for (i in dp[9]) {
          if (dp[9][i].strength > maxStrengthBuff) {
             maxStrengthBuff = dp[9][i].strength;
             maxStrengthState = i;
          }
       }
-      for (var i = 8; i >= 0; i--) {
+      for (i = 8; i >= 0; i--) {
          var curDPState = dp[i+1][maxStrengthState];
          var curComb = curDPState.comb;
          var curPowerUps = powerUps[i];
          var curGems = [];
-         for (var j = 0; j < curComb.length; j++) {
+         for (j = 0; j < curComb.length; j++) {
             curGems.push(curPowerUps[curComb[j]].gem);
          }
          this.members[i].gems = curGems;
@@ -2572,8 +2626,7 @@ var LLSaveData = (function () {
          types = ['1', '2', '3'];
       } else if (current_sub == 'per_member') {
          next_sub = 'per_unit';
-         types = ["高坂穂乃果", "絢瀬絵里", "南ことり", "園田海未", "星空凛", "西木野真姫", "東條希", "小泉花陽", "矢澤にこ",
-                  "高海千歌", "桜内梨子", "松浦果南", "黒澤ダイヤ", "渡辺曜", "津島善子", "国木田花丸", "小原鞠莉", "黒澤ルビィ"];
+         types = LLConst.getMemberGemList();
       } else if (current_sub == 'per_unit') {
          next_sub = 'per_color';
          types = ['muse', 'aqours'];
