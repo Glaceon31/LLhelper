@@ -181,9 +181,30 @@
       ];
    }
 
+   function getPureTeam() {
+      return [
+         [636, 1, 1, 3, [LLSisGem.AMUL_18]],
+         [939, 1, 1, 4, [LLSisGem.AMUL_24]],
+         [369, 1, 2, 3, [LLSisGem.AMUL_18]],
+         [127, 0, 1, 4, [LLSisGem.AMUL_18]],
+         [1002, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]],
+         [648, 1, 1, 3, [LLSisGem.AMUL_18]],
+         [317, 1, 2, 3, [LLSisGem.AMUL_18]],
+         [378, 0, 1, 4, [LLSisGem.AMUL_24]],
+         [957, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]]
+      ];
+   }
+
    function getSmileSong(name) {
       if (name == 'oyasuminasann') {
          return {'song': {'aqours': 1, "attribute": "smile", "expert": {"combo": 427, "positionweight": ["39.75", "48.0", "65", "52.5", "29", "55.75", "58.75", "47.25", "41.75"], "star": 0, "time": "110"}, "muse": 0},
+         'diff': 'expert'};
+      }
+   }
+
+   function getPureSong(name) {
+      if (name == 'kiminokokorohakagayaiterukai') {
+         return {'song': {'aqours': 1, "attribute": "pure", "expert": {"combo": 497, "positionweight": ["41.25", "68.5", "82.5", "59.25", "16.5", "56.25", "82.5", "67.5", "40.25"], "star": 0, "time": "110"}, "muse": 0},
          'diff': 'expert'};
       }
    }
@@ -227,9 +248,18 @@
       };
    }
 
+   function getGemStock_60AllGem() {
+      return {'ALL': 9};
+   }
+
    function assertEqual(a, b) {
       if (a == b) return;
       throw 'assertEqual fail: ' + a + ' == ' + b;
+   }
+
+   function assertAttributeP(a, smilep, purep, coolp) {
+      if (a.smile == smilep && a.pure == purep && a.cool == coolp) return;
+      throw 'assertAttributeP fail: {' + a.smile + ', ' + a.pure + ', ' + a.cool + '} == {' + smilep + ', ' + purep + ', ' + coolp + '}';
    }
 
    var defer_onload = $.Deferred();
@@ -279,12 +309,8 @@
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
-            assertEqual(llteam.finalAttr.smile, 37910);
-            assertEqual(llteam.finalAttr.pure, 59698);
-            assertEqual(llteam.finalAttr.cool, 32990);
-            assertEqual(llteam.bonusAttr.smile, 0);
-            assertEqual(llteam.bonusAttr.pure, 7337);
-            assertEqual(llteam.bonusAttr.cool, 0);
+            assertAttributeP(llteam.finalAttr, 37910, 59698, 32990);
+            assertAttributeP(llteam.bonusAttr, 0, 7337, 0);
             assertEqual(llteam.totalStrength, 67734);
             assertEqual(llteam.totalAttrStrength, 57788);
             assertEqual(llteam.totalSkillStrength, 9946);
@@ -302,12 +328,8 @@
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
-            assertEqual(llteam.finalAttr.smile, 78546);
-            assertEqual(llteam.finalAttr.pure, 37230);
-            assertEqual(llteam.finalAttr.cool, 36880);
-            assertEqual(llteam.bonusAttr.smile, 16200);
-            assertEqual(llteam.bonusAttr.pure, 0);
-            assertEqual(llteam.bonusAttr.cool, 0);
+            assertAttributeP(llteam.finalAttr, 78546, 37230, 36880);
+            assertAttributeP(llteam.bonusAttr, 16200, 0, 0);
             assertEqual(llteam.totalStrength, 89738);
             assertEqual(llteam.totalAttrStrength, 72088);
             assertEqual(llteam.totalSkillStrength, 17650);
@@ -325,12 +347,8 @@
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
-            assertEqual(llteam.finalAttr.smile, 81501);
-            assertEqual(llteam.finalAttr.pure, 37230);
-            assertEqual(llteam.finalAttr.cool, 36880);
-            assertEqual(llteam.bonusAttr.smile, 16778);
-            assertEqual(llteam.bonusAttr.pure, 0);
-            assertEqual(llteam.bonusAttr.cool, 0);
+            assertAttributeP(llteam.finalAttr, 81501, 37230, 36880);
+            assertAttributeP(llteam.bonusAttr, 16778, 0, 0);
             assertEqual(llteam.totalStrength, 90936);
             assertEqual(llteam.totalAttrStrength, 74798);
             assertEqual(llteam.totalSkillStrength, 16138);
@@ -348,12 +366,8 @@
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
-            assertEqual(llteam.finalAttr.smile, 67743);
-            assertEqual(llteam.finalAttr.pure, 37230);
-            assertEqual(llteam.finalAttr.cool, 36880);
-            assertEqual(llteam.bonusAttr.smile, 13963);
-            assertEqual(llteam.bonusAttr.pure, 0);
-            assertEqual(llteam.bonusAttr.cool, 0);
+            assertAttributeP(llteam.finalAttr, 67743, 37230, 36880);
+            assertAttributeP(llteam.bonusAttr, 13963, 0, 0);
             assertEqual(llteam.totalStrength, 69914);
             assertEqual(llteam.totalAttrStrength, 62172);
             assertEqual(llteam.totalSkillStrength, 7742);
@@ -374,15 +388,57 @@
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
-            assertEqual(llteam.finalAttr.smile, 76696);
-            assertEqual(llteam.finalAttr.pure, 39960);
-            assertEqual(llteam.finalAttr.cool, 36810);
-            assertEqual(llteam.bonusAttr.smile, 17038);
-            assertEqual(llteam.bonusAttr.pure, 0);
-            assertEqual(llteam.bonusAttr.cool, 0);
+            assertAttributeP(llteam.finalAttr, 76696, 39960, 36810);
+            assertAttributeP(llteam.bonusAttr, 17038, 0, 0);
             assertEqual(llteam.totalStrength, 91930);
             assertEqual(llteam.totalAttrStrength, 70182);
             assertEqual(llteam.totalSkillStrength, 21748);
+            return 0;
+         });
+      }});
+      var test8 = addTestItem({'name': 'Pure muse team with pure aqours song - autounit N-SSR 4.0 gem', 'after': test1, 'run': function () {
+         var cardConfigs = getPureTeam();
+         cardConfigs.push([1720, 0, 1, 3, []]);
+         cardConfigs.push([1721, 1, 1, 3, []]);
+         cardConfigs.push([1651, 1, 1, 6, []]);
+         cardConfigs.push([1640, 1, 8, 6, []]);
+         var song = getPureSong('kiminokokorohakagayaiterukai');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, cardConfigs);
+            llteam.autoUnit(mapdata, getGemStock_40AllGem(), submembers);
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertAttributeP(llteam.finalAttr, 34090, 70181, 35790);
+            assertAttributeP(llteam.bonusAttr, 0, 8514, 0);
+            assertEqual(llteam.totalStrength, 66155);
+            assertEqual(llteam.totalAttrStrength, 64823);
+            assertEqual(llteam.totalSkillStrength, 1332);
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Pure muse team with pure aqours song - autounit N-SSR 6.0 gem', 'after': test8, 'run': function () {
+         var cardConfigs = getPureTeam();
+         cardConfigs.push([1720, 0, 1, 3, []]);
+         cardConfigs.push([1721, 1, 1, 3, []]);
+         cardConfigs.push([1651, 1, 1, 6, []]);
+         cardConfigs.push([1640, 1, 8, 6, []]);
+         var song = getPureSong('kiminokokorohakagayaiterukai');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, cardConfigs);
+            llteam.autoUnit(mapdata, getGemStock_60AllGem(), submembers);
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertAttributeP(llteam.finalAttr, 33010, 72833, 35830);
+            assertAttributeP(llteam.bonusAttr, 0, 8923, 0);
+            assertEqual(llteam.totalStrength, 68605);
+            assertEqual(llteam.totalAttrStrength, 67273);
+            assertEqual(llteam.totalSkillStrength, 1332);
             return 0;
          });
       }});
