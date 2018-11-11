@@ -15,12 +15,14 @@ function LLSong(songjson, includeDefaultSong) {
       defaultsong["jpname"] = "默认曲目（缪）"
       defaultsong["muse"] = 1
       defaultsong["aqours"] = 0
+      defaultsong["bpm"] = 200
       defaultsong['attribute'] = ''
       var defaultsong2 = new Array()
       defaultsong2["name"] = "默认曲目（水）"
       defaultsong2["jpname"] = "默认曲目（水）"
       defaultsong2["muse"] = 0
       defaultsong2["aqours"] = 1
+      defaultsong2["bpm"] = 200
       defaultsong2['attribute'] = ''
       var expert_default = new Array()
       expert_default["positionweight"] = [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75]
