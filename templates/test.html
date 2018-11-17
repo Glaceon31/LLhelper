@@ -272,6 +272,7 @@
       document.getElementById('loadingbox').style.display = 'none';
    }
 
+   LLCardData.setVersion('cn');
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       defer_test_load.resolve();
       // done
