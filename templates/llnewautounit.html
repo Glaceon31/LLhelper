@@ -85,6 +85,12 @@
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+
+      var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
+         LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
+            comp_cardselector.setCardData(cards, true);
+         }));
+      });
       var comp_savestorage = new LLSaveStorageComponent('unit-storage', {
          'saveData': makeSaveData,
          'loadTeamMember': handleLoadTeamMember,

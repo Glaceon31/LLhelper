@@ -17,6 +17,8 @@ app.secret_key = "hatsune miku"
 # file check interval: 60 seconds (only check when a request comes in and have not checked for 1 minute)
 # auto reload the data during file check when file last modify time is changed
 g_llcarddata = LLData('newcardsjson.txt', 60)
+# snapshot for older card data, should have much less chance to update
+g_llcarddata_cn = LLData('newcardsjson-20181021.txt', 3600)
 
 ### activity ###
 @app.route("/activitypt")
@@ -71,13 +73,11 @@ def llsongdata():
 
 @app.route("/llcoverage")
 def llcoverage():
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template('llcoverage.html', cardsjson = cardsjson)
+    return render_template('llcoverage.html')
 
 @app.route("/llnewcarddata")
 def llnewcarddata():
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template('llnewcarddata.html', cardsjson = cardsjson)
+    return render_template('llnewcarddata.html')
 
 @app.route("/llurcardrank")
 def llurcardrank():
@@ -86,11 +86,17 @@ def llurcardrank():
 
 @app.route("/lldata/cardbrief", methods=['GET'])
 def lldata_cardbrief():
-    return json.dumps(g_llcarddata.queryByKeys(request.args['keys']))
+    if request.args['version'] == 'cn':
+        return json.dumps(g_llcarddata_cn.queryByKeys(request.args['keys']))
+    else:
+        return json.dumps(g_llcarddata.queryByKeys(request.args['keys']))
 
 @app.route("/lldata/card/<index>", methods=['GET'])
 def lldata_carddetail(index):
-    return json.dumps(g_llcarddata.queryByIndex(index))
+    if request.args['version'] == 'cn':
+        return json.dumps(g_llcarddata_cn.queryByIndex(index))
+    else:
+        return json.dumps(g_llcarddata.queryByIndex(index))
 
 ### data api ###
 @app.route("/llcardapiwiki")
