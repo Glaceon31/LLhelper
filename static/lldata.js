@@ -1,6 +1,7 @@
 /*
  * This script contains following things:
  *   LoadingUtil
+ *   LLHelperLocalStorage
  *   LLData
  *     (instance) LLCardData
  *   LLConst
@@ -25,8 +26,9 @@
  *   LLSubMemberComponent
  *   LLMicDisplayComponent
  *   LLSaveStorageComponent
+ *   LLDataVersionSelectorComponent
  *
- * v1.0.0
+ * v1.1.0
  * By ben1222
  */
 
@@ -96,101 +98,152 @@ var LoadingUtil = {
    }
 };
 
+var LLHelperLocalStorage = {
+   'localStorageDataVersionKey': 'llhelper_data_version__',
+
+   'getDataVersion': function () {
+      var version;
+      try {
+         version = localStorage.getItem(LLHelperLocalStorage.localStorageDataVersionKey);
+      } catch (e) {
+         version = 'latest';
+         console.error(e);
+      }
+      if (version === undefined) {
+         version = 'latest';
+      }
+      return version;
+   },
+   'setDataVersion': function (v) {
+      try {
+         localStorage.setItem(LLHelperLocalStorage.localStorageDataVersionKey, v);
+      } catch (e) {
+         console.error(e);
+      }
+   }
+};
+
 /*
  * LLData: class to load json data from backend
  * LLCardData: instance for LLData, load card data
  * require jQuery
  */
-function LLData(brief_url, detail_url, brief_keys) {
-   this.briefUrl = brief_url;
-   this.detailUrl = detail_url;
-   this.briefKeys = brief_keys;
-   this.briefCache = {};
-   this.briefCachedKeys = {};
-   this.detailCache = {};
-}
+var LLData = (function () {
+   function LLData_cls(brief_url, detail_url, brief_keys, version) {
+      this.briefUrl = brief_url;
+      this.detailUrl = detail_url;
+      this.briefKeys = brief_keys;
+      this.briefCache = {};
+      this.briefCachedKeys = {};
+      this.detailCache = {};
+      this.setVersion(version);
+   }
+   var cls = LLData_cls;
+   var proto = cls.prototype;
 
-LLData.prototype.getAllBriefData = function(keys, url) {
-   if (keys === undefined) keys = this.briefKeys;
-   if (url === undefined) url = this.briefUrl;
-   var me = this;
-   var missingKeys = [];
-   var defer = $.Deferred();
-   for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      if (!this.briefCachedKeys[key]) {
-         missingKeys.push(key);
+   proto.setVersion = function(version) {
+      if (version === undefined) {
+         version = LLHelperLocalStorage.getDataVersion();
       }
-   }
-   if (missingKeys.length == 0) {
-      defer.resolve(me.briefCache);
-      return defer;
-   }
-   var requestKeys = missingKeys.sort().join(',');
+      this.version = version;
+      if (!this.briefCache[version]) {
+         this.briefCache[version] = {};
+         this.briefCachedKeys[version] = {};
+         this.detailCache[version] = {};
+      }
+   };
+   proto.getVersion = function() {
+      return this.version;
+   };
 
-   $.ajax({
-      'url': url,
-      'type': 'GET',
-      'data': {
-         'keys': requestKeys
-      },
-      'success': function (data) {
-         for (var index in data) {
-            if (!me.briefCache[index]) {
-               me.briefCache[index] = data[index];
-            } else {
-               var curData = data[index];
-               var curCache = me.briefCache[index];
-               for (var curKey in curData) {
-                  curCache[curKey] = curData[curKey];
+   proto.getAllBriefData = function(keys, url) {
+      if (keys === undefined) keys = this.briefKeys;
+      if (url === undefined) url = this.briefUrl;
+      var me = this;
+      var missingKeys = [];
+      var defer = $.Deferred();
+      for (var i = 0; i < keys.length; i++) {
+         var key = keys[i];
+         if (!me.briefCachedKeys[me.version][key]) {
+            missingKeys.push(key);
+         }
+      }
+      if (missingKeys.length == 0) {
+         defer.resolve(me.briefCache[me.version]);
+         return defer;
+      }
+      var requestKeys = missingKeys.sort().join(',');
+
+      $.ajax({
+         'url': url,
+         'type': 'GET',
+         'data': {
+            'keys': requestKeys,
+            'version': this.version
+         },
+         'success': function (data) {
+            var curCache = me.briefCache[me.version];
+            for (var index in data) {
+               if (!curCache[index]) {
+                  curCache[index] = data[index];
+               } else {
+                  var curData = data[index];
+                  var curCache = curCache[index];
+                  for (var curKey in curData) {
+                     curCache[curKey] = curData[curKey];
+                  }
                }
             }
-         }
-         for (var i = 0; i < missingKeys.length; i++) {
-            me.briefCachedKeys[missingKeys[i]] = 1;
-         }
-         defer.resolve(me.briefCache);
-      },
-      'error': function (xhr, textStatus, errorThrown) {
-         console.error("Failed on request to " + url + " with keys:\"" + requestKeys + "\": " + textStatus);
-         console.error(errorThrown);
-         defer.reject();
-      },
-      'dataType': 'json'
-   });
-   return defer;
-};
+            for (var i = 0; i < missingKeys.length; i++) {
+               me.briefCachedKeys[me.version][missingKeys[i]] = 1;
+            }
+            defer.resolve(curCache);
+         },
+         'error': function (xhr, textStatus, errorThrown) {
+            console.error("Failed on request to " + url + " with keys:\"" + requestKeys + "\": " + textStatus);
+            console.error(errorThrown);
+            defer.reject();
+         },
+         'dataType': 'json'
+      });
+      return defer;
+   };
 
-LLData.prototype.getDetailedData = function(index, url) {
-   if (url === undefined) url = this.detailUrl;
-   var defer = $.Deferred();
-   if (index === undefined) {
-      console.error("Index not specified");
-      defer.reject();
-      return defer;
-   }
-   if (this.detailCache[index]) {
-      defer.resolve(this.detailCache[index]);
-      return defer;
-   }
-   var me = this;
-   url = url + index;
-   $.ajax({
-      'url': url ,
-      'type': 'GET',
-      'success': function (data) {
-         me.detailCache[index] = data;
-         defer.resolve(data);
-      },
-      'error': function (xhr, textStatus, errorThrown) {
-         console.error("Failed on request to " + url + ": " + textStatus);
-         console.error(errorThrown);
+   proto.getDetailedData = function(index, url) {
+      if (url === undefined) url = this.detailUrl;
+      var defer = $.Deferred();
+      if (index === undefined) {
+         console.error("Index not specified");
          defer.reject();
-      },
-      'dataType': 'json'
-   });
-   return defer;
-};
+         return defer;
+      }
+      var me = this;
+      if (me.detailCache[me.version][index]) {
+         defer.resolve(me.detailCache[me.version][index]);
+         return defer;
+      }
+      url = url + index;
+      $.ajax({
+         'url': url ,
+         'data': {
+            'version': this.version
+         },
+         'type': 'GET',
+         'success': function (data) {
+            me.detailCache[me.version][index] = data;
+            defer.resolve(data);
+         },
+         'error': function (xhr, textStatus, errorThrown) {
+            console.error("Failed on request to " + url + ": " + textStatus);
+            console.error(errorThrown);
+            defer.reject();
+         },
+         'dataType': 'json'
+      });
+      return defer;
+   };
+   return cls;
+})();
 
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'jpseries', 'series', 'eponym', 'jpeponym']);
@@ -1009,10 +1062,6 @@ var LLCardSelector = (function() {
       LLComponentCollection.call(this);
 
       // init variables
-      if (typeof(cards) == "string") {
-         cards = JSON.parse(cards);
-      }
-      this.cards = cards;
       this.language = 0;
       this.filters = {};
       this.freezeCardFilter = 1;
@@ -1052,52 +1101,7 @@ var LLCardSelector = (function() {
       addSelect('unitgrade', function (card, v) { return (v == '' || LLConst.isMemberInGroup(card.jpname, v)); });
       me.addComponentAsFilter('showncard', new LLValuedComponent(options.showncard), function (card, v) { return (v == true || card.rarity != 'N'); });
 
-      // build card options for both language
-      var cardOptionsCN = [{'value': '', 'text': ''}];
-      var cardOptionsJP = [{'value': '', 'text': ''}];
-      var setnameSet = {};
-      var cardKeys = Object.keys(cards).sort(function(a,b){return parseInt(a) - parseInt(b);});
-      var i;
-      for (i = 0; i < cardKeys.length; i++) {
-         var index = cardKeys[i];
-         if (index == "0") continue;
-         var curCard = this.cards[index];
-         if (curCard.support == 1) continue;
-
-         var fullname = String(curCard.id);
-         while (fullname.length < 3) fullname = '0' + fullname;
-         fullname += ' ' + curCard.rarity + ' ';
-         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + curCard.name + ' ' + (curCard.series ? "("+curCard.series+")" : '');
-         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + curCard.jpname + ' ' + (curCard.jpseries ? "("+curCard.jpseries+")" : '');
-         var color = this.attcolor[curCard.attribute];
-         cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
-         cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
-         if (curCard.jpseries && curCard.jpseries.indexOf('編') >= 1 && !setnameSet[curCard.jpseries]) {
-            setnameSet[curCard.jpseries] = [index, (curCard.series ? curCard.series : curCard.jpseries)];
-         }
-      }
-      this.cardOptions = [cardOptionsCN, cardOptionsJP];
-      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
-
-      // build setname options
-      var setnameOptions = this.getComponent('setname').options;
-      if (setnameOptions) {
-         for (i = 0; i < setnameOptions.length; i++) {
-            delete setnameSet[setnameOptions[i].value];
-         }
-         var setnameMissingList = Object.keys(setnameSet).sort(function(a,b){return parseInt(setnameSet[a][0]) - parseInt(setnameSet[b][0]);});
-         for (i = 0; i < setnameMissingList.length; i++) {
-            setnameOptions.push({
-               value: setnameMissingList[i],
-               text: setnameSet[setnameMissingList[i]][1]
-            });
-         }
-         this.getComponent('setname').setOptions(setnameOptions);
-      }
-
-      // at last, unfreeze the card filter and refresh filter
-      this.freezeCardFilter = 0;
-      this.handleCardFilter();
+      this.setCardData(cards);
    };
    var cls = LLCardSelector_cls;
    cls.prototype = new LLComponentCollection();
@@ -1137,6 +1141,60 @@ var LLCardSelector = (function() {
          if (!me.freezeCardFilter) me.handleCardFilter();
       };
       comp.onValueChange(comp.get());
+   };
+   proto.setCardData = function (cards, resetSelection) {
+      if (typeof(cards) == "string") {
+         cards = JSON.parse(cards);
+      }
+      this.cards = cards;
+      this.freezeCardFilter = 1;
+      // build card options for both language
+      var cardOptionsCN = [{'value': '', 'text': ''}];
+      var cardOptionsJP = [{'value': '', 'text': ''}];
+      var setnameSet = {};
+      var cardKeys = Object.keys(cards).sort(function(a,b){return parseInt(a) - parseInt(b);});
+      var i;
+      for (i = 0; i < cardKeys.length; i++) {
+         var index = cardKeys[i];
+         if (index == "0") continue;
+         var curCard = this.cards[index];
+         if (curCard.support == 1) continue;
+
+         var fullname = String(curCard.id);
+         while (fullname.length < 3) fullname = '0' + fullname;
+         fullname += ' ' + curCard.rarity + ' ';
+         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + curCard.name + ' ' + (curCard.series ? "("+curCard.series+")" : '');
+         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + curCard.jpname + ' ' + (curCard.jpseries ? "("+curCard.jpseries+")" : '');
+         var color = this.attcolor[curCard.attribute];
+         cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
+         cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
+         if (curCard.jpseries && curCard.jpseries.indexOf('編') >= 1 && !setnameSet[curCard.jpseries]) {
+            setnameSet[curCard.jpseries] = [index, (curCard.series ? curCard.series : curCard.jpseries)];
+         }
+      }
+      this.cardOptions = [cardOptionsCN, cardOptionsJP];
+      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
+      if (resetSelection) this.getComponent('cardchoice').set('');
+
+      // build setname options
+      var setnameOptions = this.getComponent('setname').options;
+      if (setnameOptions) {
+         for (i = 0; i < setnameOptions.length; i++) {
+            delete setnameSet[setnameOptions[i].value];
+         }
+         var setnameMissingList = Object.keys(setnameSet).sort(function(a,b){return parseInt(setnameSet[a][0]) - parseInt(setnameSet[b][0]);});
+         for (i = 0; i < setnameMissingList.length; i++) {
+            setnameOptions.push({
+               value: setnameMissingList[i],
+               text: setnameSet[setnameMissingList[i]][1]
+            });
+         }
+         this.getComponent('setname').setOptions(setnameOptions);
+      }
+
+      // at last, unfreeze the card filter and refresh filter
+      this.freezeCardFilter = 0;
+      this.handleCardFilter();
    };
    var super_serialize = proto.serialize;
    var super_deserialize = proto.deserialize;
@@ -3525,3 +3583,54 @@ var LLSaveStorageComponent = (function () {
    return cls;
 })();
 
+var LLDataVersionSelectorComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var versionSelectOptions = [
+      {'value': 'latest', 'text': '日服最新'},
+      {'value': 'cn', 'text': '20181021 (兼容国服)'}
+   ];
+   function createVersionSelector(controller) {
+      var sel = createElement('select', {'className': 'form-control'});
+      var selComp = new LLSelectComponent(sel);
+      selComp.setOptions(versionSelectOptions);
+      selComp.set(LLHelperLocalStorage.getDataVersion());
+      selComp.onValueChange = function (v) {
+         var lldata = controller.lldata;
+         if (lldata) {
+            if (lldata.setVersion) {
+               lldata.setVersion(v);
+            } else {
+               if (lldata.length > 0) {
+                  for (var i = 0; i < lldata.length; i++) {
+                     lldata[i].setVersion(v);
+                  }
+               }
+            }
+         }
+         LLHelperLocalStorage.setDataVersion(v);
+         if (controller.versionChanged) controller.versionChanged(v);
+      };
+      var container = createElement('div', {'className': 'form-inline'}, [
+         createElement('div', {'className': 'form-group'}, [
+            createElement('label', {'innerHTML': '选择数据版本：'}),
+            sel,
+            createElement('span', {'innerHTML': '（切换数据版本后建议重新组卡）'})
+         ])
+      ]);
+      return container;
+   }
+   // LLDataVersionSelectorComponent
+   // {
+   // }
+   function LLDataVersionSelectorComponent_cls(id, lldata, versionChangedHandler) {
+      var element = LLUnit.getElement(id);
+      var controller = {
+         'lldata': lldata,
+         'versionChanged': versionChangedHandler
+      };
+      //element.appendChild(createElement('span', {'innerHTML': '选择数据版本:'}));
+      element.appendChild(createVersionSelector(controller));
+   }
+   var cls = LLDataVersionSelectorComponent_cls;
+   return cls;
+})();

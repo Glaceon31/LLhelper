@@ -11,7 +11,7 @@
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
    <script src="https://app.lovelivewiki.com/Maps/songsjson.js"></script>
-   <script src="https://app.lovelivewiki.com/Maps/CoverageCalculator.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='CoverageCalculator.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	table {position:relative;}
@@ -22,7 +22,7 @@
 
 {% block script %}
    <script>
-   var llsong = new LLSong(songs, false); // songs defined in songsjson.js
+   var llsong = new LLSong(songs); // songs defined in songsjson.js
 
    var mezame = 0
    var language = 0
@@ -41,6 +41,12 @@
          return opt.value == '5';
       });
       comp_cardselector.onCardChange = changecolor;
+
+      var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
+         LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
+            comp_cardselector.setCardData(cards, true);
+         }));
+      });
       init();
 
       // load cookie
@@ -196,7 +202,27 @@
    	setCookie("language"+"perfect", language, 1)
       comp_cardselector.saveCookie('llcoverage_cardselector');
    }
-   
+
+   function createMapData(combo, time) {
+      if (combo <= 0 || time <= 3) return undefined;
+      var data = [];
+      // 第一秒和最后一秒不填note, 其它时间把note平均分布在除5号位外的8个位置上
+      var interval = (time - 2)/combo;
+      for (var i = 0; i < combo; i++) {
+         var pos = (i%8)+1;
+         if (pos >= 5) pos = pos+1;
+         data.push({
+            "timing_sec": i*interval+1,
+            // notes_attribute
+            "notes_level": 1,
+            "effect": 1,
+            "effect_value": 2,
+            "position": pos
+         });
+      }
+      return data;
+   }
+
    function check(){
    	var inputs = document.getElementsByTagName("input");
    	for (i in inputs){
@@ -223,8 +249,14 @@
    	saveToCookie();
 	document.getElementById('container').style.display = "";
 	document.getElementById('separater').style.display = "";
-    CoverageCalculator();
-   	return true;
+      if (parseInt(llsong.getSelectedSongIndex()) < 0) {
+         var song = llsong.getSelectedSong();
+         var diff = document.getElementById('diffchoice').value;
+         CoverageCalculator(createMapData(song[diff].combo, song[diff].time));
+      } else {
+         CoverageCalculator();
+      }
+      return true;
    }
    
    function init(){
@@ -348,6 +380,7 @@
 <br>
 
 <h3>判卡库</h3>
+<div id='card_data_version'></div>
 {% include 'components/card-filter.html' %}
 <br/>
 卡片：<select id="cardchoice" name="cardchoice">
