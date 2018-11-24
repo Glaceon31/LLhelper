@@ -105,19 +105,18 @@ if __name__ == "__main__":
             card['smile'] = card['smile2']-tmp[4]
             card['pure'] = card['pure2']-tmp[5]
             card['cool'] = card['cool2']-tmp[6]
+
         #skill
-        
         if skillid and card['support'] == 0:
-            jpskilltmp = jpdbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(skillid)+';')
+            jpskilltmp = jpdbconn.execute('SELECT name,skill_effect_type,trigger_type,unit_skill_level_up_pattern_id FROM unit_skill_m WHERE unit_skill_id = '+str(skillid)+';')
             jpskill = jpskilltmp.fetchone()
-            card['jpskillname'] = jpskill[1]
-            #cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(jptmp[20])+';')
-            #cnskill = cnskilltmp.fetchone()
+            card['jpskillname'] = jpskill[0]
             # do not overwrite old data
             if not card.has_key('skillname'):
-                card['skillname'] = jpskill[1]
-            card['skilleffect'] = jpskill[4]
-            card['triggertype'] = jpskill[6]
+                card['skillname'] = jpskill[0]
+            card['skilleffect'] = jpskill[1]
+            card['triggertype'] = jpskill[2]
+            card['skillleveluppattern'] = jpskill[3]
             if cntmp:
                 cnskilltmp = cndbconn.execute('SELECT * FROM unit_skill_m WHERE unit_skill_id = '+str(skillid)+';')
                 cnskill = cnskilltmp.fetchone()
