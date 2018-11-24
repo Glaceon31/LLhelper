@@ -109,10 +109,7 @@ var LLHelperLocalStorage = {
          version = 'latest';
          console.error(e);
       }
-      if (version === undefined) {
-         version = 'latest';
-      }
-      return version;
+      return (version || 'latest');
    },
    'setDataVersion': function (v) {
       try {
@@ -1710,7 +1707,7 @@ var LLSkill = (function () {
 
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
-   var MIC_RATIO = {'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0};
+   var MIC_RATIO = [0, 5, 11, 24, 40, 0]; //'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0
    var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    function LLMember_cls(v) {
       v = v || {};
@@ -1840,13 +1837,12 @@ var LLMember = (function() {
    };
    proto.getMicPoint = function () {
       if (!this.card) throw "No card data";
-      var rarity = this.card.rarity;
-      if (DEFAULT_MAX_SLOT[rarity] != this.card.maxslot) {
-         console.debug('Rarity not match max slot, consider as R for mic calculation');
-         console.debug(this.card);
-         rarity = 'R';
+      var skill_level_up_pattern = this.card.skillleveluppattern || 0;
+      if (MIC_RATIO[skill_level_up_pattern] === undefined) {
+         console.error("Unknown skill level up pattern: " + skill_level_up_pattern);
+         return 0;
       }
-      return MIC_RATIO[rarity] * this.skilllevel;
+      return MIC_RATIO[skill_level_up_pattern] * this.skilllevel;
    };
    proto.calcTotalCSkillPercentageForSameColor = function (mapcolor, cskills) {
       var sumPercentage = 0;
