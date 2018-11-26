@@ -7,6 +7,7 @@
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	td {size:2}
@@ -15,13 +16,21 @@
 
 {% block script %}
    <script>
-   var regS = new RegExp("&#34;", "g")
-   var regS2 = new RegExp("&#39;", "g")
-   var regSand = new RegExp("&amp;", "g")
-   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var llsong = new LLSong(songsjson, false);
+   LLSongData.briefKeys.push('bpm');
+   var defer_onload = $.Deferred();
+   var llsong = 0;
    var language = 0
-   
+
+   $.when(LLSongData.getAllBriefData(), defer_onload).then(function (songData) {
+      llsong = new LLSong(songData, false);
+      llsong.onDiffSelectChange = applysongdata;
+      llsong.initListeners();
+      llsong.onSongFilterChange();
+
+      // done
+      document.getElementById('loadingbox').style.display = 'none';
+   });
+
    function kizuna(combo){
    	var result = 0
    	for (var i = 1; i <= parseInt(combo/10); i++){
@@ -147,11 +156,6 @@
       llsong.onSongFilterChange();
    }
    
-   function init(){
-      llsong.onDiffSelectChange = applysongdata;
-      llsong.initListeners();
-      llsong.onSongFilterChange();
-   }
    
    document.addEventListener("change", function () {
 	   Han(document.body).render()
@@ -160,7 +164,7 @@
 {% endblock %}
 
 {% block body_onload %}
-   <body onload="init()" lang="zh-Hans">
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
 {% endblock %}
 
 {% block front_notice %}
@@ -258,6 +262,9 @@
       <option value="master">master</option>
    </select>
 </div>
+
+{% include 'components/loadingbox.html' %}
+
 <h3>基本信息</h3>
 <dl class="dl-horizontal">
 	<dt>歌曲名</dt>
@@ -341,22 +348,6 @@
 	<dt>Score B</dt><dd id="bscore"></dd>
 	<dt>Score C</dt><dd id="cscore"></dd>
 </dl>
-<!--table class="table">
-<tr>
-	<td></td>
-	<td>C</td>
-	<td>B</td>
-	<td>A</td>
-	<td>S</td>
-</tr>
-
-<tr>
-	<td>分数需求</td>
-	<td id="cscore"></td>
-	<td id="bscore"></td>
-	<td id="ascore"></td>
-	<td id="sscore"></td>
-</tr-->
 <!--
 <tr>
 	<td>最低属性<sup><a href="#intro-5">(5)</a></sup></td>
