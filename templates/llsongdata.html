@@ -17,6 +17,7 @@
 {% block script %}
    <script>
    LLSongData.briefKeys.push('bpm');
+   LLSongData.briefKeys.push('totaltime');
    var defer_onload = $.Deferred();
    var llsong = 0;
    var language = 0
@@ -413,6 +414,6 @@
 	<li id="intro-4">Combo乘数指的是FC比起max combo不到50时的得分的倍数</li>
 	<li id="intro-5">最低属性指的是在没有加分卡、是纯色队、全perfect的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）</li>
 	<li id="intro-6">安全属性指的是在没有加分卡、是纯色队、max combo低于50、有大量great的情况下恰好能够达到该rank的属性（选队时加成后的面板属性）若有异色卡，参考同色加成；若有加分卡，在<a href="/llcardtest">卡片强度计算</a>中计算技能等效面板属性
-	<li id="intro-7">单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88 + 0.12 * P率)，存在极小的误差</li>
+	<li id="intro-7">单位强度得分指的是每一点队伍强度可以得到的歌曲分数，队伍强度可以使用<a href="/llnewunit">队伍强度计算</a>计算，假设全P，所以实际得分需要乘以(0.88 + 0.12 * P率)，存在极小的误差</li>
 </ol>
 {% endblock %}

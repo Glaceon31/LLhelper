@@ -16,19 +16,9 @@
 
 {% block script %}
    <script>
-   var regS = new RegExp("&#34;", "g")
-   var regS2 = new RegExp("&#39;", "g")
-   var regSand = new RegExp("&amp;", "g")
-   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var llsong = new LLSong(songsjson);
-
-   var attcolor = new Array();
-   var mezame = 0
-   var language = 0
-   attcolor["smile"] = "red"
-   attcolor["pure"] = "green"
-   attcolor["cool"] = "blue"
-   attcolor[""] = "purple"
+   var llsong = 0;
+   var mezame = 0;
+   var language = 0;
    var kizuna = new Array();
    kizuna["N"] = [25, 50]
    kizuna["R"] = [100, 200]
@@ -79,8 +69,9 @@
       return ret;
    }
 
-   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
+      llsong = new LLSong(songData);
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;

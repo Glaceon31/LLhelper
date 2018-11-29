@@ -16,22 +16,18 @@
 
 {% block script %}
    <script>
-   var regS = new RegExp("&#34;", "g")
-   var regS2 = new RegExp("&#39;", "g")
-   var regSand = new RegExp("&amp;", "g")
-   var songsjson = "{{songsjson}}".replace(regS,'"').replace(regS2, "'").replace(regSand, '&')
-   var llsong = new LLSong(songsjson);
-
-   var mezame = 0
-   var language = 0
+   var llsong = 0;
+   var mezame = 0;
+   var language = 0;
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
    var comp_gemstock = 0;
    var comp_resultmic = 0;
-   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
+      llsong = new LLSong(songData);
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;

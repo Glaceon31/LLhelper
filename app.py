@@ -70,8 +70,7 @@ def nmpt():
 ### data ###
 @app.route("/llsongdata")
 def llsongdata():
-    songsjson = open('newsongsjson.txt', 'rb').read()
-    return render_template('llsongdata.html', songsjson = songsjson)
+    return render_template('llsongdata.html')
 
 @app.route("/llcoverage")
 def llcoverage():

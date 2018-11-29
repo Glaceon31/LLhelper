@@ -821,7 +821,7 @@ function redraw(i)
     }
 }
 
-function CoverageCalculatorWithData(member, member_C, _offset, s, data) {
+function CoverageCalculatorWithData(song, member, member_C, _offset, s, data) {
     Map = data;
 
     Map_size = Map.length;
@@ -829,15 +829,16 @@ function CoverageCalculatorWithData(member, member_C, _offset, s, data) {
     Map_beat = new Array(0);
     //刻度线起点绘图参数
     tickPosition = Math.round(Map[0].timing_sec * 1000 - _offset * Offset[s - 1]) / 5;
-    if (songs[document.getElementById('songchoice').value].id == 5 || songs[document.getElementById('songchoice').value].id == 7 || songs[document.getElementById('songchoice').value].id == 442)
+    var songId = parseInt(song.id);
+    if (songId == 5 || songId == 7 || songId == 442)
     {
         tickPosition -= 6;
     }
-    if (songs[document.getElementById('songchoice').value].id == 204)
+    if (songId == 204)
     {
         tickPosition -= 19;
     }
-    if (songs[document.getElementById('songchoice').value].id == 526)
+    if (songId == 526)
     {
         tickPosition += 15;
     }
@@ -1142,7 +1143,7 @@ function CoverageCalculatorWithData(member, member_C, _offset, s, data) {
     document.getElementById('running').style.display = "none";
 }
 
-function CoverageCalculator(createdData)
+function CoverageCalculator(song, difficulty, createdData)
 {
     //读取卡组数据
     var member = new Array(9);
@@ -1175,7 +1176,7 @@ function CoverageCalculator(createdData)
             alert("请输入整数");
             return;
         }
-        if ((member[i][0] == 1 || member[i][0] == 3) && songs[document.getElementById('songchoice').value][document.getElementById('diffchoice').value].combo / member[i][1] > 80)
+        if ((member[i][0] == 1 || member[i][0] == 3) && song[difficulty].combo / member[i][1] > 80)
         {
             alert("结果超出设计容量");
             return;
@@ -1223,7 +1224,7 @@ function CoverageCalculator(createdData)
     }
 
     //读取谱面文件
-    switch (songs[document.getElementById('songchoice').value].attribute)
+    switch (song.attribute)
     {
         case "smile":
             livecolor = "#f15c80";
@@ -1246,33 +1247,42 @@ function CoverageCalculator(createdData)
         return;
     }
         //获取BPM并处理
-    bpm = songs[document.getElementById('songchoice').value].bpm;
-    switch (bpm)
+    bpm = song.bpm;
+    if (!bpm)
     {
-        case "100-190":
-            Crotchet = "316-600";
-            bpm = 190;
-            prebpm = [100, 28032];
-            break;
-        case "130-153":
-            Crotchet = "392-462";
-            bpm = 153;
-            prebpm = [130, 19541];
-            break;
-        case "80-168":
-            Crotchet = "357-750";
-            bpm = 168;
-            prebpm = [80, 26918];
-            break;
-        case "84-179":
-            Crotchet = "335-714";
-            bpm = 179;
-            prebpm = [84, 21881];
-            break;
-        default:
-            bpm = Number(bpm);
-            prebpm = [0, 0];
-            Crotchet = Math.round(60000 / bpm);
+        bpm = 200;
+        prebpm = [0, 0];
+        Crotchet = "?";
+    }
+    else
+    {
+        switch (bpm)
+        {
+            case "100-190":
+                Crotchet = "316-600";
+                bpm = 190;
+                prebpm = [100, 28032];
+                break;
+            case "130-153":
+                Crotchet = "392-462";
+                bpm = 153;
+                prebpm = [130, 19541];
+                break;
+            case "80-168":
+                Crotchet = "357-750";
+                bpm = 168;
+                prebpm = [80, 26918];
+                break;
+            case "84-179":
+                Crotchet = "335-714";
+                bpm = 179;
+                prebpm = [84, 21881];
+                break;
+            default:
+                bpm = Number(bpm);
+                prebpm = [0, 0];
+                Crotchet = Math.round(60000 / bpm);
+        }
     }
     prebpm[1] = Math.round(prebpm[1] - _offset * Offset[s - 1]) / 5;
     labelsstep = 2;
@@ -1285,9 +1295,9 @@ function CoverageCalculator(createdData)
     Map = new Array(0);
 
     if (createdData) {
-        CoverageCalculatorWithData(member, member_C, _offset, s, createdData);
+        CoverageCalculatorWithData(song, member, member_C, _offset, s, createdData);
     } else {
-        var maps = songs[document.getElementById('songchoice').value][document.getElementById('diffchoice').value].liveid;
+        var maps = song[difficulty].liveid;
         var _liveid = Number(maps);
         //处理文件序号
         var j = maps.length;
@@ -1304,7 +1314,7 @@ function CoverageCalculator(createdData)
             maps = "https://rawfile.loveliv.es/livejson/Live_s" + maps + ".json";
         }
         $.getJSON(maps, function (data) {
-           CoverageCalculatorWithData(member, member_C, _offset, s, data);
+           CoverageCalculatorWithData(song, member, member_C, _offset, s, data);
         });
     }
 }

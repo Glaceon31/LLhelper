@@ -247,7 +247,7 @@ var LLData = (function () {
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'jpseries', 'series', 'eponym', 'jpeponym']);
 var LLSongData = new LLData('/lldata/songbrief', '/lldata/song/',
-   ['id', 'aqours', 'attribute', 'easy', 'expert', 'hard', 'jpname', 'master', 'muse', 'name', 'normal', 'totaltime']);
+   ['id', 'aqours', 'muse', 'attribute', 'name', 'jpname', 'easy', 'normal', 'hard', 'expert', 'master', 'arcade']);
 
 /*
  * base components:
