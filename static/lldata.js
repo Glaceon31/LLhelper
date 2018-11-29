@@ -4,6 +4,7 @@
  *   LLHelperLocalStorage
  *   LLData
  *     (instance) LLCardData
+ *     (instance) LLSongData
  *   LLConst
  *   LLUnit
  *   LLMap
@@ -123,6 +124,7 @@ var LLHelperLocalStorage = {
 /*
  * LLData: class to load json data from backend
  * LLCardData: instance for LLData, load card data
+ * LLSongData: instance for LLData, load song data
  * require jQuery
  */
 var LLData = (function () {
@@ -244,6 +246,8 @@ var LLData = (function () {
 
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'jpseries', 'series', 'eponym', 'jpeponym']);
+var LLSongData = new LLData('/lldata/songbrief', '/lldata/song/',
+   ['id', 'aqours', 'muse', 'attribute', 'name', 'jpname', 'easy', 'normal', 'hard', 'expert', 'master', 'arcade']);
 
 /*
  * base components:

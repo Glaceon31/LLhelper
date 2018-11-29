@@ -402,8 +402,7 @@ def llnewunit():
             addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
-    songsjson = open('newsongsjson.txt', 'rb').read()
-    return render_template("llnewunit.html", songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunit.html", additional_script=addon)
 
 @app.route("/llnewunitsis", methods=['GET', 'POST'])
 def llnewunitsis():
@@ -416,14 +415,11 @@ def llnewunitsis():
             addon = "handleLoadUnit(" + unescapeJsonStr(argv) + ");"
         except BaseException:
             pass
-    songsjson = open('newsongsjson.txt', 'rb').read()
-    return render_template("llnewunitsis.html", songsjson = songsjson, additional_script=addon)
+    return render_template("llnewunitsis.html", additional_script=addon)
 
 @app.route("/llnewautounit", methods=['GET', 'POST'])
 def llnewautounit():
-    songsjson = open('newsongsjson.txt', 'rb').read()
-    cardsjson = open('newcardsjson.txt', 'rb').read()
-    return render_template("llnewautounit.html", cardsjson = cardsjson, songsjson = songsjson)
+    return render_template("llnewautounit.html")
 
 @app.route("/llnewunit40", methods=['GET', 'POST'])
 def llnewunit40():

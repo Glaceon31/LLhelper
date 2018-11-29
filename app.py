@@ -17,8 +17,10 @@ app.secret_key = "hatsune miku"
 # file check interval: 60 seconds (only check when a request comes in and have not checked for 1 minute)
 # auto reload the data during file check when file last modify time is changed
 g_llcarddata = LLData('newcardsjson.txt', 60)
+g_llsongdata = LLData('newsongsjson.txt', 60)
 # snapshot for older card data, should have much less chance to update
 g_llcarddata_cn = LLData('newcardsjson-20181021.txt', 3600)
+
 
 ### activity ###
 @app.route("/activitypt")
@@ -68,8 +70,7 @@ def nmpt():
 ### data ###
 @app.route("/llsongdata")
 def llsongdata():
-    songsjson = open('newsongsjson.txt', 'rb').read()
-    return render_template('llsongdata.html', songsjson = songsjson)
+    return render_template('llsongdata.html')
 
 @app.route("/llcoverage")
 def llcoverage():
@@ -97,6 +98,14 @@ def lldata_carddetail(index):
         return json.dumps(g_llcarddata_cn.queryByIndex(index))
     else:
         return json.dumps(g_llcarddata.queryByIndex(index))
+
+@app.route("/lldata/songbrief", methods=['GET'])
+def lldata_songbrief():
+    return json.dumps(g_llsongdata.queryByKeys(request.args['keys']))
+
+@app.route("/lldata/song/<index>", methods=['GET'])
+def lldata_songdetail(index):
+    return json.dumps(g_llsongdata.queryByIndex(index))
 
 ### data api ###
 @app.route("/llcardapiwiki")

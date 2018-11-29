@@ -28,7 +28,9 @@ fi
 
 python2 updatenewcard.py
 python2 updatenewlive.py
-python2 updateweight_sync.py
+# argument is thread number, 1 to use single-thread mode
+#python2 updateweight2.py 1
+python2 updateweight2.py 10
 
 if [ "$do_cleanup" = "y" ]; then
   rm $livedb
