@@ -146,7 +146,8 @@ if app.debug == True:
     app.add_url_rule('/test', 'development_test', development_test)
 
 if __name__ == "__main__":
-    app.run()
-
-
-
+    import os
+    if os.environ['LLHELPER_RUN_PORT']:
+        app.run(port=int(os.environ['LLHELPER_RUN_PORT']))
+    else:
+        app.run()
