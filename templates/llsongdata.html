@@ -72,7 +72,8 @@
          'attrcolor': ['songchoice', 'attribute', 'name', 'jpname']
       };
       var infolist = ['attribute', 'totaltime', 'bpm', 'name', 'jpname',
-        'combo', 'time', 'stardifficulty', 'randomdifficulty', 'star', 'cscore', 'bscore', 'ascore', 'sscore', 'lp', 'exp'];
+        'combo', 'time', 'stardifficulty', 'randomdifficulty', 'star', 'cscore', 'bscore', 'ascore', 'sscore', 'lp', 'exp',
+        'slider', 'swing', 'swingslider'];
       for (var i in infolist) {
          applyTarget[infolist[i]] = [[infolist[i], 'innerHTML']];
       }
@@ -95,8 +96,12 @@
       var weights = curSongWithDiff.positionweight;
       var c = parseInt(curSongWithDiff.combo);
       for (var i = 0; i < 9; i++) {
-         totalweight += parseFloat(weights[i]);
+         document.getElementById('positionnote' + i).innerHTML = curSongWithDiff.positionnote[i];
+         document.getElementById('positionslider' + i).innerHTML = curSongWithDiff.positionslider[i];
+         document.getElementById('positionswing' + i).innerHTML = curSongWithDiff.positionswing[i];
+         document.getElementById('positionswingslider' + i).innerHTML = curSongWithDiff.positionswingslider[i];
          document.getElementById('positionweight' + i).innerHTML = weights[i];
+         totalweight += parseFloat(weights[i]);
       }
       var sl = (totalweight-c)*100/0.25/c;
       document.getElementById('noteweight').innerHTML = totalweight;
@@ -303,6 +308,12 @@
 	<dd id='bpm'> </dd>
 	<dt>星星数</dt>
 	<dd id='star'> </dd>
+	<dt>长条按键数</dt>
+	<dd id='slider'> </dd>
+	<dt>滑键数</dt>
+	<dd id='swing'> </dd>
+	<dt>滑键长条数</dt>
+	<dd id='swingslider'> </dd>
 </dl>
 
 
@@ -386,6 +397,30 @@
 </tr>
 </thead>
 <tbody>
+<tr>
+	<th>普通按键</th>
+	{% for i in range(0, 9)%}
+		<td id="positionnote{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<th>长条按键</th>
+	{% for i in range(0, 9)%}
+		<td id="positionslider{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<th>滑键</th>
+	{% for i in range(0, 9)%}
+		<td id="positionswing{{i}}"></td>
+	{% endfor %}
+</tr>
+<tr>
+	<th>滑键长条</th>
+	{% for i in range(0, 9)%}
+		<td id="positionswingslider{{i}}"></td>
+	{% endfor %}
+</tr>
 <tr>
 	<th>权重</th>
 	{% for i in range(0, 9)%}
