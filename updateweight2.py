@@ -1,5 +1,6 @@
 import urllib2
 import os
+import os.path
 import urlparse
 import json
 import threading
@@ -9,6 +10,7 @@ import ctypes
 
 LLSIF_WIN_API_DOMAIN = 'http://a.llsif.win/'
 LLSIF_WIN_API_ENDPOINT = 'live/json/'
+LIVE_MAP_LOCAL_CACHE_DIR = 'live/json/'
 
 NOTE_TYPE_RANDOM = 0
 NOTE_TYPE_NORMAL = 1
@@ -38,14 +40,19 @@ FILENAME_SONG_LIST_JSON = 'newsongsjson.txt'
 
 difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade']
 
+liveDataKeysForNumber = ['time', 'star', 'slider', 'swing', 'swingslider']
+liveDataKeysForPositiveNumber = ['time']
+liveDataKeysForPosition = ['positionweight', 'positionnote', 'positionslider', 'positionswing', 'positionswingslider']
+
 TITLE_WELCOME = '''# Welcome to LLHelper LLSIF Song Updater!
 
 * Song data based on `%s`.
+* Song data cached at `%s`.
 * Program originally authored by **Chazeon** and the end of Sept 2017 in NY.
-* Updated by **ben1222** at 2018 Nov
+* Updated by **ben1222** at 2018 Dec
 
 * We are now updating song list file: `%s`.
-''' % (LLSIF_WIN_API_DOMAIN, FILENAME_SONG_LIST_JSON)
+''' % (LLSIF_WIN_API_DOMAIN, LIVE_MAP_LOCAL_CACHE_DIR, FILENAME_SONG_LIST_JSON)
 
 class Note:
     def __init__(self, noteDict):
@@ -59,6 +66,8 @@ class Note:
         return self.type in [NOTE_TYPE_HOLD, NOTE_TYPE_SWING_HOLD]
     def isSwing(self):
         return self.type in [NOTE_TYPE_SWING, NOTE_TYPE_SWING_EVENT, NOTE_TYPE_SWING_HOLD]
+    def isStar(self):
+        return self.type in [NOTE_TYPE_BOMB_1, NOTE_TYPE_BOMB_3, NOTE_TYPE_BOMB_5, NOTE_TYPE_BOMB_9]
     def getNoteWeightedValue(self):
         weightValue = NOTE_WEIGHT_BASE
         if self.isSwing():
@@ -76,20 +85,57 @@ class LiveMap:
     def __init__(self, mapData):
         self.mapData = mapData
         positionWeight = [0.0] * 9
+        positionNote = [0] * 9
+        positionSlider = [0] * 9
+        positionSwing = [0] * 9
+        positionSwingSlider = [0] * 9
+        starCount = 0
+        sliderCount = 0
+        swingCount = 0
+        swingSliderCount = 0
         endTime = 0.0
         for note in mapData:
             note = Note(note)
             position = 9 - note.position
             positionWeight[position] += note.getNoteWeightedValue()
+            if note.isHold():
+                if note.isSwing():
+                    positionSwingSlider[position] += 1
+                    swingSliderCount += 1
+                else:
+                    positionSlider[position] += 1
+                    sliderCount += 1
+            elif note.isSwing():
+                positionSwing[position] += 1
+                swingCount += 1
+            else:
+                positionNote[position] += 1
+            if note.isStar():
+                starCount += 1
             curEndTime = note.getEndTime()
             if curEndTime > endTime:
                 endTime = curEndTime
         self.positionWeight = positionWeight
+        self.positionNote = positionNote
+        self.positionSlider = positionSlider
+        self.positionSwing = positionSwing
+        self.positionSwingSlider = positionSwingSlider
+        self.starCount = starCount
+        self.sliderCount = sliderCount
+        self.swingCount = swingCount
+        self.swingSliderCount = swingSliderCount
         self.endTime = endTime
-    def getPositionWeight(self):
-        return map(str, self.positionWeight)
-    def getEndTime(self):
-        return str(self.endTime)
+    def updateLiveData(self, liveData):
+        liveData['positionweight'] = map(str, self.positionWeight)
+        liveData['positionnote'] = map(str, self.positionNote)
+        liveData['positionslider'] = map(str, self.positionSlider)
+        liveData['positionswing'] = map(str, self.positionSwing)
+        liveData['positionswingslider'] = map(str, self.positionSwingSlider)
+        liveData['star'] = str(self.starCount)
+        liveData['slider'] = str(self.sliderCount)
+        liveData['swing'] = str(self.swingCount)
+        liveData['swingslider'] = str(self.swingSliderCount)
+        liveData['time'] = str(self.endTime)
 
 class SyncPrinter:
     def __init__(self):
@@ -101,29 +147,40 @@ class SyncPrinter:
 
 def getLiveMapJsonUrl(liveId):
     return LLSIF_WIN_API_DOMAIN + LLSIF_WIN_API_ENDPOINT + str(liveId)
+def getLiveMapJsonPath(liveId):
+    return LIVE_MAP_LOCAL_CACHE_DIR + str(liveId) + '.json'
 
 def getLiveMap(liveId):
-    liveJsonUrl = getLiveMapJsonUrl(liveId)
-    # timeout for 10 seconds
-    liveJsonFp = urllib2.urlopen(liveJsonUrl, None, 10)
-    liveJson = json.load(liveJsonFp)
+    liveJsonPath = getLiveMapJsonPath(liveId)
+    if os.path.isfile(liveJsonPath):
+        with open(liveJsonPath, 'r') as f:
+            liveJson = json.load(f)
+    else:
+        liveJsonUrl = getLiveMapJsonUrl(liveId)
+        # timeout for 10 seconds
+        liveJsonFp = urllib2.urlopen(liveJsonUrl, None, 10)
+        liveJson = json.load(liveJsonFp)
+        with open(liveJsonPath, 'w') as f:
+            json.dump(liveJson, f, sort_keys=True)
     return LiveMap(liveJson)
 
 def isLiveDataComplete(live):
-    if not live.has_key('positionweight'):
-        return False
-    if not live.has_key('time'):
-        return False
-    positionWeight = live['positionweight']
-    liveTime = live['time']
-    if len(positionWeight) != 9:
-        return False
-    if len(str(positionWeight[0])) == 0:
-        return False
-    if len(str(liveTime)) == 0:
-        return False
-    if float(liveTime) <= 0:
-        return False
+    for positionKey in liveDataKeysForPosition:
+        if not live.has_key(positionKey):
+            return False
+        positionValue = live[positionKey]
+        if len(positionValue) != 9:
+            return False
+        if len(str(positionValue[0])) == 0:
+            return False
+    for numberKey in liveDataKeysForNumber:
+        if not live.has_key(numberKey):
+            return False
+        numberValue = live[numberKey]
+        if len(str(numberValue)) == 0:
+            return False
+        if float(numberValue) <= 0 and (numberKey in liveDataKeysForPositiveNumber):
+            return False
     return True
 
 class positionWeightUpdateThread (threading.Thread):
@@ -136,7 +193,7 @@ class positionWeightUpdateThread (threading.Thread):
         while True:
             try:
                 live = self.liveQueue.get(False)
-                self.messageQueue.put(self.updatePositionWeight(live))
+                self.messageQueue.put(self.processLive(live))
             except Queue.Empty:
                 self.printer.myPrint('* Queue is empty, exiting... *')
                 break;
@@ -144,21 +201,19 @@ class positionWeightUpdateThread (threading.Thread):
                 self.printer.myPrint('* Unknown exception *')
                 self.printer.myPrint(e)
                 break;
-    def updatePositionWeight(self, live):
+    def processLive(self, live):
         liveId = int(live['liveid'])
         try:
-            liveMap = getLiveMap(liveId)
-            result = liveMap.getPositionWeight()
-            liveTime = liveMap.getEndTime()
+            result = getLiveMap(liveId)
             self.printer.myPrint('* Successfully processed %d' % (liveId))
-            return (liveId, STATUS_SUCCESSFUL, result, liveTime)
+            return (liveId, STATUS_SUCCESSFUL, result)
         except KeyboardInterrupt:
             self.printer.myPrint('* User trying to exit program')
-            return (liveId, STATUS_KEYBOARD_INTERRUPT, None, None)
+            return (liveId, STATUS_KEYBOARD_INTERRUPT, None)
         except Exception as e:
             self.printer.myPrint('* Failed to process %d' % (liveId))
             self.printer.myPrint(e)
-            return (liveId, STATUS_ERROR, None, None)
+            return (liveId, STATUS_ERROR, None)
     def interrupt(self, e):
         if not self.isAlive():
             return
@@ -184,8 +239,15 @@ def main(threadCount):
     lives = {}
     printer = SyncPrinter()
 
-    with open(FILENAME_SONG_LIST_JSON, 'r') as f:
-        songs = json.load(f)
+    try:
+        with open(FILENAME_SONG_LIST_JSON, 'r') as f:
+            songs = json.load(f)
+    except:
+        printer.myPrint('Failed to load %s' % FILENAME_SONG_LIST_JSON)
+        return
+
+    if not os.path.isdir(LIVE_MAP_LOCAL_CACHE_DIR):
+        os.makedirs(LIVE_MAP_LOCAL_CACHE_DIR)
 
     for song in songs.values():
         for difficulty_name in [difficulty for difficulty in song.keys() if (difficulty in difficultyKeys)]:
@@ -207,8 +269,7 @@ def main(threadCount):
             liveId = int(live['liveid'])
             try:
                 liveMap = getLiveMap(liveId)
-                live['positionweight'] = liveMap.getPositionWeight()
-                live['time'] = liveMap.getEndTime()
+                liveMap.updateLiveData(live)
                 updatedLives.append(liveId)
                 printer.myPrint('* Successfully processed %d' % (liveId))
             except KeyboardInterrupt:
@@ -224,11 +285,10 @@ def main(threadCount):
                 newThread.start()
                 threads.append(newThread)
             for i in range(liveQueueCount):
-                liveId, status, result, liveTime = messageQueue.get()
+                liveId, status, result = messageQueue.get()
                 if status == STATUS_SUCCESSFUL:
                     updatedLives.append(liveId)
-                    lives[str(liveId)]['positionweight'] = result
-                    lives[str(liveId)]['time'] = liveTime
+                    result.updateLiveData(lives[str(liveId)])
 
         except KeyboardInterrupt:
             try:
