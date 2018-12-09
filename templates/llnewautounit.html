@@ -8,6 +8,7 @@
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
+   <script type="text/javascript" src="/static/js/highcharts/highcharts.js"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
    	img {height:65px;width:65px}
@@ -35,6 +36,7 @@
    var comp_swapper = 0;
    var unit_member_controller = [];
    var comp_resultmic = 0;
+   var comp_distribution_chart = 0;
 
    function getUnitMember(pos) {
       var props = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost'];
@@ -592,6 +594,11 @@
          document.getElementById('simresult0').innerHTML = llteam.maxScore;
          document.getElementById('simresult100').innerHTML = llteam.minScore;
          document.getElementById('distributionresult').style.display = '';
+         if (!comp_distribution_chart) {
+            comp_distribution_chart = new LLScoreDistributionChart('score_chart', [llteam.naivePercentile]);
+         } else {
+            comp_distribution_chart.addSeries(llteam.naivePercentile);
+         }
       } else {
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
          document.getElementById('distributionresult').style.display = 'none';
@@ -1114,6 +1121,7 @@
 </tr>
 </table>
 </div>
+<div id='score_chart' style='width:100%;height:400px;display:none'></div>
 {% endblock %}
 
 {% block back_notice %}
