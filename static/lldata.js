@@ -3628,9 +3628,98 @@ var LLDataVersionSelectorComponent = (function () {
          'lldata': lldata,
          'versionChanged': versionChangedHandler
       };
-      //element.appendChild(createElement('span', {'innerHTML': '选择数据版本:'}));
       element.appendChild(createVersionSelector(controller));
    }
    var cls = LLDataVersionSelectorComponent_cls;
    return cls;
 })();
+
+var LLScoreDistributionChart = (function () {
+   function makeCommonOptions() {
+      return {
+         title: {
+            text: '得分分布曲线'
+         },
+         credits: {
+            text: 'LLhelper',
+            href: 'http://llhelper.com'
+         },
+         xAxis: {
+            min: 0,
+            max: 100,
+            tickInterval: 10,
+            crosshair: true,
+            labels: {
+               format: '{value}%'
+            }
+         },
+         yAxis: {
+            title: {
+               text: '得分'
+            }
+         },
+         tooltip: {
+            headerFormat: '<span style="font-size: 10px">{point.key}%</span><br/>',
+            shared: true
+         },
+         plotOptions: {
+            line: {
+               marker: {
+                  radius: 2,
+                  symbol: 'circle'
+               },
+               pointStart: 1
+            }
+         }
+      };
+   };
+   function makeSeries(series, name) {
+      var ret = {
+         'type': 'line',
+         //'showCheckbox': true,
+         'name': name
+      }
+      if (series.length == 99) {
+         ret['data'] = series;
+      } else if (series.length == 101) {
+         ret['data'] = series.slice(1, 100).reverse();
+      } else {
+         console.error('Unknown series');
+         concole.log(series);
+         ret['data'] = series;
+      }
+      return ret;
+   };
+   // LLScoreDistributionChart
+   // {
+   //    chart: Highcharts chart
+   //    addSeries: function(data)
+   //    show: function()
+   //    hide: function()
+   // }
+   function LLScoreDistributionChart_cls(id, series) {
+      var element = LLUnit.getElement(id);
+      if (!Highcharts) {
+         console.error('Not included Highcharts');
+      }
+      var baseComponent = new LLComponentBase(element);
+      baseComponent.show(); // need show before create chart, otherwise the canvas size is wrong...
+      var options = makeCommonOptions();
+      var seriesOptions = [];
+      var nameId = 1;
+      for (; nameId <= series.length; nameId++) {
+         seriesOptions.push(makeSeries(series[nameId-1], String(nameId)));
+      }
+      options['series'] = seriesOptions;
+      this.chart = Highcharts.chart(element, options);
+      this.addSeries = function(data) {
+         this.chart.addSeries(makeSeries(data, String(nameId)));
+         nameId++;
+      };
+      this.show = function() { baseComponent.show(); }
+      this.hide = function() { baseComponent.hide(); }
+   }
+   var cls = LLScoreDistributionChart_cls;
+   return cls;
+})();
+
