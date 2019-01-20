@@ -99,7 +99,7 @@ if __name__ == "__main__":
 			diff['bscore'] = livetmp[6]
 			diff['ascore'] = livetmp[7]
 			diff['sscore'] = livetmp[8]
-			jsonpath = livetmp[4]
+			diff['jsonpath'] = livetmp[4]
 			song['attribute'] = attribute[livetmp[3]]
 			livetmp = livesetting.fetchone()
 

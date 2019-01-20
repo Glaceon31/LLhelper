@@ -1291,6 +1291,7 @@ function CoverageCalculator(song, difficulty, createdData)
         labelsstep = null;
     }
     document.getElementById('running').style.display = "";
+    document.getElementById('running').innerHTML = "运行中…";
     document.getElementById("running").scrollIntoView();
     Map = new Array(0);
 
@@ -1298,6 +1299,7 @@ function CoverageCalculator(song, difficulty, createdData)
         CoverageCalculatorWithData(song, member, member_C, _offset, s, createdData);
     } else {
         var maps = song[difficulty].liveid;
+        var jsonPath = song[difficulty].jsonpath;
         var _liveid = Number(maps);
         //处理文件序号
         var j = maps.length;
@@ -1313,8 +1315,19 @@ function CoverageCalculator(song, difficulty, createdData)
         {
             maps = "https://rawfile.loveliv.es/livejson/Live_s" + maps + ".json";
         }
-        $.getJSON(maps, function (data) {
+        var calcFunc = function (data) {
            CoverageCalculatorWithData(song, member, member_C, _offset, s, data);
+        };
+        var failFunc = function () {
+           console.error("Failed to get json for live id " + _liveid);
+           document.getElementById('running').innerHTML = "谱面下载失败";
+        };
+        $.getJSON(maps, calcFunc).fail(function () {
+           if (jsonPath) {
+              $.getJSON("https://rawfile.loveliv.es/livejson/" + jsonPath, calcFunc).fail(failFunc);
+           } else {
+              failFunc();
+           }
         });
     }
 }
