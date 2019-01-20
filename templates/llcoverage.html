@@ -22,6 +22,7 @@
 {% block script %}
    <script>
    LLSongData.briefKeys.push('bpm');
+   LLSongData.briefKeys.push('jsonpath');
    var llsong = 0;
    var mezame = 0;
    var language = 0;
@@ -622,7 +623,7 @@
 </div>
 <div style="clear:both">
 </div>
-<div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center"><b>运行中…</b></div>
+<div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center;font-weight:bold">运行中…</div>
 {% endblock %}
 
 {% block back_notice %}
