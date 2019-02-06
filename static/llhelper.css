@@ -110,3 +110,25 @@
 .unit-storage .storage-list .badge {
    margin-top: 4px;
 }
+.lltooltip {
+   border-bottom: 1px dotted black;
+}
+.lltooltip .tooltiptext {
+   visibility: hidden;
+   background-color: black;
+   color: white;
+   text-align: center;
+   border-radius: 6px;
+   padding: 5px;
+   position: absolute;
+   z-index: 1;
+   margin-top: 16px;
+}
+.lltooltip:hover .tooltiptext {
+   visibility: visible;
+}
+.llsup {
+   vertical-align: super;
+   font-size: x-small;
+}
+

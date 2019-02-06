@@ -926,7 +926,7 @@ var LLUnit = {
    },
 
    isStrengthSupported: function (card) {
-      if (card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
+      if (card && card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
       return true;
    },
 

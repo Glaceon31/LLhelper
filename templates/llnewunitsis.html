@@ -464,11 +464,15 @@
       for (var i=0;i<9;i++){
          var curCardStrength = llteam.attrStrength[i]+llteam.avgSkills[i].strength;
          var curStrength = curCardStrength - llteam.attrDebuff[i];
+         var strengthHint = '';
+         if (!LLUnit.isStrengthSupported(llteam.members[i].card)) {
+            strengthHint = '<span class="lltooltip llsup">(*)<span class="tooltiptext">该技能暂不支持强度计算</span></span>';
+         }
          document.getElementById('cardstrength'+String(i)).innerHTML = curCardStrength.toString();
          document.getElementById('cardstrength'+String(i)).style.color = '';
          document.getElementById('strength'+String(i)).innerHTML = curStrength.toString();
          document.getElementById('strength'+String(i)).style.color = '';
-         document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength;
+         document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength + strengthHint;
          document.getElementById('heal'+String(i)).innerHTML = LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal);
 
          if (minCardStrengthIndex < 0 || curCardStrength < minCardStrength) {
