@@ -27,23 +27,29 @@
 
 {% block script %}
    <script>
+   LLSongData.briefKeys.push('jsonpath');
    var llsong = 0;
    var mezame = 0;
    var language = 0;
 
    var defer_onload = $.Deferred();
+   var data_mapnote = 0;
    var comp_skill = 0;
    var comp_cardselector = 0;
    var comp_resultmic = 0;
+   var comp_distribution_param = 0;
    var comp_distribution_chart = 0;
 
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
       llsong = new LLSong(songData);
+      data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+      comp_distribution_param = new LLScoreDistributionParameter('distribution_param');
+      comp_distribution_param.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageDistParamKey));
 
       var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
          LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
@@ -143,10 +149,12 @@
       var inputs = document.getElementsByTagName("input");
       var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++){
-         setCookie(inputs[i].name+"unit", inputs[i].value, -1);
+         if (inputs[i].name)
+            setCookie(inputs[i].name+"unit", inputs[i].value, -1);
       }
       for (var i=0; i<selects.length; i++){
-         setCookie(selects[i].name+"unit", selects[i].value, -1);
+         if (selects[i].name)
+            setCookie(selects[i].name+"unit", selects[i].value, -1);
       }
       setCookie("mezame"+"unit", mezame, -1)
       comp_cardselector.deleteCookie('llnewunit_cardselector');
@@ -222,12 +230,13 @@
       var inputs = document.getElementsByTagName("input");
       var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++) {
-         if (inputs[i].type == "text") {
+         if (inputs[i].type == "text" && inputs[i].name) {
             var curCookie = getCookie(inputs[i].name+"unit");
             if (curCookie != "") inputs[i].value = curCookie;
          }
       }
       for (var i=0; i<selects.length; i++) {
+         if (!selects[i].name) continue;
          if (comp_cardselector.getComponent(selects[i].id)) continue;
          var curCookie = getCookie(selects[i].name+"unit");
          if (curCookie != "") selects[i].value = curCookie;
@@ -248,24 +257,31 @@
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
+   		if (inputs[i].type == "text" && inputs[i].name)
    			setCookie(inputs[i].name+"unit", inputs[i].value, 1);
    	}
    	for (var i=0; i<selects.length; i++){
-   		setCookie(selects[i].name+"unit", selects[i].value, 1);
+        if (selects[i].name)
+           setCookie(selects[i].name+"unit", selects[i].value, 1);
    	}
-   	setCookie("mezame"+"unit", mezame, 1)
-   	setCookie("language"+"unit", language, 1)
+      setCookie("mezame"+"unit", mezame, 1)
+      setCookie("language"+"unit", language, 1)
       comp_cardselector.saveCookie('llnewunit_cardselector');
    }
 
    function check(){
    	saveToCookie();
-      LLUnit.calculate(docalculate);
+      LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
+      var distParam = comp_distribution_param.saveData();
+      if (distParam.type == 'sim') {
+         LLUnit.calculate(docalculate, [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
+      } else {
+         LLUnit.calculate(docalculate);
+      }
    	return true;
    }
 
-   function docalculate(cards) {
+   function docalculate(cards, extraData) {
       var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet'];
       var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
@@ -315,6 +331,7 @@
          weights.push(member[i].weight);
       }
 
+      var distParam = comp_distribution_param.saveData();
       var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
       llmap.attribute = mainatt;
       llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
@@ -335,11 +352,18 @@
          document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
       }
 
-      if (document.getElementById('distribution').checked){
+      if (distParam.type != 'no') {
          var t0 = window.performance.now();
 
          var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
-         var err = llteam.calculateScoreDistribution();
+         var err;
+         if (distParam.type == 'v1') {
+            err = llteam.calculateScoreDistribution();
+         } else if (distParam.type == 'sim') {
+            err = llteam.simulateScoreDistribution(llmap, extraData[0], distParam.count);
+         } else {
+            err = '未知的得分分布';
+         }
          if (err) {
             document.getElementById('errorresult').innerHTML = err;
             document.getElementById('errorresult').style.display = '';
@@ -348,6 +372,7 @@
             document.getElementById('errorresult').style.display = 'none';
          }
          var t1 = window.performance.now();
+         console.debug(llteam);
 
          console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
          document.getElementById('averagescore').innerHTML = llteam.naiveExpection;
@@ -777,7 +802,8 @@
    </select>%<br>
 点击得分增加：<input type="number" step="any" id="tapup" name="tapup" value="0" size=2 />%<br>
 技能发动率增加：<input type="number" step="any" id="skillup" name="skillup" value="0" size=2 />%<br>
-<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
+<div id="distribution_param"></div>
+<input type="button" value="calculate" onclick="check()">
    <br><br><br>
 </form>
 
