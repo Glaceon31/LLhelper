@@ -10,37 +10,77 @@ function LLSong(songjson, includeDefaultSong) {
       songs = JSON.parse(songs);
    }
    if (includeDefaultSong === undefined || includeDefaultSong) {
-      var defaultsong = new Array()
-      defaultsong["name"] = "默认曲目（缪）"
-      defaultsong["jpname"] = "默认曲目（缪）"
-      defaultsong["muse"] = 1
-      defaultsong["aqours"] = 0
-      defaultsong["bpm"] = 200
-      defaultsong['attribute'] = ''
-      var defaultsong2 = new Array()
-      defaultsong2["name"] = "默认曲目（水）"
-      defaultsong2["jpname"] = "默认曲目（水）"
-      defaultsong2["muse"] = 0
-      defaultsong2["aqours"] = 1
-      defaultsong2["bpm"] = 200
-      defaultsong2['attribute'] = ''
-      var expert_default = new Array()
-      expert_default["positionweight"] = [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75]
-      expert_default["combo"] = 500
-      expert_default["time"] = 110
-      expert_default["star"] = 65
-      var master_default = new Array()
-      master_default["positionweight"] = [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5]
-      master_default["combo"] = 700
-      master_default["time"] = 110
-      master_default["star"] = 65
-      defaultsong["expert"] = expert_default
-      defaultsong["master"] = master_default
-      defaultsong["type"] = "0"
-      defaultsong2["expert"] = expert_default
-      defaultsong2["master"] = master_default
+      var defaultsong1 = {
+         'name': '默认曲目（缪）',
+         'jpname': '默认曲目（缪）',
+         'muse': 1,
+         'aqours': 0,
+         'bpm': 200,
+         'attribute': ''
+      };
+      var defaultsong2 = {
+         'name': '默认曲目（水）',
+         'jpname': '默认曲目（水）',
+         'muse': 0,
+         'aqours': 1,
+         'bpm': 200,
+         'attribute': ''
+      };
+      var defaultsong3 = {
+         'name': '默认曲目2（缪）',
+         'jpname': '默认曲目2（缪）',
+         'muse': 1,
+         'aqours': 0,
+         'bpm': 200,
+         'attribute': ''
+      };
+      var defaultsong4 = {
+         'name': '默认曲目2（水）',
+         'jpname': '默认曲目2（水）',
+         'muse': 0,
+         'aqours': 1,
+         'bpm': 200,
+         'attribute': ''
+      };
+      var expert_default1 = {
+         'positionweight': [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75],
+         'combo': 500,
+         'time': 110,
+         'star': 65
+      };
+      var expert_default2 = {
+         'positionweight': [63,63,63,63,0,63,63,63,63],
+         'combo': 504,
+         'time': 110,
+         'star': 65
+      };
+      var master_default1 = {
+         'positionweight': [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5],
+         'combo': 700,
+         'time': 110,
+         'star': 65
+      };
+      var master_default2 = {
+         'positionweight': [88,88,88,88,0,88,88,88,88],
+         'combo': 704,
+         'time': 110,
+         'star': 65
+      };
+      defaultsong1["expert"] = expert_default1;
+      defaultsong1["master"] = master_default1;
+      defaultsong1["type"] = "0";
+      defaultsong2["expert"] = expert_default1;
+      defaultsong2["master"] = master_default1;
       defaultsong2["type"] = "0"
-      songs["-2"] = defaultsong
+      defaultsong3["expert"] = expert_default2;
+      defaultsong3["master"] = master_default2;
+      defaultsong3["type"] = "0";
+      defaultsong4["expert"] = expert_default2;
+      defaultsong4["master"] = master_default2;
+      defaultsong4["type"] = "0";
+      songs["-4"] = defaultsong3
+      songs["-3"] = defaultsong4
+      songs["-2"] = defaultsong1
       songs["-1"] = defaultsong2
    }
 

@@ -360,7 +360,9 @@
          if (distParam.type == 'v1') {
             err = llteam.calculateScoreDistribution();
          } else if (distParam.type == 'sim') {
-            err = llteam.simulateScoreDistribution(llmap, extraData[0], distParam.count);
+            llmap.perfect = Math.floor(parseFloat(distParam.perfect_percent || 0)/100 * llmap.combo);
+            llmap.speed = distParam.speed;
+            err = llteam.simulateScoreDistribution(llmap, extraData[0], parseInt(distParam.count));
          } else {
             err = '未知的得分分布';
          }

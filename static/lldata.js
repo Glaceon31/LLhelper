@@ -2681,7 +2681,7 @@ var LLTeam = (function() {
          return undefined;
       }
       var i;
-      var speed = mapdata.speed || 8;
+      var speed = parseInt(mapdata.speed || 8);
       var noteTriggerData = [];
       // pre-process note data
       // assume hold note start with perfect
@@ -4302,10 +4302,27 @@ var LLScoreDistributionParameter = (function () {
       {'value': 'v1', 'text': '计算理论分布'},
       {'value': 'sim', 'text': '计算模拟分布'}
    ];
+   var speedSelectOptions = [
+      {'value': '1', 'text': '1速'},
+      {'value': '2', 'text': '2速'},
+      {'value': '3', 'text': '3速'},
+      {'value': '4', 'text': '4速'},
+      {'value': '5', 'text': '5速'},
+      {'value': '6', 'text': '6速'},
+      {'value': '7', 'text': '7速'},
+      {'value': '8', 'text': '8速'},
+      {'value': '9', 'text': '9速'},
+      {'value': '10', 'text': '10速'}
+   ];
    var distTypeDetail = [
-      ['#要素', '#计算理论分布', '#计算模拟分布'],
-      ['触发条件: 时间, note, combo, perfect, star perfect, 分数', '支持', '支持'],
-      ['触发条件: 连锁', '不支持', '不支持']
+      ['#要素', '#计算理论分布/计算技能强度', '#计算模拟分布'],
+      ['触发条件: 时间, 图标, 连击, perfect, star perfect, 分数', '支持', '支持'],
+      ['触发条件: 连锁', '不支持', '不支持'],
+      ['技能效果: 回血, 加分', '支持', '支持'],
+      ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升', '不支持', '支持'],
+      ['技能效果: 属性同步, 属性提升', '不支持', '不支持'],
+      ['宝石: 诡计', '不支持', '不支持'],
+      ['溢出奶, 完美判', '不支持', '不支持']
    ];
    // controller
    // {
@@ -4324,12 +4341,31 @@ var LLScoreDistributionParameter = (function () {
          }
       }});
       detailLink.style.cursor = 'help';
-      var simParamCount = createElement('input', {'type': 'number', 'size': 10, 'value': 10000});
+      var simParamCount = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 5, 'value': 2000});
+      var simParamPerfectPercent = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 3, 'value': 90});
+      var simParamSpeedComponent = new LLSelectComponent(createElement('select', {'className': 'form-control', 'value': '8'}));
+      simParamSpeedComponent.setOptions(speedSelectOptions);
+      simParamSpeedComponent.set('8');
       var simParamContainer = createElement('div', {'className': 'form-inline'}, [
          createElement('div', {'className': 'form-group'}, [
             createElement('label', {'innerHTML': '模拟次数：'}),
-            simParamCount
-         ])
+            simParamCount,
+            createElement('span', {'innerHTML': '（模拟次数越多越接近实际分布，但是也越慢）'})
+         ]),
+         createElement('br'),
+         createElement('div', {'className': 'form-group'}, [
+            createElement('label', {'innerHTML': '无判perfect率：'}),
+            simParamPerfectPercent,
+            createElement('span', {'innerHTML': '%'})
+         ]),
+         createElement('br'),
+         createElement('div', {'className': 'form-group'}, [
+            createElement('label', {'innerHTML': '速度：'}),
+            simParamSpeedComponent.element,
+            createElement('span', {'innerHTML': '（图标下落速度，1速最慢，10速最快）'})
+         ]),
+         createElement('br'),
+         createElement('span', {'innerHTML': '注意：默认曲目的模拟分布与理论分布不兼容，两者计算结果可能会有较大差异，如有需要请选默认曲目2'})
       ]);
       var simParamContainerComponent = new LLComponentBase(simParamContainer);
       var sel = createElement('select', {'className': 'form-control'});
@@ -4342,7 +4378,7 @@ var LLScoreDistributionParameter = (function () {
             simParamContainerComponent.hide();
          }
       };
-      selComp.onValueChange(selComp.get());
+      selComp.set('no');
       var container = createElement('div', undefined, [
          createElement('div', {'className': 'form-inline'}, [
             createElement('div', {'className': 'form-group'}, [
@@ -4357,13 +4393,17 @@ var LLScoreDistributionParameter = (function () {
       controller.getParameters = function () {
          return {
             'type': selComp.get(),
-            'count': simParamCount.value
+            'count': simParamCount.value,
+            'perfect_percent': simParamPerfectPercent.value,
+            'speed': simParamSpeedComponent.get()
          }
       };
       controller.setParameters = function (data) {
          if (!data) return;
          if (data.type) selComp.set(data.type);
          if (data.count !== undefined) simParamCount.value = data.count;
+         if (data.perfect_percent !== undefined) simParamPerfectPercent.value = data.perfect_percent;
+         if (data.speed) simParamSpeedComponent.set(data.speed);
       };
       return container;
    }
