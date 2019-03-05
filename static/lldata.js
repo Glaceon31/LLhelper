@@ -2814,6 +2814,7 @@ var LLTeam = (function() {
                }
                noteTriggerIndex++;
             }
+            if (env.currentTime == minNextTime) minNextTime += 1e-8;
             env.currentTime = minNextTime;
          }
          // simulate end
