@@ -2770,6 +2770,10 @@ var LLTeam = (function() {
                minNextTime = minNoteTime;
                handleNote = true;
             }
+            // need update time before process note so that the time-related skills uses correct current time
+            // in case next time is exactly same, add EPSILON to avoid infinite loop
+            if (env.currentTime == minNextTime) minNextTime += 1e-8;
+            env.currentTime = minNextTime;
             if (handleNote) {
                var curNote = noteTriggerData[noteTriggerIndex];
                if (curNote.type == SIM_NOTE_ENTER) {
@@ -2805,17 +2809,17 @@ var LLTeam = (function() {
                         comboFeverScore = LLConst.SKILL_LIMIT_COMBO_FEVER;
                      }
                   }
-                  if (perfectScoreUp + env.totalPerfectScoreUp > LLConst.SKILL_LIMIT_PERFECT_SCORE_UP) {
-                     perfectScoreUp = LLConst.SKILL_LIMIT_PERFECT_SCORE_UP - env.totalPerfectScoreUp;
-                  }
+                  // seems not really take effect
+                  //if (perfectScoreUp + env.totalPerfectScoreUp > LLConst.SKILL_LIMIT_PERFECT_SCORE_UP) {
+                  //   perfectScoreUp = LLConst.SKILL_LIMIT_PERFECT_SCORE_UP - env.totalPerfectScoreUp;
+                  //}
                   // note position 数值1~9, 从右往左数
                   var baseNoteScore = Math.ceil(this.finalAttr[mapdata.attribute]/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo));
                   env.currentScore += baseNoteScore + comboFeverScore + perfectScoreUp;
+                  env.totalPerfectScoreUp += perfectScoreUp;
                }
                noteTriggerIndex++;
             }
-            if (env.currentTime == minNextTime) minNextTime += 1e-8;
-            env.currentTime = minNextTime;
          }
          // simulate end
          if (scores[env.currentScore] !== undefined) {
@@ -2839,6 +2843,8 @@ var LLTeam = (function() {
       this.scoreDistribution = scoreDistribution;
       this.probabilityForMinScore = this.scoreDistribution[0];
       this.probabilityForMaxScore = this.scoreDistribution[this.scoreDistribution.length - 1];
+      this.minScore = minScore;
+      this.maxScore = scoreValues[scoreValues.length -1];
       this.averageSkillsActiveCount = skillsActiveCount;
       this.averageSkillsActiveChanceCount = skillsActiveChanceCount;
       this.averageHeal = totalHeal / simCount;
