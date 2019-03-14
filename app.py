@@ -140,6 +140,10 @@ def hello():
 def about():
     return render_template('about.html')
 
+@app.route("/releasenotes")
+def releasenotes():
+    return render_template('releasenotes.html')
+
 from legacy_app import legacy_app
 
 app.register_blueprint(legacy_app, url_prefix="/legacy")

@@ -1,0 +1,171 @@
+{% extends "layout.html" %}
+
+{% set category="近期更新" %}
+{% set category_link="/#releasenotes" %}
+{% set title="近期更新" %}
+
+{% block additional_header %}
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style>
+      .update-section-content {
+         padding-left: 20px;
+      }
+   </style>
+{% endblock %}
+
+{% block script %}
+   <script>
+      var LLHistoryPage = (function(){
+         var update_history = [
+            {
+               'version': LLSiteVersion.current_version,
+               'features': [
+                  '增加近期更新页面',
+                  [
+                     '在有更新时, 会在近期更新链接旁显示一个"1"',
+                     '当访问过一次近期更新页面后, 这个"1"会消失, 直到下次更新',
+                     '近期更新页面会显示最新一次更新及上次访问以后的更新, 点击"查看更多"可以看到更早的更新内容'
+                  ],
+                  '在#llnewunit#页面增加模拟得分分布功能',
+                  [
+                     '增加计算模拟分布选项',
+                     '原"计算分布"变更为"计算理论分布"',
+                     '点击"查看支持计算的技能/宝石"可以展开/折叠支持计算的表格',
+                     '目前计算模拟分布支持而理论分布不支持的部分包括: 判定, 提升技能发动率, repeat, perfect分数提升, combo fever, 技能等级提升',
+                     '计算模拟分布时需要填写模拟次数, 无判perfect率, 速度'
+                  ],
+                  '对不支持强度计算的技能, 会在技能强度栏显示一个提示',
+                  '资源载入失败时, 载入框会提示有资源载入失败',
+                  '卡片筛选中的技能类型下拉框增加combo fever和技能等级提升的选项',
+                  '增加两首新的默认歌曲, 由504(EX)或704(Master)个图标平均分布到除C位的8个位置上组成的曲目, 用于解决原默认曲目不能平均分配导致理论计算和模拟计算结果无法比较的问题'
+               ]
+            },
+            {
+               'version': 20190121,
+               'enhancements': [
+                  '在#llcoverage#页面中, 当谱面下载失败时会显示提示信息(以前是一直显示运行中)'
+               ]
+            },
+            {
+               'version': 20181223,
+               'features': [
+                  '在#llsongdata#页面显示长条按键, 滑键, 滑键长条的数量和各键位分布情况',
+                  '在#llnewunit#,#llnewunitsis#,#llnewautounit#页面增加分数分布曲线'
+               ],
+               'fixes': [
+                  '修复了部分页面的布局问题'
+               ]
+            },
+            {
+               'version': 20181130,
+               'features': [
+                  '在#llsongdata#,#llcoverage#,#llnewunit#,#llnewunitsis#,#llnewautounit#页面实现按需加载歌曲数据功能',
+                  ['每个页面节省约600KB流量'],
+                  '在#llcoverage#可选的歌曲更新为与其他页面一致'
+               ],
+               'fixes': [
+                  '更新了协力筒数计算方式(从根据稀有度+特典判断改为通过技能升级经验判断)'
+               ]
+            }
+         ];
+         var createElement = LLUnit.createElement;
+         function renderLine(line) {
+            return line
+               .replace('#llnewunit#', '<a href="/llnewunit">得分和卡组强度计算</a>')
+               .replace('#llnewunitsis#', '<a href="/llnewunitsis">最优宝石配置计算</a>')
+               .replace('#llnewautounit#', '<a href="/llnewautounit">自动组队强度计算</a>')
+               .replace('#llcoverage#', '<a href="/llcoverage">谱面和判定覆盖率</a>')
+               .replace('#llsongdata#', '<a href="/llsongdata">歌曲</a>');
+         }
+         function createList(data) {
+            var list_items = [];
+            for (var i = 0; i < data.length; i++) {
+               if (typeof(data[i]) == 'string') {
+                  list_items.push(createElement('li', {'innerHTML': renderLine(data[i])}));
+               } else {
+                  list_items.push(createList(data[i]));
+               }
+            }
+            return createElement('ul', undefined, list_items);
+         }
+         function createListWithTitle(title, data) {
+            return createElement('div', undefined, [
+               createElement('h4', {'innerHTML': title}),
+               createList(data)
+            ]);
+         }
+         function versionToDate(v) {
+            var d = v % 100;
+            v = (v-d)/100;
+            var m = v % 100;
+            v = (v-m)/100;
+            return v + '-' + m + '-' + d;
+         }
+         function createUpdateSection(data) {
+            var parts = [];
+            var title;
+            if (data.version_text) {
+               title = createElement('h2', undefined, [
+                  data.version_text,
+                  createElement('small', {'innerHTML': versionToDate(data.version)})
+               ]);
+            } else {
+               title = createElement('h2', {'innerHTML': versionToDate(data.version)});
+            }
+            if (data.summary) {
+               parts.push(createElement('p', {'innerHTML': data.summary}));
+            }
+            if (data.features) {
+               parts.push(createListWithTitle('新功能', data.features));
+            }
+            if (data.fixes) {
+               parts.push(createListWithTitle('修复', data.fixes));
+            }
+            if (data.enhancements) {
+               parts.push(createListWithTitle('改进', data.enhancements));
+            }
+            return createElement('div', undefined, [
+               title,
+               createElement('div', {'className': 'update-section-content'}, parts)
+            ]);
+         }
+         function init() {
+            var new_container = LLUnit.getElement('updates_new');
+            var old_container = LLUnit.getElement('updates_old');
+            var new_count = 1;
+            var i;
+            for (; new_count < update_history.length; new_count++) {
+               if (update_history[new_count].version <= LLSiteVersion.visited_version) break;
+            }
+            for (i = 0; i < new_count; i++) {
+               new_container.appendChild(createUpdateSection(update_history[i]));
+            }
+            if (new_count < update_history.length) {
+               var more_button = createElement('button', {'type': 'button', 'className': 'btn btn-default btn-block', 'innerHTML': '查看更多'}, undefined, {'click': function(){
+                  for (i = new_count; i < update_history.length; i++) {
+                     old_container.appendChild(createUpdateSection(update_history[i]));
+                  }
+                  more_button.style.display = 'none';
+               }});
+               old_container.appendChild(more_button);
+            }
+            LLSiteVersion.update();
+            LLSiteVersion.check();
+         }
+         var ret = {};
+         ret.render = init;
+         return ret;
+      })();
+   </script>
+{% endblock %}
+
+{% block body_onload %}
+   <body onload="LLHistoryPage.render()" lang="zh-Hans">
+{% endblock %}
+
+{% block main %}
+<div id='updates_new'></div>
+<div id='updates_old'></div>
+{% endblock %}
+
