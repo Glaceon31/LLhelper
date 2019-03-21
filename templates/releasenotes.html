@@ -1,0 +1,376 @@
+{% extends "layout.html" %}
+
+{% set category="近期更新" %}
+{% set category_link="/#releasenotes" %}
+{% set title="近期更新" %}
+
+{% block additional_header %}
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style>
+      .update-section-content {
+         padding-left: 20px;
+      }
+   </style>
+{% endblock %}
+
+{% block script %}
+   <script>
+      var LLHistoryPage = (function(){
+         var update_history = [
+            {
+               'version': LLSiteVersion.current_version,
+               'features': [
+                  '增加近期更新页面',
+                  [
+                     '在有更新时, 会在近期更新链接旁显示一个"1"',
+                     '当访问过一次近期更新页面后, 这个"1"会消失, 直到下次更新',
+                     '近期更新页面会显示最新一次更新及上次访问以后的更新, 点击"查看更多"可以看到更早的更新内容',
+                     '目前最早的更新历史为2018-2-24'
+                  ],
+                  '在#llnewunit#页面增加模拟得分分布功能',
+                  [
+                     '增加计算模拟分布选项',
+                     '原"计算分布"变更为"计算理论分布"',
+                     '点击"查看支持计算的技能/宝石"可以展开/折叠支持计算的表格',
+                     '目前计算模拟分布支持而理论分布不支持的部分包括: 判定, 提升技能发动率, repeat, perfect分数提升, combo fever, 技能等级提升, 属性同步, 属性提升',
+                     '计算模拟分布时需要填写模拟次数, 无判perfect率, 速度'
+                  ],
+                  '对不支持强度计算的技能, 会在技能强度栏显示一个提示',
+                  '资源载入失败时, 载入框会提示有资源载入失败',
+                  '卡片筛选中的技能类型下拉框增加combo fever和技能等级提升的选项',
+                  '增加两首新的默认歌曲, 由504(EX)或704(Master)个图标平均分布到除C位的8个位置上组成的曲目, 用于解决原默认曲目不能平均分配导致理论计算和模拟计算结果无法比较的问题'
+               ]
+            },
+            {
+               'version': 20190121,
+               'enhancements': [
+                  '在#llcoverage#页面中, 当谱面下载失败时会显示提示信息(以前是一直显示运行中)'
+               ]
+            },
+            {
+               'version': 20181223,
+               'features': [
+                  '在#llsongdata#页面显示长条按键, 滑键, 滑键长条的数量和各键位分布情况',
+                  '在#llnewunit#,#llnewunitsis#,#llnewautounit#页面增加分数分布曲线'
+               ],
+               'fixes': [
+                  '修复了部分页面的布局问题'
+               ]
+            },
+            {
+               'version': 20181130,
+               'features': [
+                  '在#llsongdata#,#llcoverage#,#llnewunit#,#llnewunitsis#,#llnewautounit#页面实现按需加载歌曲数据功能',
+                  ['每个页面节省约600KB流量'],
+                  '在#llcoverage#可选的歌曲更新为与其他页面一致'
+               ],
+               'fixes': [
+                  '更新了协力筒数计算方式(从根据稀有度+特典判断改为通过技能升级经验判断)'
+               ]
+            },
+            {
+               'version': 20181120,
+               'features': [
+                  '增加卡牌数据版本切换功能(日服调整了部分卡牌数据, 国服玩家请使用兼容国服的版本)',
+                  '在#llcoverage#增加了默认曲目, 将500图标(EX)或700图标(Master)平均分布在8个按键上'
+               ]
+            },
+            {
+               'version': 20181029,
+               'fixes': [
+                  "修复了在使用非μ's和Aqours成员的自动组队/自动配饰功能时无法得出结果的问题",
+               ]
+            },
+            {
+               'version': 20181007,
+               'features': [
+                  '更新了浏览器存储队伍数据的功能',
+                  [
+                     '保存的队伍数据可以在#llnewunit#,#llnewunitsis#,#llnewautounit#通用',
+                     '保存时可以选择要保存哪些部分数据(绿色表示会保存, 白色表示不保存, 灰色表示该页面不能保存该数据)',
+                     '载入时可以选择载入哪些部分的数据(绿色表示会载入, 白色表示不载入, 灰色表示该存档不包含这部分数据)',
+                     '当开了多个窗口时, 在某个窗口添加/删除/修改后, 其它窗口不会自动刷新, 点击刷新按钮就可以在不刷新整个页面的情况下刷新队伍存档'
+                  ],
+                  '实现了自动更新卡牌数据库的功能'
+               ],
+               'fixes': [
+                  '修复了Firefox浏览器中, 点击修改宝石库的宝石数量时会展开/折叠分类的问题',
+                  '修复了保存/读取宝石库时如果有配置不同的个人宝石时会失败的问题'
+               ]
+            },
+            {
+               'version': 20180826,
+               'features': [
+                  '增加协力筒数与技能等级关系表',
+                  '更新了#llnewautounit#页面的备选成员界面',
+                  [
+                     '当备选成员数量多时会换行显示',
+                     '换位时不能修改或删除备选成员',
+                     '删除备选成员时需要确认, 防止误点'
+                  ]
+               ],
+               'enhancements': [
+                  '开发者: 新增测试页面',
+                  '更新了协力筒数计算, 现在更为精确, 感谢@电玩果 提供的数据',
+                  '#llnewautounit#页面的队伍填充功能将会只填充空位'
+               ],
+               'fixes': [
+                  '修复了在宝石仓库为空的时候自动配饰出错的问题'
+               ]
+            },
+            {
+               'version': 20180809,
+               'features': [
+                  '#llnewautounit#页面现在也全面支持新宝石了'
+               ]
+            },
+            {
+               'version': 20180802,
+               'features': [
+                  '更新了#llnewunitsis#页面的技能宝石仓库',
+                  [
+                     '全面支持新宝石, 使用树形结构展现',
+                     '通过在一类宝石的输入框填写, 可以对一类宝石下所有宝石数量进行统一设置',
+                     '宝石数量填写范围为0~9, 当宝石数量为9时会用绿色背景显示',
+                     '当一类宝石下各个宝石数量不同时, 该类宝石会显示N+, 其中N表示该类宝石中最少宝石持有数'
+                  ],
+                  '在#llnewunit#和#llnewunitsis#页面的队伍界面增加个人宝石和九重奏宝石的项',
+                  '歌曲难度筛选中增加Arcade难度'
+               ],
+               'enhancements': [
+                  '在#llnewunitsis#页面点击计算时若还没选择歌曲, 会提示选择歌曲而不是提示输入数字',
+                  '优化了歌曲难度选择中的各个难度的文本'
+               ],
+               'fixes': [
+                  '修复了游戏版本升到6.2后歌曲combo数不显示的问题'
+               ]
+            },
+            {
+               'version': 20180719,
+               'features': [
+                  '#llnewunit#页面的前几次更新同步到#llnewunitsis#页面了',
+                  '#llnewunitsis#页面可以从文件保存/读取宝石信息了'
+               ],
+               'enhancements': [
+                  '重构了自动配饰算法, 将点击得分加成/技能发动率加成/异色异团惩罚也纳入考虑, 使得自动配饰结果更优'
+               ]
+            }, 
+            {
+               'version': 20180524,
+               'features': [
+                  '#llnewunit#页面支持部分新宝石(单体1400/单体28%/全体4%)',
+                  '#llnewunit#页面在计算分布后会显示最高分和最低分, 以及其概率'
+               ],
+               'enhancements': [
+                  '优化了得分分布计算的算法, 在分卡较多的时候计算速度提升',
+                  '在#llnewunit#页面, 不勾选计算分布时不显示得分分布表'
+               ]
+            },
+            {
+               'version': 20180422,
+               'enhancements': [
+                  '保存在浏览器的队伍列表在点击队伍载入后, 队伍名字会自动填到输入框, 方便修改保存',
+                  '在#llactivity#页面增加支持日服LP消耗降低的限时活动',
+                  '在#llnewunit#页面增加异色异团惩罚项'
+               ],
+               'fixes': [
+                  '修复了#llnewunit#中如果C位颜色和歌曲颜色不同会得出错误结果的问题',
+                  '修复了#llnewunit#中当队伍里有N卡时计算失败的问题'
+               ]
+            },
+            {
+               'version': 20180404,
+               'fixes': [
+                  '修复了在小屏幕设备上(如手机)在#llnewunit#页面无法编辑1~4号位的问题'
+               ]
+            },
+            {
+               'version': 20180330,
+               'features': [
+                  '#llactivity#页面现在支持计算1~4倍消耗'
+               ],
+               'enhancements': [
+                  '在#llactivity#页面, 点击计算按钮时会检查并提示具体哪个输入框填写数据不正确',
+                  '#llnewunit#,#llnewunitsis#,#llnewautounit#,#llnewcarddata#,#llcoverage#现在使用相同的卡牌筛选组件'
+               ],
+               'fixes': [
+                  '修复了#llnewautounit#页面中, 从文件载入的后备队员会错误的使用觉醒后的属性的问题'
+               ]
+            },
+            {
+               'version': 20180324,
+               'fixes': [
+                  '修复了在https下的卡组图片识别功能'
+               ]
+            },
+            {
+               'version': 20180320,
+               'enhancements': [
+                  '#llcoverage#页面也实现了按需加载卡片数据的功能'
+               ],
+               'fixes': [
+                  '在#llnewunit#,#llnewunitsis#,#llnewautounit#,#llcoverage#页面加回了技能等级的选择和显示',
+                  '修复了在页面顶端时载入框会被导航条遮挡的问题'
+               ]
+            },
+            {
+               'version': 20180313,
+               'features': [
+                  '卡组图片识别增加了等级识别功能',
+                  '#llnewunit#,#llnewunitsis#,#llnewautounit#,#llnewcarddata#页面增加载入框'
+               ],
+               'enhancements': [
+                  '#llnewautounit#也实现了按需加载卡片数据的功能'
+               ],
+               'fixes': [
+                  '修复了#llnewunit#,#llnewunitsis#页面不能正确识别#llunitimport#和LLProxy的卡组的问题',
+                  '修复了#llnewautounit#中自动组队不能工作的问题'
+               ]
+            },
+            {
+               'version': 20180308,
+               'features': [
+                  '#llnewcarddata#页面可以正确显示新技能的文本描述了'
+               ],
+               'enhancements': [
+                  '#llnewcarddata#页面也支持按需加载卡片数据功能了',
+                  '在#llnewcarddata#,#llnewautounit#,#llnewunitsis#,#llnewunit#页面在选中卡片的时候, 卡片头像在载入完成前不再会显示之前的头像'
+               ],
+               'fixes': [
+                  '#llnewcarddata#页面中修复了部分卡片的槽数不正确的问题',
+                  '修复了#llnewunit#页面从浏览器保存的队伍加载失效的问题'
+               ]
+            },
+            {
+               'version': 20180228,
+               'features': [
+                  '#llnewunit#,#llnewunitsis#页面增加了按需加载卡片数据的功能, 可以节省大约1.4MB流量'
+               ],
+               'enhancements': [
+                  '提升了#llnewunit#页面读取卡组文件的性能(减少一次刷新)',
+                  '选择歌曲时, 为图属性添加颜色',
+                  '选择默认歌曲时, 修改图属性会令歌曲颜色同步改变'
+               ],
+               'fixes': [
+                  '修复了选择觉醒后再刷新页面会产生觉醒状态和实际显示的卡不匹配的问题',
+                  '在#llnewcarddata#页面可以显示N卡强度了'
+               ]
+            },
+            {
+               'version': 20180224,
+               'features': [
+                  "增加μ's和Aqours的歌曲筛选功能"
+               ],
+               'enhancements': [
+                  '默认歌曲显示紫色(原先是红色)'
+               ],
+               'fixes': [
+                  '修复了按歌曲名筛选的功能',
+                  '修复了#llnewunit#页面中交换卡片时槽数没有跟着交换的问题'
+               ]
+            }
+         ];
+         var createElement = LLUnit.createElement;
+         function renderLine(line) {
+            return line
+               .replace('#llnewunit#', '<a href="/llnewunit">得分和卡组强度计算</a>')
+               .replace('#llnewunitsis#', '<a href="/llnewunitsis">最优宝石配置计算</a>')
+               .replace('#llnewautounit#', '<a href="/llnewautounit">自动组队强度计算</a>')
+               .replace('#llcoverage#', '<a href="/llcoverage">谱面和判定覆盖率</a>')
+               .replace('#llsongdata#', '<a href="/llsongdata">歌曲</a>')
+               .replace('#llnewcarddata#', '<a href="/llnewcarddata">卡片、立绘</a>')
+               .replace('#llunitimport#', '<a href="/llunitimport">截图导入队伍</a>')
+               .replace('#llactivity#', '<a href="/llactivity">传统活动</a>');
+         }
+         function createList(data) {
+            var list_items = [];
+            for (var i = 0; i < data.length; i++) {
+               if (typeof(data[i]) == 'string') {
+                  list_items.push(createElement('li', {'innerHTML': renderLine(data[i])}));
+               } else {
+                  list_items.push(createList(data[i]));
+               }
+            }
+            return createElement('ul', undefined, list_items);
+         }
+         function createListWithTitle(title, data) {
+            return createElement('div', undefined, [
+               createElement('h4', {'innerHTML': title}),
+               createList(data)
+            ]);
+         }
+         function versionToDate(v) {
+            var d = v % 100;
+            v = (v-d)/100;
+            var m = v % 100;
+            v = (v-m)/100;
+            return v + '-' + m + '-' + d;
+         }
+         function createUpdateSection(data) {
+            var parts = [];
+            var title;
+            if (data.version_text) {
+               title = createElement('h2', undefined, [
+                  data.version_text,
+                  createElement('small', {'innerHTML': versionToDate(data.version)})
+               ]);
+            } else {
+               title = createElement('h2', {'innerHTML': versionToDate(data.version)});
+            }
+            if (data.summary) {
+               parts.push(createElement('p', {'innerHTML': data.summary}));
+            }
+            if (data.features) {
+               parts.push(createListWithTitle('新功能', data.features));
+            }
+            if (data.fixes) {
+               parts.push(createListWithTitle('修复', data.fixes));
+            }
+            if (data.enhancements) {
+               parts.push(createListWithTitle('改进', data.enhancements));
+            }
+            return createElement('div', undefined, [
+               title,
+               createElement('div', {'className': 'update-section-content'}, parts)
+            ]);
+         }
+         function init() {
+            var new_container = LLUnit.getElement('updates_new');
+            var old_container = LLUnit.getElement('updates_old');
+            var new_count = 1;
+            var i;
+            for (; new_count < update_history.length; new_count++) {
+               if (update_history[new_count].version <= LLSiteVersion.visited_version) break;
+            }
+            for (i = 0; i < new_count; i++) {
+               new_container.appendChild(createUpdateSection(update_history[i]));
+            }
+            if (new_count < update_history.length) {
+               var more_button = createElement('button', {'type': 'button', 'className': 'btn btn-default btn-block', 'innerHTML': '查看更多'}, undefined, {'click': function(){
+                  for (i = new_count; i < update_history.length; i++) {
+                     old_container.appendChild(createUpdateSection(update_history[i]));
+                  }
+                  more_button.style.display = 'none';
+               }});
+               old_container.appendChild(more_button);
+            }
+            LLSiteVersion.update();
+            LLSiteVersion.check();
+         }
+         var ret = {};
+         ret.render = init;
+         return ret;
+      })();
+   </script>
+{% endblock %}
+
+{% block body_onload %}
+   <body onload="LLHistoryPage.render()" lang="zh-Hans">
+{% endblock %}
+
+{% block main %}
+<div id='updates_new'></div>
+<div id='updates_old'></div>
+{% endblock %}
+
