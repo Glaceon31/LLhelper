@@ -2108,6 +2108,24 @@ var LLMember = (function() {
 })();
 
 var LLSimulateContext = (function() {
+   function getTargetMembers(members, targets, excludeId) {
+      var ret = [];
+      if ((!targets) || (targets.length == 0)) return ret;
+      for (var i = 0; i < members.length; i++) {
+         if (excludeId !== undefined && i == excludeId) continue;
+         var matched = true;
+         for (var j = 0; j < targets.length; j++) {
+            if (!LLConst.isMemberInGroup(members[i].card.jpname, targets[j])) {
+               matched = false;
+               break;
+            }
+         }
+         if (matched) {
+            ret.push(i);
+         }
+      }
+      return ret;
+   }
    function LLSimulateContext_cls(mapdata, members, maxTime) {
       this.members = members;
       this.totalNote = mapdata.combo;
@@ -2126,20 +2144,47 @@ var LLSimulateContext = (function() {
       // trigger_type: [[memberid, start_value, is_active, has_active_chance, require, base_possibility], ...]
       // in SKILL_TRIGGER_MEMBERS case, start_value is members_bitset
       this.triggers = {};
+      this.syncTargets = []; // syncTargets[memberId] = [memberIds...]
+      this.attributeUpBase = []; // attributeUpBonus[memberId] = sum{target_member.attrStrength}
       for (var i = 0; i < 9; i++) {
          var curMember = members[i];
          if ((!curMember.card.skill) || (curMember.skilleffect == 0)) continue;
          var triggerType = curMember.card.triggertype;
+         var effectType = curMember.card.skilleffect;
          var skillDetail = curMember.getSkillDetail();
-         var triggerData = [i, 0, 0, 0, skillDetail.require, skillDetail.possibility];
-         if (this.triggers[triggerType] === undefined) {
-            this.triggers[triggerType] = [triggerData];
+         var targets;
+         var neverTrigger = false;
+         if (effectType == LLConst.SKILL_EFFECT_SYNC) {
+            targets = getTargetMembers(this.members, curMember.card.effecttarget, i);
+            // 无同步对象, 不会触发
+            if (targets.length == 0) neverTrigger = true;
+            this.syncTargets.push(targets);
          } else {
-            this.triggers[triggerType].push(triggerData);
+            this.syncTargets.push(undefined);
+         }
+         if (effectType == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
+            targets = getTargetMembers(this.members, curMember.card.effecttarget);
+            var baseValue = 0;
+            for (var j = 0; j < targets.length; j++) {
+               baseValue += members[targets[j]].attrStrength;
+            }
+            this.attributeUpBase.push(baseValue);
+         } else {
+            this.attributeUpBase.push(0);
+         }
+         // TODO: chain trigger
+         if (!neverTrigger) {
+            var triggerData = [i, 0, 0, 0, skillDetail.require, skillDetail.possibility];
+            if (this.triggers[triggerType] === undefined) {
+               this.triggers[triggerType] = [triggerData];
+            } else {
+               this.triggers[triggerType].push(triggerData);
+            }
          }
       }
       // activeSkills: [[end_time, memberid, realMemberId, effectValue, extraData], ...]
       // realMemberId is repeat target memberid for repeat skill, otherwise equal to memberid
+      // for SYNC & ATTRIBUTE_UP effect: effectValue is increased attribute after sync/attribute up
       this.activeSkills = [];
       this.lastActiveSkill = undefined; // memberid
       // effect_type: effect_value
@@ -2154,9 +2199,8 @@ var LLSimulateContext = (function() {
       var effPossibilityUp = 1.0; // possibility *x, no stack
       var effPerfectScoreUp = 0; // total bonus
       var effComboFever = 0; // score +(x*combo_factor), need cap at SKILL_LIMIT_COMBO_FEVER
-      var effSync = 0; // total attribute +x
       var effLevelUp = 0; // next skill level +x
-      var effAttributeUp = 0; // total attribute +x
+      var effAttributeUp = 0; // total attribute +x, including sync and attribute up and accuracy gem
       for (var i = 0; i < this.activeSkills.length; i++) {
          // repeat target member id
          var curMember = this.members[this.activeSkills[i][2]];
@@ -2172,9 +2216,9 @@ var LLSimulateContext = (function() {
          else if (curEffect == LLConst.SKILL_EFFECT_COMBO_FEVER)
             effComboFever += this.activeSkills[i][3];
          else if (curEffect == LLConst.SKILL_EFFECT_SYNC) {
-            // TODO
+            effAttributeUp += this.activeSkills[i][3];
          } else if (curEffect == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
-            // TODO
+            effAttributeUp += this.activeSkills[i][3];
          }
       }
       var eff = this.effects;
@@ -2183,7 +2227,6 @@ var LLSimulateContext = (function() {
       eff[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = effPossibilityUp;
       eff[LLConst.SKILL_EFFECT_PERFECT_SCORE_UP] = effPerfectScoreUp;
       eff[LLConst.SKILL_EFFECT_COMBO_FEVER] = effComboFever;
-      eff[LLConst.SKILL_EFFECT_SYNC] = effSync;
       eff[LLConst.SKILL_EFFECT_LEVEL_UP] = effLevelUp;
       eff[LLConst.SKILL_EFFECT_ATTRIBUTE_UP] = effAttributeUp;
    };
@@ -2306,14 +2349,18 @@ var LLSimulateContext = (function() {
          this.activeSkills.push([this.currentTime + skillDetail.time, memberId, realMemberId, skillDetail.score]);
          this.markTriggerActive(memberId, 1);
       } else if (skillEffect == LLConst.SKILL_EFFECT_SYNC) {
-         // TODO
-         this.activeSkills.push([this.currentTime + skillDetail.time, memberId, realMemberId, skillDetail.score]);
+         var syncTargets = this.syncTargets[realMemberId];
+         var syncTarget = syncTargets[Math.floor(Math.random() * syncTargets.length)];
+         var attrDiff = this.members[syncTarget].attrStrength - this.members[memberId].attrStrength;
+         this.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP] += attrDiff;
+         this.activeSkills.push([this.currentTime + skillDetail.time, memberId, realMemberId, attrDiff]);
          this.markTriggerActive(memberId, 1);
       } else if (skillEffect == LLConst.SKILL_EFFECT_LEVEL_UP) {
          this.effects[LLConst.SKILL_EFFECT_LEVEL_UP] = skillDetail.score;
       } else if (skillEffect == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
-         // TODO
-         this.activeSkills.push([this.currentTime + skillDetail.time, memberId, realMemberId, skillDetail.score]);
+         var attrBuff = Math.ceil((skillDetail.score-1) * this.attributeUpBase[realMemberId]);
+         this.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP] += attrBuff;
+         this.activeSkills.push([this.currentTime + skillDetail.time, memberId, realMemberId, attrBuff]);
          this.markTriggerActive(memberId, 1);
       } else {
          console.warn('Unknown skill effect ' + skillEffect);
@@ -2732,7 +2779,10 @@ var LLTeam = (function() {
       // 3. repeat技能如果repeat了一个奶转分, 会加分吗?
       // 4. repeat了一个持续系技能的话, 在该技能持续时间内再次触发repeat的话, 会发生什么? 加分技能能发动吗? 持续系的技能能发动吗? 会延后到持续时间结束点上发动吗?
       // 5. 属性同步是同步的宝石加成前的还是后的?
+      //   A5. 同步的是宝石加成以及C技加成后的
       // 6. 属性同步状态下的卡受到能力强化技能加成时是什么效果? 受到能力强化技能加成的卡被属性同步是什么效果?
+      //   A6. 不互相影响, 强化的是同步前的数据, 同步的是强化前的数据
+      // 7. repeat的是属性同步技能的话, 同步对象会重新选择吗? 如果重新选择, 会选到当初发动同步的卡吗? 如果不重新选择, 同步对象是自身的话是什么效果?
       var scores = {};
       var skillsActiveCount = [0, 0, 0, 0, 0, 0, 0, 0, 0];
       var skillsActiveChanceCount = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -2813,8 +2863,9 @@ var LLTeam = (function() {
                   //if (perfectScoreUp + env.totalPerfectScoreUp > LLConst.SKILL_LIMIT_PERFECT_SCORE_UP) {
                   //   perfectScoreUp = LLConst.SKILL_LIMIT_PERFECT_SCORE_UP - env.totalPerfectScoreUp;
                   //}
+                  var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
-                  var baseNoteScore = Math.ceil(this.finalAttr[mapdata.attribute]/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo));
+                  var baseNoteScore = Math.ceil(baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo));
                   env.currentScore += baseNoteScore + comboFeverScore + perfectScoreUp;
                   env.totalPerfectScoreUp += perfectScoreUp;
                }
@@ -4326,8 +4377,7 @@ var LLScoreDistributionParameter = (function () {
       ['触发条件: 时间, 图标, 连击, perfect, star perfect, 分数', '支持', '支持'],
       ['触发条件: 连锁', '不支持', '不支持'],
       ['技能效果: 回血, 加分', '支持', '支持'],
-      ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升', '不支持', '支持'],
-      ['技能效果: 属性同步, 属性提升', '不支持', '不支持'],
+      ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升<br/>属性同步, 属性提升', '不支持', '支持'],
       ['宝石: 诡计', '不支持', '不支持'],
       ['溢出奶, 完美判', '不支持', '不支持']
    ];
