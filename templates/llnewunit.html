@@ -39,6 +39,7 @@
    var comp_resultmic = 0;
    var comp_distribution_param = 0;
    var comp_distribution_chart = 0;
+   var comp_team = 0;
 
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
@@ -60,6 +61,7 @@
          'saveData': makeSaveData,
          'loadTeamMember': handleLoadTeamMember
       });
+      var comp_team = new LLTeamComponent('unit-team');
 
       init();
 
@@ -714,6 +716,8 @@
 <div id="unit-storage" style="margin-top: 30px">
 </div>
 
+</div>
+<div class="col-xs-12 col-md-9" style="overflow-x:auto" id="unit-team">
 </div>
 <div style="clear:both">
 </div>

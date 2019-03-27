@@ -31,8 +31,9 @@
  *   LLDataVersionSelectorComponent
  *   LLScoreDistributionParameter
  *   LLScoreDistributionChart
+ *   LLTeamComponent
  *
- * v1.2.0
+ * v1.3.0
  * By ben1222
  */
 
@@ -4147,22 +4148,22 @@ var LLSaveStorageComponent = (function () {
    var toggleIncludedClass = 'btn btn-success';
    var toggleExcludedClass = 'btn btn-default';
 
-  function loadStorageJSON() {
-    var json;
-    try {
-      json = JSON.parse(localStorage.getItem(localStorageKey));
-    } catch (e) {
-      json = {};
-    }
-    if (json == null || json === '') {
-      json = {};
-    }
-    return json;
-  }
+   function loadStorageJSON() {
+      var json;
+      try {
+         json = JSON.parse(localStorage.getItem(localStorageKey));
+      } catch (e) {
+         json = {};
+      }
+      if (json == null || json === '') {
+         json = {};
+      }
+      return json;
+   }
 
-  function saveStorageJSON(json) {
-    localStorage.setItem(localStorageKey, JSON.stringify(json));
-  }
+   function saveStorageJSON(json) {
+      localStorage.setItem(localStorageKey, JSON.stringify(json));
+   }
 
    // controller
    // {
@@ -4593,6 +4594,176 @@ var LLScoreDistributionChart = (function () {
       this.hide = function() { baseComponent.hide(); }
    }
    var cls = LLScoreDistributionChart_cls;
+   return cls;
+})();
+
+var LLTeamComponent = (function () {
+   var createElement = LLUnit.createElement;
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function makeInputCreator(options) {
+      return function(controller) {
+         var inputElement = createElement('input', options);
+         var inputComponent = new LLValuedComponent(inputElement);
+         controller.get = function() { return inputComponent.get(); }
+         controller.set = function(v) { inputComponent.set(v); }
+         return [inputElement];
+      };
+   }
+   function makeButtonCreator(text, clickFunc) {
+      return function(controller, i) {
+         return [createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': text+(i+1)}, undefined, {'click': function(){clickFunc(i);}})];
+      };
+   }
+   // controller
+   // {
+   //    update: function(cardid, mezame)
+   // }
+   function avatarCreator(controller) {
+      var imgElement = createElement('img', {'src': '/static/null.png'});
+      controller.update = function(cardid, mezame) {
+         LLUnit.changeavatare(imgElement, cardid, parseInt(mezame));
+      };
+      return [imgElement];
+   }
+   // controller
+   // {
+   //    set: function(value)
+   // }
+   function textCreator(controller) {
+      var textElement = createElement('span');
+      controller.set = function(v) { textElement.innerHTML = v; };
+      return [textElement];
+   }
+   // controller
+   // {
+   //    setTooltip: function(value)
+   //    :textCreator
+   // }
+   function textWithTooltipCreator(controller) {
+      var ret = textCreator(controller);
+      var tooltipContent = createElement('span', {'className': 'tooltiptext'});
+      var tooltipElement = createElement('span', {'className': 'lltooltip llsup'}, ['(*)', tooltipContent]);
+      var tooltipComponent = new LLComponentBase(tooltipElement);
+      tooltipComponent.hide();
+      ret.push(tooltipElement);
+      controller.setTooltip = function(v) {
+         if (v === undefined) {
+            tooltipComponent.hide();
+         } else {
+            tooltipContent.innerHTML = v;
+            tooltipComponent.show();
+         }
+      };
+      return ret;
+   }
+   // controller
+   // {
+   //    headColor: optional config
+   //    fold: optional callback function()
+   //    unfold: optional callback function()
+   //    cells[0-8]: cell controllers
+   //    show: function()
+   //    hide: function()
+   // }
+   function createRowFor9(head, cellCreator, controller) {
+      var headElement;
+      if (controller.fold) {
+         var arrowSpan = createElement('span', {'className': 'tri-down'});
+         var textSpan = createElement('span', {'innerHTML': head});
+         var visible = true;
+         headElement = createElement('th', {'scope': 'row'}, [arrowSpan, textSpan], {
+            'click': function() {
+               if (visible) {
+                  controller.fold();
+                  arrowSpan.className = 'tri-right';
+                  visible = false;
+               } else {
+                  controller.unfold();
+                  arrowSpan.className = 'tri-down';
+                  visible = true;
+               }
+            }
+         });
+      } else {
+         headElement = createElement('th', {'scope': 'row', 'innerHTML': head});
+      }
+      if (controller.headColor) {
+         headElement.style.color = controller.headColor;
+      }
+      var cells = [headElement];
+      var cellControllers = [];
+      for (var i = 0; i < 9; i++) {
+         var cellController = {};
+         cells.push(createElement('td', undefined, cellCreator(cellController, i)));
+         cellControllers.push(cellController);
+      }
+      var rowElement = createElement('tr', undefined, cells);
+      var rowComponent = new LLComponentBase(rowElement);
+      controller.cells == cellControllers;
+      controller.show = function(){ rowComponent.show(); }
+      controller.hide = function(){ rowComponent.hide(); }
+      return rowElement;
+   }
+   // controller
+   // {
+   //    onPutCard: callback function(i)
+   //    saveData: function()
+   //    loadData: function(data)
+   // }
+   function createTeamTable(controller) {
+      var rows = [];
+      var controllers = {
+         'weight': {'converter': parseInt},
+         'avatar': {},
+         'info': {'owning': ['info_name']},
+         'info_name': {},
+      };
+      var doFold = function() {
+         for (var i = 0; i < this.owning.length; i++) {
+            controllers[this.owning[i]].hide();
+         }
+      };
+      var doUnfold = function() {
+         for (var i = 0; i < this.owning.length; i++) {
+            controllers[this.owning[i]].show();
+         }
+      };
+      for (var i in controllers) {
+         if (controllers[i].owning) {
+            controllers[i].fold = doFold;
+            controllers[i].unfold = doUnfold;
+         }
+      }
+      rows.push(createRowFor9('权重', makeInputCreator({'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off'}), controllers.weight));
+      rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
+         controller.onPutCard && controller.onPutCard(i);
+      }), {}));
+      rows.push(createRowFor9('卡片', avatarCreator, controllers.avatar));
+      rows.push(createRowFor9('基本信息', textCreator, controllers.info));
+      rows.push(createRowFor9('名字', textCreator, controllers.info_name));
+      return createElement('table', {'className': 'table table-bordered table-hover table-condensed'}, [
+         createElement('tbody', undefined, rows)
+      ]);
+   }
+   // LLTeamComponent
+   // {
+   //    callbacks:
+   //       onPutCard: function(i)
+   //    :createTeamTable
+   //    :LLSaveLoadJsonMixin
+   // }
+   function LLTeamComponent_cls(id, callbacks) {
+      var element = LLUnit.getElement(id);
+      element.appendChild(createTeamTable(this));
+      this.onPutCard = callbacks && callbacks.onPutCard;
+   }
+   var cls = LLTeamComponent_cls;
+   var proto = cls.prototype;
+   LLSaveLoadJsonMixin(proto);
    return cls;
 })();
 
