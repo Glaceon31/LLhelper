@@ -3,11 +3,11 @@
  */
 
 var LLSiteVersion = (function(){
-   var current_version = 20190320;
+   var current_version = 20190327;
    var VISITED_VERSION_KEY = 'llhelper_visited_version__';
 
    function getVisitedVersion() {
-      var version = 0;
+      var version = current_version;
       try {
          version = parseInt(localStorage.getItem(VISITED_VERSION_KEY) || 0);
       } catch (e) {

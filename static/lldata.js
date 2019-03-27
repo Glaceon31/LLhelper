@@ -2132,6 +2132,7 @@ var LLSimulateContext = (function() {
       this.totalTime = maxTime;
       this.totalPerfect = mapdata.perfect;
       this.mapSkillPossibilityUp = (1 + parseInt(mapdata.skillup || 0)/100);
+      this.mapTapScoreUp = (1 + parseInt(mapdata.tapup || 0)/100);
       this.currentTime = 0;
       this.currentNote = 0;
       this.currentCombo = 0;
@@ -2865,7 +2866,7 @@ var LLTeam = (function() {
                   //}
                   var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
-                  var baseNoteScore = Math.ceil(baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo));
+                  var baseNoteScore = Math.ceil(baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) * env.mapTapScoreUp);
                   env.currentScore += baseNoteScore + comboFeverScore + perfectScoreUp;
                   env.totalPerfectScoreUp += perfectScoreUp;
                }
