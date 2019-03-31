@@ -1877,6 +1877,9 @@ var LLSkill = (function () {
       } else if (this.triggerType == eTriggerType.STAR_PERFECT) {
          // TODO: star*perfect_rate?
          total = env.starperfect;
+      } else if (this.triggerType == eTriggerType.MEMBERS) {
+         // TODO: how to calculate it?
+         total = 0;
       }
       chance = Math.floor(total/this.require);
       if (chance > this.skillChance) {
@@ -1919,7 +1922,11 @@ var LLSkill = (function () {
       }
    };
    proto.calcSkillDist = function () {
-      if (!this.skillChance) return false;
+      if (this.skillChance === undefined) {
+         console.error("No skill chance");
+         return [1];
+      }
+      if (!this.skillChance) return [1]; // no chance or not supported, return 100% not active
       if (this.skillDist) return this.skillDist;
       this.skillDist = calcBiDist(this.skillChance, this.actualPossibility/100);
       return this.skillDist;
@@ -2143,7 +2150,7 @@ var LLSimulateContext = (function() {
       this.totalPerfectScoreUp = 0; // capped at SKILL_LIMIT_PERFECT_SCORE_UP
       this.remainingPerfect = mapdata.perfect;
       // trigger_type: [[memberid, start_value, is_active, has_active_chance, require, base_possibility], ...]
-      // in SKILL_TRIGGER_MEMBERS case, start_value is members_bitset
+      // in SKILL_TRIGGER_MEMBERS case, start_value is members_bitset, require is trigger_condition_members_bitset
       this.triggers = {};
       this.syncTargets = []; // syncTargets[memberId] = [memberIds...]
       this.attributeUpBase = []; // attributeUpBonus[memberId] = sum{target_member.attrStrength}
@@ -2153,6 +2160,7 @@ var LLSimulateContext = (function() {
          var triggerType = curMember.card.triggertype;
          var effectType = curMember.card.skilleffect;
          var skillDetail = curMember.getSkillDetail();
+         var skillRequire = skillDetail.require;
          var targets;
          var neverTrigger = false;
          if (effectType == LLConst.SKILL_EFFECT_SYNC) {
@@ -2173,9 +2181,24 @@ var LLSimulateContext = (function() {
          } else {
             this.attributeUpBase.push(0);
          }
-         // TODO: chain trigger
+         // 连锁发动条件
+         if (triggerType == LLConst.SKILL_TRIGGER_MEMBERS) {
+            targets = getTargetMembers(this.members, curMember.card.triggertarget, i);
+            var conditionBitset = 0;
+            for (var j = 0; j < targets.length; j++) {
+               // 持有连锁技能的卡牌不计入连锁发动条件
+               if (members[targets[j]].card.triggertype  == LLConst.SKILL_TRIGGER_MEMBERS) continue;
+               conditionBitset |= (1 << targets[j]);
+            }
+            // 无连锁对象, 不会触发
+            if (conditionBitset == 0) {
+               neverTrigger = true;
+            } else {
+               skillRequire = conditionBitset;
+            }
+         }
          if (!neverTrigger) {
-            var triggerData = [i, 0, 0, 0, skillDetail.require, skillDetail.possibility];
+            var triggerData = [i, 0, 0, 0, skillRequire, skillDetail.possibility];
             if (this.triggers[triggerType] === undefined) {
                this.triggers[triggerType] = [triggerData];
             } else {
@@ -2855,7 +2878,7 @@ var LLTeam = (function() {
                      accuracyBonus *= LLConst.NOTE_WEIGHT_PERFECT_FACTOR;
                   }
                   if (env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER] > 0) {
-                     comboFeverScore = LLConst.getComboFeverBonus(env.currentCombo) * env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER];
+                     comboFeverScore = Math.ceil(LLConst.getComboFeverBonus(env.currentCombo) * env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER]);
                      if (comboFeverScore > LLConst.SKILL_LIMIT_COMBO_FEVER) {
                         comboFeverScore = LLConst.SKILL_LIMIT_COMBO_FEVER;
                      }
@@ -2885,7 +2908,7 @@ var LLTeam = (function() {
          skillsActiveCount[i] /= simCount;
          skillsActiveChanceCount[i] /= simCount;
       }
-      var scoreValues = Object.keys(scores).sort();
+      var scoreValues = Object.keys(scores).sort(function(a,b){return parseInt(a) - parseInt(b);});
       var minScore = parseInt(scoreValues[0]);
       var scoreDistribution = new Array(scoreValues[scoreValues.length-1]-minScore+1);
       for (i = 0; i < scoreValues.length; i++) {
@@ -4376,7 +4399,7 @@ var LLScoreDistributionParameter = (function () {
    var distTypeDetail = [
       ['#要素', '#计算理论分布/计算技能强度', '#计算模拟分布'],
       ['触发条件: 时间, 图标, 连击, perfect, star perfect, 分数', '支持', '支持'],
-      ['触发条件: 连锁', '不支持', '不支持'],
+      ['触发条件: 连锁', '不支持', '支持'],
       ['技能效果: 回血, 加分', '支持', '支持'],
       ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升<br/>属性同步, 属性提升', '不支持', '支持'],
       ['宝石: 诡计', '不支持', '不支持'],
