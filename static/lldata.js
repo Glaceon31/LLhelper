@@ -4508,6 +4508,7 @@ var LLScoreDistributionParameter = (function () {
 })();
 
 var LLScoreDistributionChart = (function () {
+   var createElement = LLUnit.createElement;
    function makeCommonOptions() {
       return {
          title: {
@@ -4567,27 +4568,58 @@ var LLScoreDistributionChart = (function () {
    // {
    //    chart: Highcharts chart
    //    addSeries: function(data)
+   //    clearSeries: function()
    //    show: function()
    //    hide: function()
    // }
-   function LLScoreDistributionChart_cls(id, series) {
+   // options
+   // {
+   //    series: [series_data, ...]
+   //    width
+   //    height
+   // }
+   function LLScoreDistributionChart_cls(id, options) {
       var element = LLUnit.getElement(id);
       if (!Highcharts) {
          console.error('Not included Highcharts');
       }
+      var me = this;
       var baseComponent = new LLComponentBase(element);
       baseComponent.show(); // need show before create chart, otherwise the canvas size is wrong...
-      var options = makeCommonOptions();
+      var canvasDiv = createElement('div');
+      var clearButton = createElement('button', {'className': 'btn btn-danger', 'type': 'button', 'innerHTML': '清空曲线'}, undefined, {
+         'click': function() {
+            me.clearSeries && me.clearSeries();
+         }
+      });
+      element.appendChild(canvasDiv);
+      element.appendChild(clearButton);
+      var chartOptions = makeCommonOptions();
       var seriesOptions = [];
       var nameId = 1;
-      for (; nameId <= series.length; nameId++) {
-         seriesOptions.push(makeSeries(series[nameId-1], String(nameId)));
+      if (options) {
+         if (options.series) {
+            for (; nameId <= options.series.length; nameId++) {
+               seriesOptions.push(makeSeries(options.series[nameId-1], String(nameId)));
+            }
+         }
+         if (options.width) canvasDiv.style.width = options.width;
+         if (options.height) canvasDiv.style.height = options.height;
       }
-      options['series'] = seriesOptions;
-      this.chart = Highcharts.chart(element, options);
+      chartOptions['series'] = seriesOptions;
+      this.chart = Highcharts.chart(canvasDiv, chartOptions);
       this.addSeries = function(data) {
+         this.show();
          this.chart.addSeries(makeSeries(data, String(nameId)));
          nameId++;
+      };
+      this.clearSeries = function() {
+         if ((!this.chart.series) || (this.chart.series.length == 0)) return;
+         while (this.chart.series.length > 0) {
+            this.chart.series[0].remove(false);
+         }
+         this.chart.redraw();
+         this.hide();
       };
       this.show = function() { baseComponent.show(); }
       this.hide = function() { baseComponent.hide(); }
