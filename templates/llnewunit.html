@@ -18,6 +18,9 @@
       input[type="number"][size="2"] {
          width: 50px;
       }
+      input[type="number"][size="1"] {
+         width: 20px;
+      }
       input::-webkit-inner-spin-button {
          -webkit-appearance: none;
          margin: 0;
@@ -61,7 +64,20 @@
          'saveData': makeSaveData,
          'loadTeamMember': handleLoadTeamMember
       });
-      var comp_team = new LLTeamComponent('unit-team');
+      var comp_team = new LLTeamComponent('unit-team', {
+         'onPutCardClicked': function(i) {
+            var curMain = document.getElementById("main").value;
+            var memberData = {
+               'cardid': comp_cardselector.getCardId(),
+               'mezame': (document.getElementById("mezame").checked ? 1 : 0),
+               'smile': parseInt(document.getElementById("smile").value),
+               'pure': parseInt(document.getElementById("pure").value),
+               'cool': parseInt(document.getElementById("cool").value)
+            };
+            memberData[curMain] += parseInt(document.getElementById("kizuna").value);
+            comp_team.putMember(i, memberData);
+         }
+      });
 
       init();
 

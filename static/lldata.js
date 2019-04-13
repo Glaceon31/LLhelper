@@ -183,6 +183,9 @@ var LLData = (function () {
    proto.getVersion = function() {
       return this.version;
    };
+   proto.getCachedBriefData = function() {
+      return this.briefCache[this.version];
+   };
 
    proto.getAllBriefData = function(keys, url) {
       if (keys === undefined) keys = this.briefKeys;
@@ -830,6 +833,37 @@ var LLConst = (function () {
    };
    ret.getComboFeverBonus = function(combo) {
       return (combo >= 300 ? 10 : Math.pow(Math.floor(combo/10), 2)/100+1);
+   };
+
+   var SKILL_TRIGGER_TEXT = {};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_TIME] = '时间';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_NOTE] = '图标';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_COMBO] = '连击';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_SCORE] = '分数';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_PERFECT] = '完美';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_STAR_PERFECT] = '星星';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_MEMBERS] = '连锁';
+
+   var SKILL_EFFECT_TEXT = {};
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ACCURACY_SMALL] = '小判定';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ACCURACY_NORMAL] = '判定';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_HEAL] = '回血';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_SCORE] = '加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_POSSIBILITY_UP] = '技能发动率';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_REPEAT] = '重复';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_PERFECT_SCORE_UP] = '完美加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_COMBO_FEVER] = '连击加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_SYNC] = '属性同步';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_LEVEL_UP] = '技能等级';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ATTRIBUTE_UP] = '属性提升';
+
+   ret.getSkillTriggerText = function(skill_trigger) {
+      if (!skill_trigger) return '无';
+      return SKILL_TRIGGER_TEXT[skill_trigger] || '未知';
+   };
+   ret.getSkillEffectText = function(skill_effect) {
+      if (!skill_effect) return '无';
+      return SKILL_EFFECT_TEXT[skill_effect] || '未知';
    };
    return ret;
 })();
@@ -4636,14 +4670,34 @@ var LLTeamComponent = (function () {
    //    get: function()
    //    set: function(value)
    // }
-   function makeInputCreator(options) {
+   function makeInputCreator(options, converter) {
       return function(controller) {
          var inputElement = createElement('input', options);
          var inputComponent = new LLValuedComponent(inputElement);
-         controller.get = function() { return inputComponent.get(); }
-         controller.set = function(v) { inputComponent.set(v); }
+         controller.get = function() {
+            if (converter) {
+               return converter(inputComponent.get());
+            } else {
+               return inputComponent.get();
+            }
+         };
+         controller.set = function(v) { inputComponent.set(v); };
          return [inputElement];
       };
+   }
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function skillLevelCreator(controller) {
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off'});
+      var inputComponent = new LLValuedComponent(inputElement);
+      controller.get = function() {
+         return parseInt(inputComponent.get());
+      };
+      controller.set = function(v) { inputComponent.set(v); };
+      return ['Lv', inputElement];
    }
    function makeButtonCreator(text, clickFunc) {
       return function(controller, i) {
@@ -4653,21 +4707,43 @@ var LLTeamComponent = (function () {
    // controller
    // {
    //    update: function(cardid, mezame)
+   //    getCardId: function()
+   //    getMezame: function()
    // }
    function avatarCreator(controller) {
       var imgElement = createElement('img', {'src': '/static/null.png'});
+      var curCardid = undefined;
+      var curMezame = undefined;
       controller.update = function(cardid, mezame) {
-         LLUnit.changeavatare(imgElement, cardid, parseInt(mezame));
+         cardid = parseInt(cardid || 0);
+         mezame = parseInt(mezame || 0);
+         if (cardid != curCardid || mezame != curMezame) {
+            curCardid = cardid;
+            curMezame = mezame;
+            LLUnit.changeavatare(imgElement, cardid, mezame);
+         }
       };
+      controller.getCardId = function() { return curCardid; };
+      controller.getMezame = function() { return curMezame; };
       return [imgElement];
    }
    // controller
    // {
    //    set: function(value)
+   //    get: function()
+   //    reset: function()
    // }
    function textCreator(controller) {
       var textElement = createElement('span');
-      controller.set = function(v) { textElement.innerHTML = v; };
+      var curValue = '';
+      controller.set = function(v) {
+         if (curValue != v) {
+            curValue = v;
+            textElement.innerHTML = v;
+         }
+      };
+      controller.get = function() { return curValue; };
+      controller.reset = function() { controller.set(''); };
       return [textElement];
    }
    // controller
@@ -4695,11 +4771,13 @@ var LLTeamComponent = (function () {
    // controller
    // {
    //    headColor: optional config
+   //    cellColor: optional config
    //    fold: optional callback function()
    //    unfold: optional callback function()
    //    cells[0-8]: cell controllers
    //    show: function()
    //    hide: function()
+   //    toggleFold: optional function()
    // }
    function createRowFor9(head, cellCreator, controller) {
       var headElement;
@@ -4707,19 +4785,21 @@ var LLTeamComponent = (function () {
          var arrowSpan = createElement('span', {'className': 'tri-down'});
          var textSpan = createElement('span', {'innerHTML': head});
          var visible = true;
-         headElement = createElement('th', {'scope': 'row'}, [arrowSpan, textSpan], {
-            'click': function() {
-               if (visible) {
-                  controller.fold();
-                  arrowSpan.className = 'tri-right';
-                  visible = false;
-               } else {
-                  controller.unfold();
-                  arrowSpan.className = 'tri-down';
-                  visible = true;
-               }
+         var toggleFold = function () {
+            if (visible) {
+               controller.fold();
+               arrowSpan.className = 'tri-right';
+               visible = false;
+            } else {
+               controller.unfold();
+               arrowSpan.className = 'tri-down';
+               visible = true;
             }
+         };
+         headElement = createElement('th', {'scope': 'row'}, [arrowSpan, textSpan], {
+            'click': toggleFold
          });
+         controller.toggleFold = toggleFold;
       } else {
          headElement = createElement('th', {'scope': 'row', 'innerHTML': head});
       }
@@ -4731,29 +4811,42 @@ var LLTeamComponent = (function () {
       for (var i = 0; i < 9; i++) {
          var cellController = {};
          cells.push(createElement('td', undefined, cellCreator(cellController, i)));
+         if (controller.cellColor) {
+            cells[i].style.color = controller.cellColor;
+         }
          cellControllers.push(cellController);
       }
       var rowElement = createElement('tr', undefined, cells);
       var rowComponent = new LLComponentBase(rowElement);
-      controller.cells == cellControllers;
+      controller.cells = cellControllers;
       controller.show = function(){ rowComponent.show(); }
       controller.hide = function(){ rowComponent.hide(); }
       return rowElement;
    }
    // controller
    // {
-   //    onPutCard: callback function(i)
+   //    onPutCardClicked: callback function(i)
+   //    putCard: function(i, member)
+   //      member: {main, smile, pure, cool, skilllevel(1-8), mezame(0/1), cardid, maxcost}
    //    saveData: function()
    //    loadData: function(data)
    // }
    function createTeamTable(controller) {
       var rows = [];
       var controllers = {
-         'weight': {'converter': parseInt},
+         'weight': {},
          'avatar': {},
-         'info': {'owning': ['info_name']},
+         'info': {'owning': ['info_name', 'skill_trigger', 'skill_effect']},
          'info_name': {},
+         'skill_trigger': {},
+         'skill_effect': {},
+         'smile': {'headColor': 'red', 'cellColor': 'red'},
+         'pure': {'headColor': 'green', 'cellColor': 'green'},
+         'cool': {'headColor': 'blue', 'cellColor': 'blue'},
+         'skill_level': {},
       };
+      var members = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
+      var cardsBrief = new Array(9);
       var doFold = function() {
          for (var i = 0; i < this.owning.length; i++) {
             controllers[this.owning[i]].hide();
@@ -4770,13 +4863,45 @@ var LLTeamComponent = (function () {
             controllers[i].unfold = doUnfold;
          }
       }
-      rows.push(createRowFor9('权重', makeInputCreator({'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off'}), controllers.weight));
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off'};
+      rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
-         controller.onPutCard && controller.onPutCard(i);
+         controller.onPutCardClicked && controller.onPutCardClicked(i);
       }), {}));
       rows.push(createRowFor9('卡片', avatarCreator, controllers.avatar));
       rows.push(createRowFor9('基本信息', textCreator, controllers.info));
       rows.push(createRowFor9('名字', textCreator, controllers.info_name));
+      rows.push(createRowFor9('技能条件', textCreator, controllers.skill_trigger));
+      rows.push(createRowFor9('技能类型', textCreator, controllers.skill_effect));
+      rows.push(createRowFor9('smile', makeInputCreator(number3Config, parseInt), controllers.smile));
+      rows.push(createRowFor9('pure', makeInputCreator(number3Config, parseInt), controllers.pure));
+      rows.push(createRowFor9('cool', makeInputCreator(number3Config, parseInt), controllers.cool));
+      rows.push(createRowFor9('技能等级', skillLevelCreator, controllers.skill_level));
+      controllers.info.toggleFold();
+
+      controller.putMember = function(i, member) {
+         controllers.avatar.cells[i].update(member.cardid, member.mezame);
+         controllers.smile.cells[i].set(parseInt(member.smile || 0));
+         controllers.pure.cells[i].set(parseInt(member.pure || 0));
+         controllers.cool.cells[i].set(parseInt(member.cool || 0));
+         var cardid = controllers.avatar.cells[i].getCardId();
+         var cardbrief = undefined;
+         if (cardid) {
+            cardbrief = ((LLCardData && LLCardData.getCachedBriefData()) || {})[cardid];
+         }
+         cardsBrief[i] = cardbrief;
+         if (cardbrief) {
+            controllers.info.cells[i].set(cardbrief.attribute);
+            controllers.info_name.cells[i].set(cardbrief.name);
+            controllers.skill_trigger.cells[i].set(LLConst.getSkillTriggerText(cardbrief.triggertype));
+            controllers.skill_effect.cells[i].set(LLConst.getSkillEffectText(cardbrief.skilleffect));
+         } else {
+            controllers.info.cells[i].reset();
+            controllers.info_name.cells[i].reset();
+            controllers.skill_trigger.cells[i].reset();
+            controllers.skill_effect.cells[i].reset();
+         }
+      };
       return createElement('table', {'className': 'table table-bordered table-hover table-condensed'}, [
          createElement('tbody', undefined, rows)
       ]);
@@ -4784,14 +4909,14 @@ var LLTeamComponent = (function () {
    // LLTeamComponent
    // {
    //    callbacks:
-   //       onPutCard: function(i)
+   //       onPutCardClicked: function(i)
    //    :createTeamTable
    //    :LLSaveLoadJsonMixin
    // }
    function LLTeamComponent_cls(id, callbacks) {
       var element = LLUnit.getElement(id);
       element.appendChild(createTeamTable(this));
-      this.onPutCard = callbacks && callbacks.onPutCard;
+      this.onPutCardClicked = callbacks && callbacks.onPutCardClicked;
    }
    var cls = LLTeamComponent_cls;
    var proto = cls.prototype;
