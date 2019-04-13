@@ -389,7 +389,7 @@
          document.getElementById('simresult100').innerHTML = llteam.minScore;
          document.getElementById('distributionresult').style.display = '';
          if (!comp_distribution_chart) {
-            comp_distribution_chart = new LLScoreDistributionChart('score_chart', [llteam.naivePercentile]);
+            comp_distribution_chart = new LLScoreDistributionChart('score_chart', {'series': [llteam.naivePercentile], 'width': '100%', 'height': '400px'});
          } else {
             comp_distribution_chart.addSeries(llteam.naivePercentile);
          }
@@ -880,7 +880,7 @@
 </tr>
 </table>
 </div>
-<div id='score_chart' style='width:100%;height:400px;display:none'></div>
+<div id='score_chart' style='width:100%;display:none'></div>
 {% endblock %}
 
 {% block back_notice %}
