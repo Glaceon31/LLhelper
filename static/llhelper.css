@@ -131,4 +131,13 @@
    vertical-align: super;
    font-size: x-small;
 }
+.team-table {
+   overflow-x: auto;
+}
+.team-table .form-control {
+   padding: 0;
+   height: auto;
+   color: inherit;
+   display: inline;
+}
 

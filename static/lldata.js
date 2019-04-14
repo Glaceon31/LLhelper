@@ -865,6 +865,15 @@ var LLConst = (function () {
       if (!skill_effect) return '无';
       return SKILL_EFFECT_TEXT[skill_effect] || '未知';
    };
+
+   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
+   var DEFAULT_MIN_SLOT = {'UR': 4, 'SSR': 3, 'SR': 2, 'R': 1, 'N': 0};
+   ret.getDefaultMaxSlot = function(rarity) {
+      return (DEFAULT_MAX_SLOT[rarity] || 0);
+   };
+   ret.getDefaultMinSlot = function(rarity) {
+      return (DEFAULT_MIN_SLOT[rarity] || 0);
+   };
    return ret;
 })();
 
@@ -1974,7 +1983,6 @@ var LLSkill = (function () {
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
    var MIC_RATIO = [0, 5, 11, 24, 40, 0]; //'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0
-   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    function LLMember_cls(v) {
       v = v || {};
       var i;
@@ -4665,6 +4673,36 @@ var LLScoreDistributionChart = (function () {
 
 var LLTeamComponent = (function () {
    var createElement = LLUnit.createElement;
+   var gemNumOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '200', 'text': '200'},
+      {'value': '450', 'text': '450'},
+      {'value': '650', 'text': '650'},
+      {'value': '1400', 'text': '1400'},
+      {'value': '1600', 'text': '1600'},
+      {'value': '1850', 'text': '1850'},
+      {'value': '2050', 'text': '2050'}
+   ];
+   var gemSinglePercentOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '0.1', 'text': '10%'},
+      {'value': '0.16', 'text': '16%'},
+      {'value': '0.26', 'text': '26%'},
+      {'value': '0.28', 'text': '28%'},
+      {'value': '0.38', 'text': '38%'},
+      {'value': '0.44', 'text': '44%'}
+   ];
+   var gemAllPercentOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '0.018', 'text': '1.8%'},
+      {'value': '0.024', 'text': '2.4%'},
+      {'value': '0.04', 'text': '4.0%'},
+      {'value': '0.042', 'text': '4.2%'}
+   ];
+   var gemYesNoOptions = [
+      {'value': '0', 'text': '无'},
+      {'value': '1', 'text': '有'}
+   ];
    // controller
    // {
    //    get: function()
@@ -4691,13 +4729,72 @@ var LLTeamComponent = (function () {
    //    set: function(value)
    // }
    function skillLevelCreator(controller) {
-      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off'});
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control'});
       var inputComponent = new LLValuedComponent(inputElement);
       controller.get = function() {
          return parseInt(inputComponent.get());
       };
       controller.set = function(v) { inputComponent.set(v); };
       return ['Lv', inputElement];
+   }
+   // controller
+   // {
+   //    getMaxSlot: function()
+   //    setMaxSlot: function(value)
+   //    getUsedSlot: function()
+   //    setUsedSlot: function(value)
+   // }
+   function slotCreator(controller) {
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputComponent = new LLValuedComponent(inputElement);
+      var textElement = createElement('span', {'innerHTML': '0'});
+      var curUsedSlot = 0;
+      var updateColor = function() {
+         var curMaxSlot = controller.getMaxSlot();
+         if (curUsedSlot == curMaxSlot) {
+            textElement.style.color = '';
+         } else if (curUsedSlot >= curMaxSlot) {
+            textElement.style.color = 'red';
+         } else {
+            textElement.style.color = 'blue';
+         }
+      };
+      inputComponent.onValueChange = updateColor;
+      controller.getMaxSlot = function() { return parseInt(inputComponent.get()); };
+      controller.setMaxSlot = function(v) { inputComponent.set(v); };
+      controller.getUsedSlot = function() { return curUsedSlot; };
+      controller.setUsedSlot = function(v) {
+         if (curUsedSlot != v) {
+            curUsedSlot = v;
+            textElement.innerHTML = v;
+            updateColor();
+         }
+      };
+      return [textElement, '/', inputElement];
+   }
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function makeSelectCreator(selOptions, valOptions, valueChangeFunc, converter) {
+      return function(controller, i) {
+         var sel = createElement('select', selOptions);
+         var selComp = new LLSelectComponent(sel);
+         selComp.setOptions(valOptions);
+         selComp.onValueChange = function (v) {
+            valueChangeFunc && valueChangeFunc(i, v);
+         };
+         controller.get = function() {
+            if (converter) {
+               return converter(selComp.get());
+            } else {
+               return selComp.get();
+            }
+         };
+         controller.set = function(v) { selComp.set(v); }
+         return [sel];
+      }
    }
    function makeButtonCreator(text, clickFunc) {
       return function(controller, i) {
@@ -4810,10 +4907,11 @@ var LLTeamComponent = (function () {
       var cellControllers = [];
       for (var i = 0; i < 9; i++) {
          var cellController = {};
-         cells.push(createElement('td', undefined, cellCreator(cellController, i)));
+         var tdElement = createElement('td', undefined, cellCreator(cellController, i));
          if (controller.cellColor) {
-            cells[i].style.color = controller.cellColor;
+            tdElement.style.color = controller.cellColor;
          }
+         cells.push(tdElement);
          cellControllers.push(cellController);
       }
       var rowElement = createElement('tr', undefined, cells);
@@ -4844,6 +4942,14 @@ var LLTeamComponent = (function () {
          'pure': {'headColor': 'green', 'cellColor': 'green'},
          'cool': {'headColor': 'blue', 'cellColor': 'blue'},
          'skill_level': {},
+         'slot': {'owning': ['gem_num', 'gem_single_percent', 'gem_all_percent', 'gem_score', 'gem_acc', 'gem_member', 'gem_nonet']},
+         'gem_num': {},
+         'gem_single_percent': {},
+         'gem_all_percent': {},
+         'gem_score': {},
+         'gem_acc': {},
+         'gem_member': {},
+         'gem_nonet': {},
       };
       var members = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var cardsBrief = new Array(9);
@@ -4857,13 +4963,25 @@ var LLTeamComponent = (function () {
             controllers[this.owning[i]].show();
          }
       };
+      var calcSlot = function(i) {
+         var result = 0;
+         result += LLSisGem.parseSADDSlot(controllers.gem_num.cells[i].get());
+         result += LLSisGem.parseSMULSlot(controllers.gem_single_percent.cells[i].get()*100);
+         result += LLSisGem.parseAMULSlot(controllers.gem_all_percent.cells[i].get()*100);
+         result += controllers.gem_score.cells[i].get()*4;
+         result += controllers.gem_acc.cells[i].get()*4;
+         result += controllers.gem_member.cells[i].get()*4;
+         result += controllers.gem_nonet.cells[i].get()*4;
+         controllers.slot.cells[i].setUsedSlot(result);
+      };
       for (var i in controllers) {
          if (controllers[i].owning) {
             controllers[i].fold = doFold;
             controllers[i].unfold = doUnfold;
          }
       }
-      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off'};
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control'};
+      var selConfig = {'className': 'form-control'};
       rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
          controller.onPutCardClicked && controller.onPutCardClicked(i);
@@ -4877,6 +4995,15 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('pure', makeInputCreator(number3Config, parseInt), controllers.pure));
       rows.push(createRowFor9('cool', makeInputCreator(number3Config, parseInt), controllers.cool));
       rows.push(createRowFor9('技能等级', skillLevelCreator, controllers.skill_level));
+      rows.push(createRowFor9('使用槽数', slotCreator, controllers.slot));
+      rows.push(createRowFor9('单体数值', makeSelectCreator(selConfig, gemNumOptions, calcSlot, parseInt), controllers.gem_num));
+      rows.push(createRowFor9('单体百分比', makeSelectCreator(selConfig, gemSinglePercentOptions, calcSlot, parseFloat), controllers.gem_single_percent));
+      rows.push(createRowFor9('全体百分比', makeSelectCreator(selConfig, gemAllPercentOptions, calcSlot, parseFloat), controllers.gem_all_percent));
+      rows.push(createRowFor9('奶/分宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_score));
+      rows.push(createRowFor9('判定宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_acc));
+      rows.push(createRowFor9('个人宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_member));
+      rows.push(createRowFor9('九重奏宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_nonet));
+
       controllers.info.toggleFold();
 
       controller.putMember = function(i, member) {
@@ -4901,8 +5028,13 @@ var LLTeamComponent = (function () {
             controllers.skill_trigger.cells[i].reset();
             controllers.skill_effect.cells[i].reset();
          }
+         if (member.maxcost !== undefined) {
+            controllers.slot.cells[i].setMaxSlot(parseInt(member.maxcost));
+         } else if (cardbrief && cardbrief.rarity) {
+            controllers.slot.cells[i].setMaxSlot(LLConst.getDefaultMinSlot(cardbrief.rarity));
+         }
       };
-      return createElement('table', {'className': 'table table-bordered table-hover table-condensed'}, [
+      return createElement('table', {'className': 'table table-bordered table-hover table-condensed team-table'}, [
          createElement('tbody', undefined, rows)
       ]);
    }
