@@ -30,9 +30,8 @@ live_setting_query_str = (
 ' live_setting_m.a_rank_score,'
 ' live_setting_m.s_rank_score,'
 ' live_setting_m.s_rank_combo,'
-' CASE WHEN special_live_m.ac_flag IS NOT NULL THEN 1 ELSE 0 END as is_ac '
+' live_setting_m.ac_flag as is_ac '
 'FROM live_setting_m '
-'LEFT JOIN special_live_m ON special_live_m.live_setting_id = live_setting_m.live_setting_id AND special_live_m.ac_flag = 1 '
 'WHERE live_track_id = %s;'
 )
 
