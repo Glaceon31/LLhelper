@@ -362,6 +362,7 @@
          } else if (distParam.type == 'sim') {
             llmap.perfect = Math.floor(parseFloat(distParam.perfect_percent || 0)/100 * llmap.combo);
             llmap.speed = distParam.speed;
+            llmap.combo_fever_pattern = distParam.combo_fever_pattern;
             err = llteam.simulateScoreDistribution(llmap, extraData[0], parseInt(distParam.count));
          } else {
             err = '未知的得分分布';
@@ -447,15 +448,17 @@
 {% block front_notice %}
 <h4 class="alert-heading">使用方法</h4>
 <ol>
-      <li>选择歌曲 或 填写歌曲详细信息 <font style='color:red'><b>务必记得修改perfect数量</b></font></li>
-      <li>从卡牌库中选择一张卡，点击转移来放置到对应位置，没有录入的卡片数据可以手动输入 <font style='color:red'><b>一张卡默认为满级、一级技能的数据，若不是则需要修改</b></font></li>
+      <li>选择歌曲 或 填写歌曲详细信息 <font style='color:red'><b>务必记得修改perfect数量（若卡组中有判卡，请填写带判情况下的perfect数量）</b></font></li>
+      <li>选择卡牌数据版本</li>
+      <li>从卡牌库中选择一张卡，点击「放卡」来放置到对应位置 <font style='color:red'><b>一张卡默认为满级、一级技能的数据，若不是则需要修改</b></font></li>
       <li>使用以上方法选择所有的9张卡</li>
-      <li>可以点击「保存队伍」将队伍配置文件保存到本地</li>
-      <li>第2、3步可以从保存的文件中读取队伍信息来代替：点击「选择文件」选择本地配置文件，再点击「读取队伍」</li>
-      <li>选择主唱技能和好友主唱技能 <font style='color:red'><b>计算SM得分时将好友主唱加成设为0%</b></font></li>
-      <li>点击Calculate</li>
+      <li>可以点击「保存队伍」将队伍配置文件保存到本地，也可以在「队伍列表」中保存到浏览器</li>
+      <li>第3、4步可以从保存的文件中读取队伍信息来代替：点击「选择文件」选择本地配置文件，再点击「读取队伍」；或点击「队伍列表」中的队伍名称</li>
+      <li>选择主唱技能和好友主唱技能，设置点击得分增加系数和技能发动率增加系数 <font style='color:red'><b>计算SM、MF、CF、协力得分时将好友主唱加成设为0%</b></font></li>
+      <li>选择分数分布计算模式。目前有3种计算模式，分别为「不计算分布」、「计算理论分布」和「计算模拟分布」。「不计算分布」和「计算理论分布」不支持 <font style='color:red'><b>box新技能的计算</b></font>；「计算模拟分布」 <font style='color:red'><b>支持大部分box新技能的计算</b></font>，若选择该项需要设置模拟次数、 <font style='color:red'><b>无判perfect率</b></font>和图标下落速度， <font style='color:red'><b>如果要计算默认歌曲请选择默认曲目2</b></font>（各模式支持计算的技能/宝石列表请点击「查看支持计算的技能/宝石」）</li>
+      <li>点击calculate进行计算。「不计算分布」仅会显示期望得分；「计算理论分布」会显示期望得分和理论得分分布；「计算模拟分布」会进行模拟打歌，将模拟结果汇总绘制成曲线，如果要清空图中内容请点击「清空曲线」</li>
 </ol>
-<p>当前版本：4.1及以上。</p>
+<p>当前版本：6.5.3。</p>
 {% endblock %}
 
 {% block main %}
@@ -882,18 +885,17 @@
 {% block back_notice %}
 <h4 class="alert-heading">注意</h4>
 <ul>
-   <li>勾选「计算分布」来计算得分分布。得分分布使用真实分布计算，计算速度比较慢。</li>
-   <li>由于使用歌曲信息计算，最终结果可能会有千分之一的误差</li>
-   <li>判定覆盖率仅供参考</li>
-   <li>判定期间属性1.25倍的宝石计算有误，暂时按无效计算。</li>
-   <li>日服新宝石的计算正在测试中，可能有计算错误，欢迎反馈</li>
+   <li>「计算理论分布」使用真实分布计算，计算速度比较慢；「计算模拟分布」使用模拟打歌计算，模拟次数越多，计算速度越慢，但也越接近真实分布</li>
+   <li>由于使用歌曲信息计算，最终结果可能会有误差</li>
+   <li>判定期间属性1.33倍的宝石计算有误，暂时按无效计算。</li>
+   <li>由于「不计算分布」和「计算理论分布」不支持box新技能的计算，新技能卡的技能强度会显示为0</li>
+   <li>默认曲目的模拟分布与理论分布不兼容，两者计算结果可能会有较大差异</li>
 </ul>
 {% endblock %}
 
 {% block back_notice_2 %}
 <h4 class="alert-heading">说明</h4>
 <ul>
-   <li>在卡片数据行中的判定指的该卡片的边际判定覆盖率影响，即撤掉这张卡后边际覆盖率的损失。在括号中的覆盖率为单卡判定覆盖率</li>
    <li>卡强度指的是不考虑异色和异团带来的负面影响时的强度，该数值方便异团卡、异色横向比较。实际强度则是考虑异色和异团加成的强度</li>
 </ul>
 {% endblock %}

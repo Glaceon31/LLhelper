@@ -53,13 +53,14 @@
    LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
    $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
       // init 2 skill containers
-      comp_skill = new LLSkillContainer();
+      comp_skill = new LLSkillContainer({'showall': 1});
       comp_skill2 = new LLSkillContainer({
-         container: 'skillcontainer2',
-         lvup: 'skilllvup2',
-         lvdown: 'skilllvdown2',
-         level: 'skilllevel2',
-         text: 'skilltext2'
+         'container': 'skillcontainer2',
+         'lvup': 'skilllvup2',
+         'lvdown': 'skilllvdown2',
+         'level': 'skilllevel2',
+         'text': 'skilltext2',
+         'showall': 1
       });
       var origSetSkillLevel = comp_skill.setSkillLevel;
       var newSetSkillLevel = function (lv) {
