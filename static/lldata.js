@@ -12,6 +12,7 @@
  *   LLSisGem
  *   LLSkill
  *   LLMember
+ *   LLSimulateContext
  *   LLTeam
  *   LLSaveData
  *   LLSaveLoadJsonMixin
@@ -1450,6 +1451,7 @@ var LLCardSelector = (function() {
  *   LLSisGem
  *   LLSkill
  *   LLMember
+ *   LLSimulateContext
  *   LLTeam
  */
 var LLMap = (function () {
@@ -2271,7 +2273,9 @@ var LLSimulateContext = (function() {
             var deactivedMemberId = this.activeSkills[activeIndex][1];
             this.markTriggerActive(deactivedMemberId, 0);
             this.activeSkills.splice(activeIndex, 1);
-            needRecalculate = true;
+            if (this.members[deactivedMemberId].card.skilleffect != LLConst.SKILL_EFFECT_SCORE) {
+               needRecalculate = true;
+            }
             activeIndex--;
          }
       }
@@ -2367,6 +2371,9 @@ var LLSimulateContext = (function() {
       } else if (skillEffect == LLConst.SKILL_EFFECT_SCORE) {
          if (this.members[realMemberId].hasSkillGem()) this.currentScore += Math.ceil(skillDetail.score * 2.5);
          else this.currentScore += skillDetail.score;
+         // 由于一帧(16ms)最多发动一次技能, 为防止爆分在某些情况下无限上分导致死循环, 加个16ms的延迟
+         this.activeSkills.push([this.currentTime + 0.016, memberId, realMemberId, skillDetail.score]);
+         this.markTriggerActive(memberId, 1);
       } else if (skillEffect == LLConst.SKILL_EFFECT_POSSIBILITY_UP) {
          // 不可叠加
          this.effects[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = skillDetail.score;
@@ -2897,8 +2904,11 @@ var LLTeam = (function() {
                   //}
                   var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
-                  var baseNoteScore = Math.ceil(baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) * env.mapTapScoreUp);
-                  env.currentScore += baseNoteScore + comboFeverScore + perfectScoreUp;
+                  var baseNoteScore = baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) + comboFeverScore + perfectScoreUp;
+                  // 点击得分加成对PP分也有加成效果
+                  // TODO: 点击得分对CF分是否有加成? 如果有, 1000分的CF加成上限是限制在点击得分加成之前还是之后?
+                  // 目前按照对CF分有效, 并且CF加成上限限制在点击加成之前处理
+                  env.currentScore += Math.ceil(baseNoteScore * env.mapTapScoreUp);
                   env.totalPerfectScoreUp += perfectScoreUp;
                }
                noteTriggerIndex++;
