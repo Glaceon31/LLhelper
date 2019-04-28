@@ -12,6 +12,7 @@
  *   LLSisGem
  *   LLSkill
  *   LLMember
+ *   LLSimulateContext
  *   LLTeam
  *   LLSaveData
  *   LLSaveLoadJsonMixin
@@ -831,8 +832,10 @@ var LLConst = (function () {
       else if (combo <= 800) return 1.3;
       else return 1.35;
    };
-   ret.getComboFeverBonus = function(combo) {
-      return (combo >= 300 ? 10 : Math.pow(Math.floor(combo/10), 2)/100+1);
+   var COMBO_FEVER_PATTERN_2 = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 7, 8, 9, 10]
+   ret.getComboFeverBonus = function(combo, pattern) {
+      if (pattern == 1) return (combo >= 300 ? 10 : Math.pow(Math.floor(combo/10), 2)/100+1);
+      return (combo >= 220 ? 10 : COMBO_FEVER_PATTERN_2[Math.floor(combo/10)]);
    };
 
    var SKILL_TRIGGER_TEXT = {};
@@ -1236,14 +1239,15 @@ var LLSkillContainer = (function() {
       LLComponentCollection.call(this);
       this.skillLevel = 0; // base 0, range 0-7
       this.cardData = undefined;
-      options = options || {
-         container: 'skillcontainer',
-         lvup: 'skilllvup',
-         lvdown: 'skilllvdown',
-         level: 'skilllevel',
-         text: 'skilltext'
-      };
+      options = options || {};
+      options.container = options.container || 'skillcontainer';
+      options.lvup = options.lvup || 'skilllvup';
+      options.lvdown = options.lvdown || 'skilllvdown';
+      options.level = options.level || 'skilllevel';
+      options.text = options.text || 'skilltext';
+      options.showall = options.showall || 0;
       var me = this;
+      this.showAll = (options.showall || 0);
       this.add('container', new LLComponentBase(options.container));
       this.add('lvup', new LLComponentBase(options.lvup));
       this.getComponent('lvup').on('click', function (e) {
@@ -1264,10 +1268,14 @@ var LLSkillContainer = (function() {
    var proto = cls.prototype;
    proto.setSkillLevel = function (lv) {
       if (lv == this.skillLevel) return;
-      if (lv > 7) {
+      var lvCap = 8;
+      if (this.showAll && this.cardData && this.cardData.skilldetail && this.cardData.skilldetail.length > lvCap) {
+         lvCap = this.cardData.skilldetail.length;
+      }
+      if (lv >= lvCap) {
          this.skillLevel = 0;
       } else if (lv < 0) {
-         this.skillLevel = 7;
+         this.skillLevel = lvCap-1;
       } else {
          this.skillLevel = lv;
       }
@@ -1487,6 +1495,7 @@ var LLCardSelector = (function() {
  *   LLSisGem
  *   LLSkill
  *   LLMember
+ *   LLSimulateContext
  *   LLTeam
  */
 var LLMap = (function () {
@@ -2151,7 +2160,7 @@ var LLMember = (function() {
          return this.card.skilldetail[this.skilllevel-1];
       }
       var lv = this.skilllevel + levelBoost;
-      if (lv > 8) lv = 8;
+      if (lv > this.card.skilldetail.length) lv = this.card.skilldetail.length;
       return this.card.skilldetail[lv-1];
    };
    return cls;
@@ -2183,6 +2192,7 @@ var LLSimulateContext = (function() {
       this.totalPerfect = mapdata.perfect;
       this.mapSkillPossibilityUp = (1 + parseInt(mapdata.skillup || 0)/100);
       this.mapTapScoreUp = (1 + parseInt(mapdata.tapup || 0)/100);
+      this.comboFeverPattern = parseInt(mapdata.combo_fever_pattern || 2);
       this.currentTime = 0;
       this.currentNote = 0;
       this.currentCombo = 0;
@@ -2306,7 +2316,9 @@ var LLSimulateContext = (function() {
             var deactivedMemberId = this.activeSkills[activeIndex][1];
             this.markTriggerActive(deactivedMemberId, 0);
             this.activeSkills.splice(activeIndex, 1);
-            needRecalculate = true;
+            if (this.members[deactivedMemberId].card.skilleffect != LLConst.SKILL_EFFECT_SCORE) {
+               needRecalculate = true;
+            }
             activeIndex--;
          }
       }
@@ -2402,6 +2414,9 @@ var LLSimulateContext = (function() {
       } else if (skillEffect == LLConst.SKILL_EFFECT_SCORE) {
          if (this.members[realMemberId].hasSkillGem()) this.currentScore += Math.ceil(skillDetail.score * 2.5);
          else this.currentScore += skillDetail.score;
+         // 由于一帧(16ms)最多发动一次技能, 为防止爆分在某些情况下无限上分导致死循环, 加个16ms的延迟
+         this.activeSkills.push([this.currentTime + 0.016, memberId, realMemberId, skillDetail.score]);
+         this.markTriggerActive(memberId, 1);
       } else if (skillEffect == LLConst.SKILL_EFFECT_POSSIBILITY_UP) {
          // 不可叠加
          this.effects[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = skillDetail.score;
@@ -2921,7 +2936,7 @@ var LLTeam = (function() {
                      accuracyBonus *= LLConst.NOTE_WEIGHT_PERFECT_FACTOR;
                   }
                   if (env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER] > 0) {
-                     comboFeverScore = Math.ceil(LLConst.getComboFeverBonus(env.currentCombo) * env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER]);
+                     comboFeverScore = Math.ceil(LLConst.getComboFeverBonus(env.currentCombo, env.comboFeverPattern) * env.effects[LLConst.SKILL_EFFECT_COMBO_FEVER]);
                      if (comboFeverScore > LLConst.SKILL_LIMIT_COMBO_FEVER) {
                         comboFeverScore = LLConst.SKILL_LIMIT_COMBO_FEVER;
                      }
@@ -2932,8 +2947,11 @@ var LLTeam = (function() {
                   //}
                   var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
-                  var baseNoteScore = Math.ceil(baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) * env.mapTapScoreUp);
-                  env.currentScore += baseNoteScore + comboFeverScore + perfectScoreUp;
+                  var baseNoteScore = baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) + comboFeverScore + perfectScoreUp;
+                  // 点击得分加成对PP分也有加成效果
+                  // TODO: 点击得分对CF分是否有加成? 如果有, 1000分的CF加成上限是限制在点击得分加成之前还是之后?
+                  // 目前按照对CF分有效, 并且CF加成上限限制在点击加成之前处理
+                  env.currentScore += Math.ceil(baseNoteScore * env.mapTapScoreUp);
                   env.totalPerfectScoreUp += perfectScoreUp;
                }
                noteTriggerIndex++;
@@ -4439,6 +4457,10 @@ var LLScoreDistributionParameter = (function () {
       {'value': '9', 'text': '9速'},
       {'value': '10', 'text': '10速'}
    ];
+   var comboFeverPatternSelectOptions = [
+      {'value': '1', 'text': '技能加强前（300 combo达到最大加成）'},
+      {'value': '2', 'text': '技能加强后（220 combo达到最大加成）'}
+   ];
    var distTypeDetail = [
       ['#要素', '#计算理论分布/计算技能强度', '#计算模拟分布'],
       ['触发条件: 时间, 图标, 连击, perfect, star perfect, 分数', '支持', '支持'],
@@ -4470,6 +4492,9 @@ var LLScoreDistributionParameter = (function () {
       var simParamSpeedComponent = new LLSelectComponent(createElement('select', {'className': 'form-control', 'value': '8'}));
       simParamSpeedComponent.setOptions(speedSelectOptions);
       simParamSpeedComponent.set('8');
+      var simParamComboFeverPatternComponent = new LLSelectComponent(createElement('select', {'className': 'form-control'}));
+      simParamComboFeverPatternComponent.setOptions(comboFeverPatternSelectOptions);
+      simParamComboFeverPatternComponent.set('2');
       var simParamContainer = createElement('div', {'className': 'form-inline'}, [
          createElement('div', {'className': 'form-group'}, [
             createElement('label', {'innerHTML': '模拟次数：'}),
@@ -4487,6 +4512,11 @@ var LLScoreDistributionParameter = (function () {
             createElement('label', {'innerHTML': '速度：'}),
             simParamSpeedComponent.element,
             createElement('span', {'innerHTML': '（图标下落速度，1速最慢，10速最快）'})
+         ]),
+         createElement('br'),
+         createElement('div', {'className': 'form-group'}, [
+            createElement('label', {'innerHTML': 'Combo Fever技能：'}),
+            simParamComboFeverPatternComponent.element
          ]),
          createElement('br'),
          createElement('span', {'innerHTML': '注意：默认曲目的模拟分布与理论分布不兼容，两者计算结果可能会有较大差异，如有需要请选默认曲目2'})
@@ -4519,7 +4549,8 @@ var LLScoreDistributionParameter = (function () {
             'type': selComp.get(),
             'count': simParamCount.value,
             'perfect_percent': simParamPerfectPercent.value,
-            'speed': simParamSpeedComponent.get()
+            'speed': simParamSpeedComponent.get(),
+            'combo_fever_pattern': simParamComboFeverPatternComponent.get()
          }
       };
       controller.setParameters = function (data) {
@@ -4528,6 +4559,7 @@ var LLScoreDistributionParameter = (function () {
          if (data.count !== undefined) simParamCount.value = data.count;
          if (data.perfect_percent !== undefined) simParamPerfectPercent.value = data.perfect_percent;
          if (data.speed) simParamSpeedComponent.set(data.speed);
+         if (data.combo_fever_pattern) simParamComboFeverPatternComponent.set(data.combo_fever_pattern);
       };
       return container;
    }

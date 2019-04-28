@@ -124,13 +124,16 @@ if __name__ == "__main__":
             # skill detailed effect for each level
             skilldetail = jpdbconn.execute('SELECT effect_value,discharge_time,trigger_value,activation_rate FROM unit_skill_level_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY skill_level ASC;')
             card['skilldetail'] = []
-            for i in range(0, 8):
-                tmp = skilldetail.fetchone()
+            tmp = skilldetail.fetchone()
+            i = 0
+            while tmp:
                 card['skilldetail'].append({})
                 card['skilldetail'][i]['score'] = tmp[0]
                 card['skilldetail'][i]['time'] = tmp[1]
                 card['skilldetail'][i]['require'] = tmp[2]
                 card['skilldetail'][i]['possibility'] = tmp[3]
+                i = i + 1
+                tmp = skilldetail.fetchone()
             triggertarget = jpdbconn.execute('SELECT trigger_target FROM unit_skill_trigger_target_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY trigger_target DESC;')
             tmp = triggertarget.fetchone()
             if tmp:
