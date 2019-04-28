@@ -4801,6 +4801,43 @@ var LLTeamComponent = (function () {
          return [createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': text+(i+1)}, undefined, {'click': function(){clickFunc(i);}})];
       };
    }
+   // parentController
+   // {
+   //   getMember: callback function(i)
+   //   setMember: callback function(i, value)
+   //   getSwapper: callback function()
+   // }
+   function makeSwapCreator(parentController) {
+      // controller
+      // {
+      //   startSwapping: function()
+      //   finishSwapping: function(value)
+      // }
+      return function(controller, i) {
+         var bSwapping = false;
+         var buttonElement = createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': '换位'+(i+1)}, undefined, {'click': function() {
+            var swapper = parentController.getSwapper();
+            if (swapper) swapper.onSwap(controller);
+         }});
+         controller.startSwapping = function() {
+            buttonElement.innerHTML = '选择';
+            buttonElement.className = 'btn btn-primary btn-block';
+            bSwapping = true;
+            return parentController.getMember(i);
+         };
+         controller.finishSwapping = function(v) {
+            if (bSwapping) {
+               buttonElement.innerHTML = '换位';
+               buttonElement.className = 'btn btn-default btn-block';
+               bSwapping = false;
+            }
+            var ret = parentController.getMember(i);
+            parentController.setMember(i, v);
+            return ret;
+         };
+         return  [buttonElement];
+      };
+   }
    // controller
    // {
    //    update: function(cardid, mezame)
@@ -4896,6 +4933,7 @@ var LLTeamComponent = (function () {
          headElement = createElement('th', {'scope': 'row'}, [arrowSpan, textSpan], {
             'click': toggleFold
          });
+         headElement.style.cursor = 'pointer';
          controller.toggleFold = toggleFold;
       } else {
          headElement = createElement('th', {'scope': 'row', 'innerHTML': head});
@@ -4924,8 +4962,12 @@ var LLTeamComponent = (function () {
    // controller
    // {
    //    onPutCardClicked: callback function(i)
-   //    putCard: function(i, member)
+   //    putMember: function(i, member)
    //      member: {main, smile, pure, cool, skilllevel(1-8), mezame(0/1), cardid, maxcost}
+   //    setMember: function(i, member) alias putMember
+   //    getMember: function(i)
+   //    setSwapper: function(swapper)
+   //    getSwapper: function()
    //    saveData: function()
    //    loadData: function(data)
    // }
@@ -4938,18 +4980,24 @@ var LLTeamComponent = (function () {
          'info_name': {},
          'skill_trigger': {},
          'skill_effect': {},
-         'smile': {'headColor': 'red', 'cellColor': 'red'},
-         'pure': {'headColor': 'green', 'cellColor': 'green'},
-         'cool': {'headColor': 'blue', 'cellColor': 'blue'},
-         'skill_level': {},
+         'smile': {'headColor': 'red', 'cellColor': 'red', 'memberKey': 'smile', 'memberDefault': 0},
+         'pure': {'headColor': 'green', 'cellColor': 'green', 'memberKey': 'pure', 'memberDefault': 0},
+         'cool': {'headColor': 'blue', 'cellColor': 'blue', 'memberKey': 'cool', 'memberDefault': 0},
+         'skill_level': {'memberKey': 'skilllevel'},
          'slot': {'owning': ['gem_num', 'gem_single_percent', 'gem_all_percent', 'gem_score', 'gem_acc', 'gem_member', 'gem_nonet']},
-         'gem_num': {},
-         'gem_single_percent': {},
-         'gem_all_percent': {},
-         'gem_score': {},
-         'gem_acc': {},
-         'gem_member': {},
-         'gem_nonet': {},
+         'gem_num': {'memberKey': 'gemnum'},
+         'gem_single_percent': {'memberKey': 'gemsinglepercent'},
+         'gem_all_percent': {'memberKey': 'gemallpercent'},
+         'gem_score': {'memberKey': 'gemskill'},
+         'gem_acc': {'memberKey': 'gemacc'},
+         'gem_member': {'memberKey': 'gemmember'},
+         'gem_nonet': {'memberKey': 'gemnonet'},
+         'str_attr': {},
+         'str_skill_theory': {},
+         'str_card_theory': {},
+         'str_debuff': {},
+         'str_total_theory': {},
+         'heal': {},
       };
       var members = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var cardsBrief = new Array(9);
@@ -4962,6 +5010,16 @@ var LLTeamComponent = (function () {
          for (var i = 0; i < this.owning.length; i++) {
             controllers[this.owning[i]].show();
          }
+      };
+      var doSetByMember = function(i, member) {
+         if (member[this.memberKey] !== undefined) {
+            this.cells[i].set(member[this.memberKey]);
+         } else if (this.memberDefault !== undefined) {
+            this.cells[i].set(this.memberDefault);
+         }
+      };
+      var doSetToMember = function(i, member) {
+         member[this.memberKey] = this.cells[i].get();
       };
       var calcSlot = function(i) {
          var result = 0;
@@ -4979,8 +5037,12 @@ var LLTeamComponent = (function () {
             controllers[i].fold = doFold;
             controllers[i].unfold = doUnfold;
          }
+         if (controllers[i].memberKey) {
+            controllers[i].setByMember = doSetByMember;
+            controllers[i].setToMember = doSetToMember;
+         }
       }
-      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control'};
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control', 'value': '0'};
       var selConfig = {'className': 'form-control'};
       rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
@@ -4997,20 +5059,29 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('技能等级', skillLevelCreator, controllers.skill_level));
       rows.push(createRowFor9('使用槽数', slotCreator, controllers.slot));
       rows.push(createRowFor9('单体数值', makeSelectCreator(selConfig, gemNumOptions, calcSlot, parseInt), controllers.gem_num));
-      rows.push(createRowFor9('单体百分比', makeSelectCreator(selConfig, gemSinglePercentOptions, calcSlot, parseFloat), controllers.gem_single_percent));
-      rows.push(createRowFor9('全体百分比', makeSelectCreator(selConfig, gemAllPercentOptions, calcSlot, parseFloat), controllers.gem_all_percent));
+      rows.push(createRowFor9('单体百分比', makeSelectCreator(selConfig, gemSinglePercentOptions, calcSlot), controllers.gem_single_percent));
+      rows.push(createRowFor9('全体百分比', makeSelectCreator(selConfig, gemAllPercentOptions, calcSlot), controllers.gem_all_percent));
       rows.push(createRowFor9('奶/分宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_score));
       rows.push(createRowFor9('判定宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_acc));
       rows.push(createRowFor9('个人宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_member));
       rows.push(createRowFor9('九重奏宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_nonet));
+      rows.push(createRowFor9('换位', makeSwapCreator(controller), {}));
+      rows.push(createRowFor9('属性强度', textCreator, controllers.str_attr));
+      rows.push(createRowFor9('技能强度（理论）', textCreator, controllers.str_skill_theory));
+      rows.push(createRowFor9('卡强度（理论）', textCreator, controllers.str_card_theory));
+      rows.push(createRowFor9('异色异团惩罚', textCreator, controllers.str_debuff));
+      rows.push(createRowFor9('实际强度（理论）', textCreator, controllers.str_total_theory));
+      rows.push(createRowFor9('回复', textCreator, controllers.heal));
 
       controllers.info.toggleFold();
 
       controller.putMember = function(i, member) {
+         for (var k in controllers) {
+            if (controllers[k].setByMember) {
+               controllers[k].setByMember(i, member);
+            }
+         }
          controllers.avatar.cells[i].update(member.cardid, member.mezame);
-         controllers.smile.cells[i].set(parseInt(member.smile || 0));
-         controllers.pure.cells[i].set(parseInt(member.pure || 0));
-         controllers.cool.cells[i].set(parseInt(member.cool || 0));
          var cardid = controllers.avatar.cells[i].getCardId();
          var cardbrief = undefined;
          if (cardid) {
@@ -5034,6 +5105,22 @@ var LLTeamComponent = (function () {
             controllers.slot.cells[i].setMaxSlot(LLConst.getDefaultMinSlot(cardbrief.rarity));
          }
       };
+      controller.setMember = controller.putMember;
+      controller.getMember = function(i) {
+         var retMember = {};
+         for (var k in controllers) {
+            if (controllers[k].setToMember) {
+               controllers[k].setToMember(i, retMember);
+            }
+         }
+         retMember.cardid = controllers.avatar.cells[i].getCardId();
+         retMember.mezame = controllers.avatar.cells[i].getMezame();
+         retMember.maxcost = controllers.slot.cells[i].getMaxSlot();
+         return retMember;
+      };
+      var swapper = new LLSwapper();
+      controller.setSwapper = function(sw) { swapper = sw; };
+      controller.getSwapper = function(sw) { return swapper; };
       return createElement('table', {'className': 'table table-bordered table-hover table-condensed team-table'}, [
          createElement('tbody', undefined, rows)
       ]);

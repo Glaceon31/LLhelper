@@ -72,7 +72,8 @@
                'mezame': (document.getElementById("mezame").checked ? 1 : 0),
                'smile': parseInt(document.getElementById("smile").value),
                'pure': parseInt(document.getElementById("pure").value),
-               'cool': parseInt(document.getElementById("cool").value)
+               'cool': parseInt(document.getElementById("cool").value),
+               'skilllevel': parseInt(document.getElementById("skilllevel").innerHTML)
             };
             memberData[curMain] += parseInt(document.getElementById("kizuna").value);
             comp_team.putMember(i, memberData);

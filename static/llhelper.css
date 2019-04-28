@@ -140,4 +140,7 @@
    color: inherit;
    display: inline;
 }
+.team-table th {
+   min-width: 7em;
+}
 
