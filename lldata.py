@@ -47,6 +47,19 @@ class LLData:
         self.last_update_time = 0
         self.loadJson()
 
+    def getLastUpdateTime(self):
+        self.lock.acquireRead()
+        ret = self.last_update_time
+        self.lock.releaseRead()
+        return ret
+
+    def mergeDataTo(self, data):
+        self.lock.acquireRead()
+        for i in self.data:
+            if not data.has_key(i):
+                data[i] = self.data[i]
+        self.lock.releaseRead()
+
     def loadJson(self):
         # assume write lock acquired
         filestat = os.stat(self.json_file)
@@ -100,4 +113,28 @@ class LLData:
         finally:
             self.lock.releaseRead()
         return ret;
+
+class LLDataMix(LLData):
+    def __init__(self, lldataList, name, check_interval):
+        self.lldataList = lldataList
+        LLData.__init__(self, name, check_interval)
+
+    def loadJson(self):
+        # assume write lock acquired
+        max_update_time = 0
+        for lldata in self.lldataList:
+            lldata.reloadJson()
+            this_update_time = lldata.getLastUpdateTime()
+            if this_update_time > max_update_time:
+                max_update_time = this_update_time
+
+        if max_update_time == self.last_update_time:
+            return
+
+        print 'Loading mix %s ...' % self.json_file
+        new_data = {}
+        for lldata in self.lldataList:
+            lldata.mergeDataTo(new_data)
+        self.data = new_data
+        self.last_update_time = max_update_time
 
