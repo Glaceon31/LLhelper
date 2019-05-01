@@ -6,7 +6,7 @@ import string
 import random
 import json
 import sys
-from lldata import LLData
+from lldata import LLData, LLDataMix
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -20,6 +20,7 @@ g_llcarddata = LLData('newcardsjson.txt', 60)
 g_llsongdata = LLData('newsongsjson.txt', 60)
 # snapshot for older card data, should have much less chance to update
 g_llcarddata_cn = LLData('newcardsjson-20181021.txt', 3600)
+g_llcarddata_mix = LLDataMix([g_llcarddata_cn, g_llcarddata], 'cn-mix', 60)
 
 
 ### activity ###
@@ -89,6 +90,8 @@ def llurcardrank():
 def lldata_cardbrief():
     if request.args['version'] == 'cn':
         return json.dumps(g_llcarddata_cn.queryByKeys(request.args['keys']))
+    elif request.args['version'] == 'mix':
+        return json.dumps(g_llcarddata_mix.queryByKeys(request.args['keys']))
     else:
         return json.dumps(g_llcarddata.queryByKeys(request.args['keys']))
 
@@ -96,6 +99,8 @@ def lldata_cardbrief():
 def lldata_carddetail(index):
     if request.args['version'] == 'cn':
         return json.dumps(g_llcarddata_cn.queryByIndex(index))
+    elif request.args['version'] == 'mix':
+        return json.dumps(g_llcarddata_mix.queryByIndex(index))
     else:
         return json.dumps(g_llcarddata.queryByIndex(index))
 

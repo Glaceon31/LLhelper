@@ -4348,7 +4348,8 @@ var LLDataVersionSelectorComponent = (function () {
    var createElement = LLUnit.createElement;
    var versionSelectOptions = [
       {'value': 'latest', 'text': '日服最新'},
-      {'value': 'cn', 'text': '20181021 (兼容国服)'}
+      {'value': 'cn', 'text': '20181021 (兼容国服)'},
+      {'value': 'mix', 'text': '混合（1763号卡开始为日服数据）'}
    ];
    function createVersionSelector(controller) {
       var sel = createElement('select', {'className': 'form-control'});
