@@ -1026,24 +1026,37 @@ var LLUnit = {
       LLUnit.changeavatar('avatar' + n, cardid, mezame);
    },
 
-   calculate: function (docalculate, addRequests) {
+   calculate: function (docalculate, cardids, addRequests) {
       var requests = [];
       var i;
-      for (i = 0; i < 9; i++) {
-         var cardid = document.getElementById('cardid' + i).value;
-         if (cardid) {
-            requests.push(LLCardData.getDetailedData(cardid));
+      var uniqueCardids = {};
+      if (!cardids) {
+         for (i = 0; i < 9; i++) {
+            var cardid = document.getElementById('cardid' + i).value;
+            if (cardid && uniqueCardids[cardid] === undefined) {
+               requests.push(LLCardData.getDetailedData(cardid));
+               uniqueCardids[cardid] = 1;
+            }
+         }
+      } else {
+         for (i = 0; i < cardids.length; i++) {
+            var cardid = cardids[i];
+            if (cardid && uniqueCardids[cardid] === undefined) {
+               requests.push(LLCardData.getDetailedData(cardid));
+               uniqueCardids[cardid] = 1;
+            }
          }
       }
       if (addRequests) {
+         var cardRequestCount = requests.length;
          var extraResults = [];
          for (i = 0; i < addRequests.length; i++) {
             requests.push(addRequests[i]);
             extraResults.push(undefined);
          }
          LoadingUtil.start(requests, function (data, index, result) {
-            if (index < 9) result[parseInt(data.id)] = data;
-            else extraResults[index-9] = data
+            if (index < cardRequestCount) result[parseInt(data.id)] = data;
+            else extraResults[index-cardRequestCount] = data
          }).then(function (cards) {
             docalculate(cards, extraResults);
          }, defaultHandleFailedRequest);
@@ -1054,9 +1067,12 @@ var LLUnit = {
       }
    },
 
-   changecenter: function () {
-      var cardid = parseInt(document.getElementById("cardid4").value)
-      if (cardid == "") return;
+   changecenter: function (cardid) {
+      if (cardid === undefined) {
+         cardid = document.getElementById("cardid4").value;
+      }
+      if (!cardid) return;
+      cardid = parseInt(cardid);
       LoadingUtil.startSingle(LLCardData.getDetailedData(cardid)).then(function(card) {
          document.getElementById("bonus").value = card["attribute"]
          document.getElementById("percentage").value = card["Cskillpercentage"]
@@ -4850,6 +4866,7 @@ var LLTeamComponent = (function () {
          var buttonElement = createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': '换位'+(i+1)}, undefined, {'click': function() {
             var swapper = parentController.getSwapper();
             if (swapper) swapper.onSwap(controller);
+            if (i == 4 && parentController.onCenterChanged) parentController.onCenterChanged();
          }});
          controller.startSwapping = function() {
             buttonElement.innerHTML = '选择';
@@ -4911,6 +4928,45 @@ var LLTeamComponent = (function () {
       controller.get = function() { return curValue; };
       controller.reset = function() { controller.set(''); };
       return [textElement];
+   }
+   // controller
+   // {
+   //    setColor: function(color)
+   //    :textCreator
+   // }
+   function textWithColorCreator(controller) {
+      var ret = textCreator(controller);
+      controller.setColor = function(c) { ret[0].style.color = c; };
+      return ret;
+   }
+   function makeTextCreator(controller, getConverter, setConverter, defaultValue) {
+      if (defaultValue === undefined) defaultValue = '';
+      return function (controller) {
+         var textElement = createElement('span');
+         var curValue = defaultValue;
+         if (setConverter) {
+            controller.set = function(v) {
+               if (curValue != v) {
+                  curValue = v;
+                  textElement.innerHTML = setConverter(v);
+               }
+            };
+         } else {
+            controller.set = function(v) {
+               if (curValue != v) {
+                  curValue = v;
+                  textElement.innerHTML = v;
+               }
+            };
+         }
+         if (getConverter) {
+            controller.get = function() { return getConverter(curValue); };
+         } else {
+            controller.get = function() { return curValue; };
+         }
+         controller.reset = function() { controller.set(defaultValue); };
+         return [textElement];
+      };
    }
    // controller
    // {
@@ -4991,13 +5047,33 @@ var LLTeamComponent = (function () {
       controller.hide = function(){ rowComponent.hide(); }
       return rowElement;
    }
+   // make getXXXs() and setXXXs(val) functions
+   function makeGet9Function(method) {
+      return function() {
+         var ret = [];
+         for (var i = 0; i < 9; i++) {
+            ret.push(method.call(this, i));
+         }
+         return ret;
+      };
+   }
+   function makeSet9Function(method) {
+      return function(val) {
+         for (var i = 0; i < 9; i++) {
+            method.call(this, i, val[i]);
+         }
+      };
+   }
    // controller
    // {
    //    onPutCardClicked: callback function(i)
+   //    onCenterChanged: callback function()
    //    putMember: function(i, member)
    //      member: {main, smile, pure, cool, skilllevel(1-8), mezame(0/1), cardid, maxcost}
    //    setMember: function(i, member) alias putMember
-   //    getMember: function(i)
+   //    getMember(i), getMembers()
+   //    getCardId(i), getCardIds()
+   //    getWeight(i), getWeights(), setWeight(i,w), setWeights(i,w)
    //    setSwapper: function(swapper)
    //    getSwapper: function()
    //    saveData: function()
@@ -5079,6 +5155,7 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
          controller.onPutCardClicked && controller.onPutCardClicked(i);
+         if (i == 4 && controller.onCenterChanged) controller.onCenterChanged();
       }), {}));
       rows.push(createRowFor9('卡片', avatarCreator, controllers.avatar));
       rows.push(createRowFor9('基本信息', textCreator, controllers.info));
@@ -5099,10 +5176,10 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('九重奏宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_nonet));
       rows.push(createRowFor9('换位', makeSwapCreator(controller), {}));
       rows.push(createRowFor9('属性强度', textCreator, controllers.str_attr));
-      rows.push(createRowFor9('技能强度（理论）', textCreator, controllers.str_skill_theory));
-      rows.push(createRowFor9('卡强度（理论）', textCreator, controllers.str_card_theory));
+      rows.push(createRowFor9('技能强度（理论）', textWithTooltipCreator, controllers.str_skill_theory));
+      rows.push(createRowFor9('卡强度（理论）', textWithColorCreator, controllers.str_card_theory));
       rows.push(createRowFor9('异色异团惩罚', textCreator, controllers.str_debuff));
-      rows.push(createRowFor9('实际强度（理论）', textCreator, controllers.str_total_theory));
+      rows.push(createRowFor9('实际强度（理论）', textWithColorCreator, controllers.str_total_theory));
       rows.push(createRowFor9('回复', textCreator, controllers.heal));
 
       controllers.info.toggleFold();
@@ -5150,6 +5227,13 @@ var LLTeamComponent = (function () {
          retMember.maxcost = controllers.slot.cells[i].getMaxSlot();
          return retMember;
       };
+      controller.getMembers = makeGet9Function(controller.getMember);
+      controller.getCardId = function(i) { return controllers.avatar.cells[i].getCardId(); };
+      controller.getCardIds = makeGet9Function(controller.getCardId);
+      controller.getWeight = function(i) { return controllers.weight.cells[i].get(); };
+      controller.getWeights = makeGet9Function(controller.getWeight);
+      controller.setWeight = function(i, w) { controllers.weight.cells[i].set(w); };
+      controller.setWeights = makeSet9Function(controller.setWeight);
       var swapper = new LLSwapper();
       controller.setSwapper = function(sw) { swapper = sw; };
       controller.getSwapper = function(sw) { return swapper; };
@@ -5161,6 +5245,7 @@ var LLTeamComponent = (function () {
    // {
    //    callbacks:
    //       onPutCardClicked: function(i)
+   //       onCenterChanged: function()
    //    :createTeamTable
    //    :LLSaveLoadJsonMixin
    // }
@@ -5168,6 +5253,7 @@ var LLTeamComponent = (function () {
       var element = LLUnit.getElement(id);
       element.appendChild(createTeamTable(this));
       this.onPutCardClicked = callbacks && callbacks.onPutCardClicked;
+      this.onCenterChanged = callbacks && callbacks.onCenterChanged;
    }
    var cls = LLTeamComponent_cls;
    var proto = cls.prototype;

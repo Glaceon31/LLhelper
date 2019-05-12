@@ -140,7 +140,8 @@
    color: inherit;
    display: inline;
 }
-.team-table th {
+.team-table >tbody >tr >th {
    min-width: 7em;
+   vertical-align: middle;
 }
 

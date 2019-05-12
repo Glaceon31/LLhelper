@@ -64,7 +64,7 @@
          'saveData': makeSaveData,
          'loadTeamMember': handleLoadTeamMember
       });
-      var comp_team = new LLTeamComponent('unit-team', {
+      comp_team = new LLTeamComponent('unit-team', {
          'onPutCardClicked': function(i) {
             var curMain = document.getElementById("main").value;
             var memberData = {
@@ -77,6 +77,9 @@
             };
             memberData[curMain] += parseInt(document.getElementById("kizuna").value);
             comp_team.putMember(i, memberData);
+         },
+         'onCenterChanged': function() {
+            LLUnit.changecenter(this.getCardId(4) || 0);
          }
       });
 
@@ -129,7 +132,10 @@
       var handleTime = function(t) { document.getElementById("time").value = (t ? t : 110); };
       var handlePerfect = function(combo) { document.getElementById("perfect").value = parseInt(combo*19/20); };
       var handleStar = function() { document.getElementById("starperfect").value = 0; };
-      var handleWeight = function(w) { for (var i = 0; i < 9; i++) { document.getElementById("weight"+i).value = parseFloat(w[i]); } };
+      var handleWeight = function(w) {
+         for (var i = 0; i < 9; i++) { document.getElementById("weight"+i).value = parseFloat(w[i]); }
+         comp_team.setWeights(w);
+      };
       var applyTarget = {
          'attribute': ['map', changemapcolor],
          'combo': ['combo', handlePerfect],
@@ -181,6 +187,8 @@
    }
 
    function makeSaveData() {
+      var member = comp_team.getMembers();
+      /*
       var member = [{}, {}, {},{},{},{},{},{},{}];
       var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
       for (var i=0; i<9; i++){
@@ -188,6 +196,7 @@
             member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
          }
       }
+      */
       return new LLSaveData(member);
    }
 
@@ -293,23 +302,21 @@
       LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
       var distParam = comp_distribution_param.saveData();
       if (distParam.type == 'sim') {
-         LLUnit.calculate(docalculate, [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
+         LLUnit.calculate(docalculate, comp_team.getCardIds(), [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
       } else {
-         LLUnit.calculate(docalculate);
+         LLUnit.calculate(docalculate, comp_team.getCardIds());
       }
    	return true;
    }
 
    function docalculate(cards, extraData) {
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet'];
-      var float_element = ["weight",'gemsinglepercent','gemallpercent'];
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
       var atts = ['smile', 'pure', 'cool'];
-      var member = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
+      var member = comp_team.getMembers();
       var mapcenter = {};
       var llmembers = [];
-      var weights = [];
+      var weights = comp_team.getWeights();
 
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
@@ -321,33 +328,25 @@
       var mainatt = mapcenter['map']
 
       for (var i = 0; i < 9; i++) {
-         for (var j = 0; j < int_element.length; j++) {
-            member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
-         }
-         for (var j = 0; j < float_element.length; j++) {
-            member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
-         }
-         member[i]['maxcost'] = 0; // not used, added to not print error in console
          member[i]['card'] = cards[member[i]['cardid']];
          var llsisgems = [];
-         llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(document.getElementById('gemallpercent'+i).value)*100, mainatt));
-         if (parseInt(document.getElementById('gemskill' + i).value) == 1) {
+         llsisgems = llsisgems.concat(LLSisGem.parseSADD(member[i].gemnum, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(member[i].gemsinglepercent)*100, mainatt));
+         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(member[i].gemallpercent)*100, mainatt));
+         if (parseInt(member[i].gemskill) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
          }
-         if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
+         if (parseInt(member[i].gemacc) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
          }
-         if (parseInt(document.getElementById('gemmember' + i).value) == 1) {
+         if (parseInt(member[i].gemmember) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
          }
-         if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
+         if (parseInt(member[i].gemnonet) == 1) {
             llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
          }
          member[i].gems = llsisgems;
          llmembers.push(new LLMember(member[i]));
-         weights.push(member[i].weight);
       }
 
       var distParam = comp_distribution_param.saveData();
