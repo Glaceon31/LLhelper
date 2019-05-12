@@ -4920,7 +4920,7 @@ var LLTeamComponent = (function () {
       var textElement = createElement('span');
       var curValue = '';
       controller.set = function(v) {
-         if (curValue != v) {
+         if (curValue !== v) {
             curValue = v;
             textElement.innerHTML = v;
          }
@@ -4946,14 +4946,14 @@ var LLTeamComponent = (function () {
          var curValue = defaultValue;
          if (setConverter) {
             controller.set = function(v) {
-               if (curValue != v) {
+               if (curValue !== v) {
                   curValue = v;
                   textElement.innerHTML = setConverter(v);
                }
             };
          } else {
             controller.set = function(v) {
-               if (curValue != v) {
+               if (curValue !== v) {
                   curValue = v;
                   textElement.innerHTML = v;
                }
@@ -5064,6 +5064,18 @@ var LLTeamComponent = (function () {
          }
       };
    }
+   function makeHighlightMinFunction(cells) {
+      return function(arr) {
+         var minVal, i;
+         for (i = 0; i < arr.length; i++) {
+            if (i == 0 || arr[i] < minVal) minVal = arr[i];
+            cells[i].set(arr[i]);
+         }
+         for (i = 0; i < arr.length; i++) {
+            cells[i].setColor((arr[i] == minVal) ? 'red' : '');
+         }
+      };
+   }
    // controller
    // {
    //    onPutCardClicked: callback function(i)
@@ -5071,9 +5083,16 @@ var LLTeamComponent = (function () {
    //    putMember: function(i, member)
    //      member: {main, smile, pure, cool, skilllevel(1-8), mezame(0/1), cardid, maxcost}
    //    setMember: function(i, member) alias putMember
+   //    setMembers: function(members)
    //    getMember(i), getMembers()
    //    getCardId(i), getCardIds()
    //    getWeight(i), getWeights(), setWeight(i,w), setWeights(i,w)
+   //    setStrengthAttribute(i,s), setStrengthAttributes(s)
+   //    setStrengthDebuff(i,s), setStrengthDebuffs(s)
+   //    setStrengthCardTheories(s)
+   //    setStrengthTotalTheories(s)
+   //    setStrengthSkillTheory(i,s,strengthSupported)
+   //    setHeal(i,s)
    //    setSwapper: function(swapper)
    //    getSwapper: function()
    //    saveData: function()
@@ -5107,7 +5126,6 @@ var LLTeamComponent = (function () {
          'str_total_theory': {},
          'heal': {},
       };
-      var members = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
       var cardsBrief = new Array(9);
       var doFold = function() {
          for (var i = 0; i < this.owning.length; i++) {
@@ -5215,6 +5233,7 @@ var LLTeamComponent = (function () {
          }
       };
       controller.setMember = controller.putMember;
+      controller.setMembers = makeSet9Function(controller.setMember);
       controller.getMember = function(i) {
          var retMember = {};
          for (var k in controllers) {
@@ -5234,6 +5253,17 @@ var LLTeamComponent = (function () {
       controller.getWeights = makeGet9Function(controller.getWeight);
       controller.setWeight = function(i, w) { controllers.weight.cells[i].set(w); };
       controller.setWeights = makeSet9Function(controller.setWeight);
+      controller.setStrengthAttribute = function(i, str) { controllers.str_attr.cells[i].set(str); };
+      controller.setStrengthAttributes = makeSet9Function(controller.setStrengthAttribute);
+      controller.setStrengthDebuff = function(i, str) { controllers.str_debuff.cells[i].set(-str); };
+      controller.setStrengthDebuffs = makeSet9Function(controller.setStrengthDebuff);
+      controller.setStrengthCardTheories = makeHighlightMinFunction(controllers.str_card_theory.cells);
+      controller.setStrengthTotalTheories = makeHighlightMinFunction(controllers.str_total_theory.cells);
+      controller.setStrengthSkillTheory = function(i, str, strengthSupported) {
+         controllers.str_skill_theory.cells[i].set(str);
+         controllers.str_skill_theory.cells[i].setTooltip(strengthSupported ? undefined : '该技能暂不支持理论强度计算');
+      };
+      controller.setHeal = function(i, heal) { controllers.heal.cells[i].set(heal); };
       var swapper = new LLSwapper();
       controller.setSwapper = function(sw) { swapper = sw; };
       controller.getSwapper = function(sw) { return swapper; };
