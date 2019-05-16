@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hans" class="han-init">
+<html lang="zh-Hans">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -300,8 +300,8 @@
           <div class="container" :class="['tool-index-container' + section.id]">
             <div class="row tool-index-row" :class="'tool-index-row-' + section.id">
               <div class="col-sm-12 col-md-4">
-                <h3>{{activeSection.name}}</h3>
-                <p>{{activeSection.description}}</p>
+                <h3>{{section.name}}</h3>
+                <p>{{section.description}}</p>
               </div>
               <div class="col-sm-12 col-md-8">
                 <div class="row">
@@ -341,7 +341,6 @@
       </div>
     </div>
   </body>
-  <script src="/static/han.min.js"></script>
   <script>
    var weight = []
    var tips = []
@@ -533,9 +532,6 @@
       }
     },
     methods: {
-      isSectionHidden: function (sectionId) {
-        return this.activeSection !== sectionId && this.collapsing
-      },
       toggleCollapsing: function () {
         this.collapsing = !this.collapsing
       },
@@ -558,7 +554,6 @@
     watch: {
     },
     updated: function () {
-      Han(document.body).renderHWS()
     }
   })
 
