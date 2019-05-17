@@ -113,6 +113,7 @@ var LoadingUtil = {
 var LLHelperLocalStorage = {
    'localStorageDataVersionKey': 'llhelper_data_version__',
    'localStorageDistParamKey': 'llhelper_dist_param__',
+   'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
 
    'getDataVersion': function () {
       var version;
@@ -145,6 +146,13 @@ var LLHelperLocalStorage = {
    'setData': function (key, value) {
       try {
          localStorage.setItem(key, value);
+      } catch (e) {
+         console.error(e);
+      }
+   },
+   'clearData': function (key) {
+      try {
+         localStorage.removeItem(key);
       } catch (e) {
          console.error(e);
       }
@@ -1796,6 +1804,7 @@ var LLSisGem = (function () {
    proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
    proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
    proto.isSkillGem = function () { return this.skill_mul || this.heal_mul; };
+   proto.isAccuracyGem = function () { return this.ease_attr_mul; };
    proto.isValid = function () {
       if (this.per_grade && !this.grade) return false;
       if (this.per_member) {
@@ -2041,6 +2050,15 @@ var LLMember = (function() {
       }
       return 0;
    };
+   proto.getAccuracyGemFactor = function () {
+      var factor = 1;
+      for (var i = 0; i < this.gems.length; i++) {
+         if (this.gems[i].isAccuracyGem()) {
+            factor = factor * (1+this.gems[i].effect_value/100);
+         }
+      }
+      return factor;
+   };
    proto.empty = function () {
       return (!this.cardid) || (this.cardid == '0');
    };
@@ -2109,6 +2127,7 @@ var LLMember = (function() {
                'cool': baseAttr.cool + bonusAttr.cool
             };
             this.attrStrength = this.finalAttr[mapcolor];
+            this.attrStrengthWithAccuracy = Math.ceil(this.attrStrength * this.getAccuracyGemFactor());
          }
       }
       this.cumulativeCSkillBonus = cumulativeCSkillBonus;
@@ -2232,6 +2251,7 @@ var LLSimulateContext = (function() {
          var skillRequire = skillDetail.require;
          var targets;
          var neverTrigger = false;
+         // 属性同步技能可带来的属性变化量
          if (effectType == LLConst.SKILL_EFFECT_SYNC) {
             targets = getTargetMembers(this.members, curMember.card.effecttarget, i);
             // 无同步对象, 不会触发
@@ -2240,6 +2260,7 @@ var LLSimulateContext = (function() {
          } else {
             this.syncTargets.push(undefined);
          }
+         // 属性提升技能可带来的属性提升量
          if (effectType == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
             targets = getTargetMembers(this.members, curMember.card.effecttarget);
             var baseValue = 0;
@@ -2638,9 +2659,11 @@ var LLTeam = (function() {
       var attrStrength = [];
       var finalAttr = {'smile':0, 'pure':0, 'cool':0};
       var bonusAttr = {'smile':0, 'pure':0, 'cool':0};
+      var totalAttrWithAccuracy = 0;
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          var curAttrStrength = curMember.cumulativeAttrStrength[0];
+         totalAttrWithAccuracy += curMember.attrStrengthWithAccuracy;
          for (j = 0; j < 9; j++) {
             var jMember = this.members[j];
             curAttrStrength += jMember.cumulativeAttrStrength[i+1] - jMember.cumulativeAttrStrength[i];
@@ -2664,6 +2687,7 @@ var LLTeam = (function() {
       this.attrDebuff = attrDebuff;
       this.finalAttr = finalAttr;
       this.bonusAttr = bonusAttr;
+      this.totalAttrWithAccuracy = totalAttrWithAccuracy;
       // total
       this.totalWeight = mapdata.totalWeight;
       this.totalAttrStrength = totalAttrStrength;
@@ -2961,7 +2985,7 @@ var LLTeam = (function() {
                   //if (perfectScoreUp + env.totalPerfectScoreUp > LLConst.SKILL_LIMIT_PERFECT_SCORE_UP) {
                   //   perfectScoreUp = LLConst.SKILL_LIMIT_PERFECT_SCORE_UP - env.totalPerfectScoreUp;
                   //}
-                  var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
+                  var baseAttribute = (isAccuracyState ? this.totalAttrWithAccuracy : this.finalAttr[mapdata.attribute]) + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
                   var baseNoteScore = baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) + comboFeverScore + perfectScoreUp;
                   // 点击得分加成对PP分也有加成效果
@@ -4407,7 +4431,7 @@ var LLDataVersionSelectorComponent = (function () {
    var createElement = LLUnit.createElement;
    var versionSelectOptions = [
       {'value': 'latest', 'text': '日服最新'},
-      {'value': 'cn', 'text': '20181021 (兼容国服)'},
+      {'value': 'cn', 'text': '20181021'},
       {'value': 'mix', 'text': '混合（1763号卡开始为日服数据）'}
    ];
    function createVersionSelector(controller) {
@@ -4484,7 +4508,7 @@ var LLScoreDistributionParameter = (function () {
       ['触发条件: 连锁', '不支持', '支持'],
       ['技能效果: 回血, 加分', '支持', '支持'],
       ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升<br/>属性同步, 属性提升', '不支持', '支持'],
-      ['宝石: 诡计', '不支持', '不支持'],
+      ['宝石: 诡计', '不支持', '支持'],
       ['溢出奶, 完美判', '不支持', '不支持']
    ];
    // controller
@@ -4877,7 +4901,7 @@ var LLTeamComponent = (function () {
          };
          controller.finishSwapping = function(v) {
             if (bSwapping) {
-               buttonElement.innerHTML = '换位';
+               buttonElement.innerHTML = '换位' + (i+1);
                buttonElement.className = 'btn btn-default btn-block';
                bSwapping = false;
             }
@@ -5060,6 +5084,7 @@ var LLTeamComponent = (function () {
    }
    function makeSet9Function(method) {
       return function(val) {
+         if (!val) val = [];
          for (var i = 0; i < 9; i++) {
             method.call(this, i, val[i]);
          }
@@ -5204,6 +5229,7 @@ var LLTeamComponent = (function () {
       controllers.info.toggleFold();
 
       controller.putMember = function(i, member) {
+         if (!member) member = {};
          for (var k in controllers) {
             if (controllers[k].setByMember) {
                controllers[k].setByMember(i, member);
@@ -5232,6 +5258,7 @@ var LLTeamComponent = (function () {
          } else if (cardbrief && cardbrief.rarity) {
             controllers.slot.cells[i].setMaxSlot(LLConst.getDefaultMinSlot(cardbrief.rarity));
          }
+         if (i == 4 && controller.onCenterChanged) controller.onCenterChanged();
       };
       controller.setMember = controller.putMember;
       controller.setMembers = makeSet9Function(controller.setMember);
@@ -5268,6 +5295,8 @@ var LLTeamComponent = (function () {
       var swapper = new LLSwapper();
       controller.setSwapper = function(sw) { swapper = sw; };
       controller.getSwapper = function(sw) { return swapper; };
+      controller.saveData = controller.getMembers;
+      controller.loadData = controller.setMembers;
       return createElement('table', {'className': 'table table-bordered table-hover table-condensed team-table'}, [
          createElement('tbody', undefined, rows)
       ]);

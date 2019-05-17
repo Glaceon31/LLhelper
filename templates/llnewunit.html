@@ -82,6 +82,7 @@
             LLUnit.changecenter(this.getCardId(4) || 0);
          }
       });
+      comp_team.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageLLNewUnitTeamKey));
 
       init();
 
@@ -94,29 +95,6 @@
       // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
-
-   pos = -1
-   function changepos(i){
-      if (pos==-1){
-         document.getElementById('pos'+String(i)).value = '选择'
-         pos = i
-      }
-      else{
-         document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemmember','gemnonet','gemacc']
-         for (j in swaplist){
-            at = swaplist[j]
-            tmp = document.getElementById(at+String(pos)).value
-            document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
-            document.getElementById(at+String(i)).value = tmp
-         }
-         LLUnit.changeavatarn(pos)
-         LLUnit.changeavatarn(i)
-         calslot(pos);
-         calslot(i);
-         pos = -1
-      }
-   }
 
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
@@ -141,18 +119,6 @@
          'positionweight': [handleWeight]
       };
       llsong.applyDataOfSongWithDiff(applyTarget);
-   }
-
-   function calslot(n){
-      result = 0
-      result += LLSisGem.parseSADDSlot(document.getElementById("gemnum"+String(n)).value);
-      result += LLSisGem.parseSMULSlot(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)*100);
-      result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
-      result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemmember"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemnonet"+String(n)).value)*4)
-      document.getElementById("slot"+String(n)).innerHTML = result
    }
 
    function changeLanguage(){
@@ -180,20 +146,12 @@
       }
       setCookie("mezame"+"unit", mezame, -1)
       comp_cardselector.deleteCookie('llnewunit_cardselector');
+      LLHelperLocalStorage.clearData(LLHelperLocalStorage.localStorageLLNewUnitTeamKey);
       window.location.href="/llnewunit"
    }
 
    function makeSaveData() {
       var member = comp_team.getMembers();
-      /*
-      var member = [{}, {}, {},{},{},{},{},{},{}];
-      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemmember', 'gemnonet', 'gemacc'];
-      for (var i=0; i<9; i++){
-         for (var j in saveatt){
-            member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
-         }
-      }
-      */
       return new LLSaveData(member);
    }
 
@@ -277,6 +235,7 @@
    function check(){
    	saveToCookie();
       LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
+      LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageLLNewUnitTeamKey, comp_team.saveJson());
       var distParam = comp_distribution_param.saveData();
       if (distParam.type == 'sim') {
          LLUnit.calculate(docalculate, comp_team.getCardIds(), [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
