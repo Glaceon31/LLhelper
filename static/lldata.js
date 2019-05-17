@@ -32,8 +32,9 @@
  *   LLDataVersionSelectorComponent
  *   LLScoreDistributionParameter
  *   LLScoreDistributionChart
+ *   LLTeamComponent
  *
- * v1.2.0
+ * v1.3.0
  * By ben1222
  */
 
@@ -112,6 +113,7 @@ var LoadingUtil = {
 var LLHelperLocalStorage = {
    'localStorageDataVersionKey': 'llhelper_data_version__',
    'localStorageDistParamKey': 'llhelper_dist_param__',
+   'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
 
    'getDataVersion': function () {
       var version;
@@ -144,6 +146,13 @@ var LLHelperLocalStorage = {
    'setData': function (key, value) {
       try {
          localStorage.setItem(key, value);
+      } catch (e) {
+         console.error(e);
+      }
+   },
+   'clearData': function (key) {
+      try {
+         localStorage.removeItem(key);
       } catch (e) {
          console.error(e);
       }
@@ -182,6 +191,9 @@ var LLData = (function () {
    };
    proto.getVersion = function() {
       return this.version;
+   };
+   proto.getCachedBriefData = function() {
+      return this.briefCache[this.version];
    };
 
    proto.getAllBriefData = function(keys, url) {
@@ -833,6 +845,46 @@ var LLConst = (function () {
       if (pattern == 1) return (combo >= 300 ? 10 : Math.pow(Math.floor(combo/10), 2)/100+1);
       return (combo >= 220 ? 10 : COMBO_FEVER_PATTERN_2[Math.floor(combo/10)]);
    };
+
+   var SKILL_TRIGGER_TEXT = {};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_TIME] = '时间';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_NOTE] = '图标';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_COMBO] = '连击';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_SCORE] = '分数';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_PERFECT] = '完美';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_STAR_PERFECT] = '星星';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_MEMBERS] = '连锁';
+
+   var SKILL_EFFECT_TEXT = {};
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ACCURACY_SMALL] = '小判定';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ACCURACY_NORMAL] = '判定';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_HEAL] = '回血';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_SCORE] = '加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_POSSIBILITY_UP] = '技能发动率';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_REPEAT] = '重复';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_PERFECT_SCORE_UP] = '完美加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_COMBO_FEVER] = '连击加分';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_SYNC] = '属性同步';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_LEVEL_UP] = '技能等级';
+   SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ATTRIBUTE_UP] = '属性提升';
+
+   ret.getSkillTriggerText = function(skill_trigger) {
+      if (!skill_trigger) return '无';
+      return SKILL_TRIGGER_TEXT[skill_trigger] || '未知';
+   };
+   ret.getSkillEffectText = function(skill_effect) {
+      if (!skill_effect) return '无';
+      return SKILL_EFFECT_TEXT[skill_effect] || '未知';
+   };
+
+   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
+   var DEFAULT_MIN_SLOT = {'UR': 4, 'SSR': 3, 'SR': 2, 'R': 1, 'N': 0};
+   ret.getDefaultMaxSlot = function(rarity) {
+      return (DEFAULT_MAX_SLOT[rarity] || 0);
+   };
+   ret.getDefaultMinSlot = function(rarity) {
+      return (DEFAULT_MIN_SLOT[rarity] || 0);
+   };
    return ret;
 })();
 
@@ -982,24 +1034,37 @@ var LLUnit = {
       LLUnit.changeavatar('avatar' + n, cardid, mezame);
    },
 
-   calculate: function (docalculate, addRequests) {
+   calculate: function (docalculate, cardids, addRequests) {
       var requests = [];
       var i;
-      for (i = 0; i < 9; i++) {
-         var cardid = document.getElementById('cardid' + i).value;
-         if (cardid) {
-            requests.push(LLCardData.getDetailedData(cardid));
+      var uniqueCardids = {};
+      if (!cardids) {
+         for (i = 0; i < 9; i++) {
+            var cardid = document.getElementById('cardid' + i).value;
+            if (cardid && uniqueCardids[cardid] === undefined) {
+               requests.push(LLCardData.getDetailedData(cardid));
+               uniqueCardids[cardid] = 1;
+            }
+         }
+      } else {
+         for (i = 0; i < cardids.length; i++) {
+            var cardid = cardids[i];
+            if (cardid && uniqueCardids[cardid] === undefined) {
+               requests.push(LLCardData.getDetailedData(cardid));
+               uniqueCardids[cardid] = 1;
+            }
          }
       }
       if (addRequests) {
+         var cardRequestCount = requests.length;
          var extraResults = [];
          for (i = 0; i < addRequests.length; i++) {
             requests.push(addRequests[i]);
             extraResults.push(undefined);
          }
          LoadingUtil.start(requests, function (data, index, result) {
-            if (index < 9) result[parseInt(data.id)] = data;
-            else extraResults[index-9] = data
+            if (index < cardRequestCount) result[parseInt(data.id)] = data;
+            else extraResults[index-cardRequestCount] = data
          }).then(function (cards) {
             docalculate(cards, extraResults);
          }, defaultHandleFailedRequest);
@@ -1010,9 +1075,12 @@ var LLUnit = {
       }
    },
 
-   changecenter: function () {
-      var cardid = parseInt(document.getElementById("cardid4").value)
-      if (cardid == "") return;
+   changecenter: function (cardid) {
+      if (cardid === undefined) {
+         cardid = document.getElementById("cardid4").value;
+      }
+      if (!cardid) return;
+      cardid = parseInt(cardid);
       LoadingUtil.startSingle(LLCardData.getDetailedData(cardid)).then(function(card) {
          document.getElementById("bonus").value = card["attribute"]
          document.getElementById("percentage").value = card["Cskillpercentage"]
@@ -1736,6 +1804,7 @@ var LLSisGem = (function () {
    proto.isEffectRangeSelf = function () { return this.effect_range == EFFECT_RANGE.SELF; };
    proto.isEffectRangeAll = function () { return this.effect_range == EFFECT_RANGE.ALL; };
    proto.isSkillGem = function () { return this.skill_mul || this.heal_mul; };
+   proto.isAccuracyGem = function () { return this.ease_attr_mul; };
    proto.isValid = function () {
       if (this.per_grade && !this.grade) return false;
       if (this.per_member) {
@@ -1948,7 +2017,6 @@ var LLSkill = (function () {
 var LLMember = (function() {
    var int_attr = ["cardid", "smile", "pure", "cool", "skilllevel", "maxcost"];
    var MIC_RATIO = [0, 5, 11, 24, 40, 0]; //'UR': 40, 'SSR': 24, 'SR': 11, 'R': 5, 'N': 0
-   var DEFAULT_MAX_SLOT = {'UR': 8, 'SSR': 6, 'SR': 4, 'R': 2, 'N': 1};
    function LLMember_cls(v) {
       v = v || {};
       var i;
@@ -1981,6 +2049,15 @@ var LLMember = (function() {
          if (this.gems[i].isSkillGem()) return 1;
       }
       return 0;
+   };
+   proto.getAccuracyGemFactor = function () {
+      var factor = 1;
+      for (var i = 0; i < this.gems.length; i++) {
+         if (this.gems[i].isAccuracyGem()) {
+            factor = factor * (1+this.gems[i].effect_value/100);
+         }
+      }
+      return factor;
    };
    proto.empty = function () {
       return (!this.cardid) || (this.cardid == '0');
@@ -2050,6 +2127,7 @@ var LLMember = (function() {
                'cool': baseAttr.cool + bonusAttr.cool
             };
             this.attrStrength = this.finalAttr[mapcolor];
+            this.attrStrengthWithAccuracy = Math.ceil(this.attrStrength * this.getAccuracyGemFactor());
          }
       }
       this.cumulativeCSkillBonus = cumulativeCSkillBonus;
@@ -2173,6 +2251,7 @@ var LLSimulateContext = (function() {
          var skillRequire = skillDetail.require;
          var targets;
          var neverTrigger = false;
+         // 属性同步技能可带来的属性变化量
          if (effectType == LLConst.SKILL_EFFECT_SYNC) {
             targets = getTargetMembers(this.members, curMember.card.effecttarget, i);
             // 无同步对象, 不会触发
@@ -2181,6 +2260,7 @@ var LLSimulateContext = (function() {
          } else {
             this.syncTargets.push(undefined);
          }
+         // 属性提升技能可带来的属性提升量
          if (effectType == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
             targets = getTargetMembers(this.members, curMember.card.effecttarget);
             var baseValue = 0;
@@ -2579,9 +2659,11 @@ var LLTeam = (function() {
       var attrStrength = [];
       var finalAttr = {'smile':0, 'pure':0, 'cool':0};
       var bonusAttr = {'smile':0, 'pure':0, 'cool':0};
+      var totalAttrWithAccuracy = 0;
       for (i = 0; i < 9; i++) {
          var curMember = this.members[i];
          var curAttrStrength = curMember.cumulativeAttrStrength[0];
+         totalAttrWithAccuracy += curMember.attrStrengthWithAccuracy;
          for (j = 0; j < 9; j++) {
             var jMember = this.members[j];
             curAttrStrength += jMember.cumulativeAttrStrength[i+1] - jMember.cumulativeAttrStrength[i];
@@ -2605,6 +2687,7 @@ var LLTeam = (function() {
       this.attrDebuff = attrDebuff;
       this.finalAttr = finalAttr;
       this.bonusAttr = bonusAttr;
+      this.totalAttrWithAccuracy = totalAttrWithAccuracy;
       // total
       this.totalWeight = mapdata.totalWeight;
       this.totalAttrStrength = totalAttrStrength;
@@ -2902,7 +2985,7 @@ var LLTeam = (function() {
                   //if (perfectScoreUp + env.totalPerfectScoreUp > LLConst.SKILL_LIMIT_PERFECT_SCORE_UP) {
                   //   perfectScoreUp = LLConst.SKILL_LIMIT_PERFECT_SCORE_UP - env.totalPerfectScoreUp;
                   //}
-                  var baseAttribute = this.finalAttr[mapdata.attribute] + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
+                  var baseAttribute = (isAccuracyState ? this.totalAttrWithAccuracy : this.finalAttr[mapdata.attribute]) + env.effects[LLConst.SKILL_EFFECT_ATTRIBUTE_UP];
                   // note position 数值1~9, 从右往左数
                   var baseNoteScore = baseAttribute/100 * curNote.factor * accuracyBonus * memberBonusFactor[9-curNote.note.position] * LLConst.getComboScoreFactor(env.currentCombo) + comboFeverScore + perfectScoreUp;
                   // 点击得分加成对PP分也有加成效果
@@ -4165,22 +4248,22 @@ var LLSaveStorageComponent = (function () {
    var toggleIncludedClass = 'btn btn-success';
    var toggleExcludedClass = 'btn btn-default';
 
-  function loadStorageJSON() {
-    var json;
-    try {
-      json = JSON.parse(localStorage.getItem(localStorageKey));
-    } catch (e) {
-      json = {};
-    }
-    if (json == null || json === '') {
-      json = {};
-    }
-    return json;
-  }
+   function loadStorageJSON() {
+      var json;
+      try {
+         json = JSON.parse(localStorage.getItem(localStorageKey));
+      } catch (e) {
+         json = {};
+      }
+      if (json == null || json === '') {
+         json = {};
+      }
+      return json;
+   }
 
-  function saveStorageJSON(json) {
-    localStorage.setItem(localStorageKey, JSON.stringify(json));
-  }
+   function saveStorageJSON(json) {
+      localStorage.setItem(localStorageKey, JSON.stringify(json));
+   }
 
    // controller
    // {
@@ -4348,7 +4431,7 @@ var LLDataVersionSelectorComponent = (function () {
    var createElement = LLUnit.createElement;
    var versionSelectOptions = [
       {'value': 'latest', 'text': '日服最新'},
-      {'value': 'cn', 'text': '20181021 (兼容国服)'},
+      {'value': 'cn', 'text': '20181021'},
       {'value': 'mix', 'text': '混合（1763号卡开始为日服数据）'}
    ];
    function createVersionSelector(controller) {
@@ -4425,7 +4508,7 @@ var LLScoreDistributionParameter = (function () {
       ['触发条件: 连锁', '不支持', '支持'],
       ['技能效果: 回血, 加分', '支持', '支持'],
       ['技能效果: 小判定, 大判定, 提升技能发动率, repeat, <br/>perfect分数提升, combo fever, 技能等级提升<br/>属性同步, 属性提升', '不支持', '支持'],
-      ['宝石: 诡计', '不支持', '不支持'],
+      ['宝石: 诡计', '不支持', '支持'],
       ['溢出奶, 完美判', '不支持', '不支持']
    ];
    // controller
@@ -4658,6 +4741,583 @@ var LLScoreDistributionChart = (function () {
       this.hide = function() { baseComponent.hide(); }
    }
    var cls = LLScoreDistributionChart_cls;
+   return cls;
+})();
+
+var LLTeamComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var gemNumOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '200', 'text': '200'},
+      {'value': '450', 'text': '450'},
+      {'value': '650', 'text': '650'},
+      {'value': '1400', 'text': '1400'},
+      {'value': '1600', 'text': '1600'},
+      {'value': '1850', 'text': '1850'},
+      {'value': '2050', 'text': '2050'}
+   ];
+   var gemSinglePercentOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '0.1', 'text': '10%'},
+      {'value': '0.16', 'text': '16%'},
+      {'value': '0.26', 'text': '26%'},
+      {'value': '0.28', 'text': '28%'},
+      {'value': '0.38', 'text': '38%'},
+      {'value': '0.44', 'text': '44%'}
+   ];
+   var gemAllPercentOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '0.018', 'text': '1.8%'},
+      {'value': '0.024', 'text': '2.4%'},
+      {'value': '0.04', 'text': '4.0%'},
+      {'value': '0.042', 'text': '4.2%'}
+   ];
+   var gemYesNoOptions = [
+      {'value': '0', 'text': '无'},
+      {'value': '1', 'text': '有'}
+   ];
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function makeInputCreator(options, converter) {
+      return function(controller) {
+         var inputElement = createElement('input', options);
+         var inputComponent = new LLValuedComponent(inputElement);
+         controller.get = function() {
+            if (converter) {
+               return converter(inputComponent.get());
+            } else {
+               return inputComponent.get();
+            }
+         };
+         controller.set = function(v) { inputComponent.set(v); };
+         return [inputElement];
+      };
+   }
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function skillLevelCreator(controller) {
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputComponent = new LLValuedComponent(inputElement);
+      controller.get = function() {
+         return parseInt(inputComponent.get());
+      };
+      controller.set = function(v) { inputComponent.set(v); };
+      return ['Lv', inputElement];
+   }
+   // controller
+   // {
+   //    getMaxSlot: function()
+   //    setMaxSlot: function(value)
+   //    getUsedSlot: function()
+   //    setUsedSlot: function(value)
+   // }
+   function slotCreator(controller) {
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputComponent = new LLValuedComponent(inputElement);
+      var textElement = createElement('span', {'innerHTML': '0'});
+      var curUsedSlot = 0;
+      var updateColor = function() {
+         var curMaxSlot = controller.getMaxSlot();
+         if (curUsedSlot == curMaxSlot) {
+            textElement.style.color = '';
+         } else if (curUsedSlot >= curMaxSlot) {
+            textElement.style.color = 'red';
+         } else {
+            textElement.style.color = 'blue';
+         }
+      };
+      inputComponent.onValueChange = updateColor;
+      controller.getMaxSlot = function() { return parseInt(inputComponent.get()); };
+      controller.setMaxSlot = function(v) { inputComponent.set(v); };
+      controller.getUsedSlot = function() { return curUsedSlot; };
+      controller.setUsedSlot = function(v) {
+         if (curUsedSlot != v) {
+            curUsedSlot = v;
+            textElement.innerHTML = v;
+            updateColor();
+         }
+      };
+      return [textElement, '/', inputElement];
+   }
+   // controller
+   // {
+   //    get: function()
+   //    set: function(value)
+   // }
+   function makeSelectCreator(selOptions, valOptions, valueChangeFunc, converter) {
+      return function(controller, i) {
+         var sel = createElement('select', selOptions);
+         var selComp = new LLSelectComponent(sel);
+         selComp.setOptions(valOptions);
+         selComp.onValueChange = function (v) {
+            valueChangeFunc && valueChangeFunc(i, v);
+         };
+         controller.get = function() {
+            if (converter) {
+               return converter(selComp.get());
+            } else {
+               return selComp.get();
+            }
+         };
+         controller.set = function(v) { selComp.set(v); }
+         return [sel];
+      }
+   }
+   function makeButtonCreator(text, clickFunc) {
+      return function(controller, i) {
+         return [createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': text+(i+1)}, undefined, {'click': function(){clickFunc(i);}})];
+      };
+   }
+   // parentController
+   // {
+   //   getMember: callback function(i)
+   //   setMember: callback function(i, value)
+   //   getSwapper: callback function()
+   // }
+   function makeSwapCreator(parentController) {
+      // controller
+      // {
+      //   startSwapping: function()
+      //   finishSwapping: function(value)
+      // }
+      return function(controller, i) {
+         var bSwapping = false;
+         var buttonElement = createElement('button', {'type': 'button', 'className': 'btn btn-default', 'innerHTML': '换位'+(i+1)}, undefined, {'click': function() {
+            var swapper = parentController.getSwapper();
+            if (swapper) swapper.onSwap(controller);
+            if (i == 4 && parentController.onCenterChanged) parentController.onCenterChanged();
+         }});
+         controller.startSwapping = function() {
+            buttonElement.innerHTML = '选择';
+            buttonElement.className = 'btn btn-primary btn-block';
+            bSwapping = true;
+            return parentController.getMember(i);
+         };
+         controller.finishSwapping = function(v) {
+            if (bSwapping) {
+               buttonElement.innerHTML = '换位' + (i+1);
+               buttonElement.className = 'btn btn-default btn-block';
+               bSwapping = false;
+            }
+            var ret = parentController.getMember(i);
+            parentController.setMember(i, v);
+            return ret;
+         };
+         return  [buttonElement];
+      };
+   }
+   // controller
+   // {
+   //    update: function(cardid, mezame)
+   //    getCardId: function()
+   //    getMezame: function()
+   // }
+   function avatarCreator(controller) {
+      var imgElement = createElement('img', {'src': '/static/null.png'});
+      var curCardid = undefined;
+      var curMezame = undefined;
+      controller.update = function(cardid, mezame) {
+         cardid = parseInt(cardid || 0);
+         mezame = parseInt(mezame || 0);
+         if (cardid != curCardid || mezame != curMezame) {
+            curCardid = cardid;
+            curMezame = mezame;
+            LLUnit.changeavatare(imgElement, cardid, mezame);
+         }
+      };
+      controller.getCardId = function() { return curCardid; };
+      controller.getMezame = function() { return curMezame; };
+      return [imgElement];
+   }
+   // controller
+   // {
+   //    set: function(value)
+   //    get: function()
+   //    reset: function()
+   // }
+   function textCreator(controller) {
+      var textElement = createElement('span');
+      var curValue = '';
+      controller.set = function(v) {
+         if (curValue !== v) {
+            curValue = v;
+            textElement.innerHTML = v;
+         }
+      };
+      controller.get = function() { return curValue; };
+      controller.reset = function() { controller.set(''); };
+      return [textElement];
+   }
+   // controller
+   // {
+   //    setColor: function(color)
+   //    :textCreator
+   // }
+   function textWithColorCreator(controller) {
+      var ret = textCreator(controller);
+      controller.setColor = function(c) { ret[0].style.color = c; };
+      return ret;
+   }
+   function makeTextCreator(controller, getConverter, setConverter, defaultValue) {
+      if (defaultValue === undefined) defaultValue = '';
+      return function (controller) {
+         var textElement = createElement('span');
+         var curValue = defaultValue;
+         if (setConverter) {
+            controller.set = function(v) {
+               if (curValue !== v) {
+                  curValue = v;
+                  textElement.innerHTML = setConverter(v);
+               }
+            };
+         } else {
+            controller.set = function(v) {
+               if (curValue !== v) {
+                  curValue = v;
+                  textElement.innerHTML = v;
+               }
+            };
+         }
+         if (getConverter) {
+            controller.get = function() { return getConverter(curValue); };
+         } else {
+            controller.get = function() { return curValue; };
+         }
+         controller.reset = function() { controller.set(defaultValue); };
+         return [textElement];
+      };
+   }
+   // controller
+   // {
+   //    setTooltip: function(value)
+   //    :textCreator
+   // }
+   function textWithTooltipCreator(controller) {
+      var ret = textCreator(controller);
+      var tooltipContent = createElement('span', {'className': 'tooltiptext'});
+      var tooltipElement = createElement('span', {'className': 'lltooltip llsup'}, ['(*)', tooltipContent]);
+      var tooltipComponent = new LLComponentBase(tooltipElement);
+      tooltipComponent.hide();
+      ret.push(tooltipElement);
+      controller.setTooltip = function(v) {
+         if (v === undefined) {
+            tooltipComponent.hide();
+         } else {
+            tooltipContent.innerHTML = v;
+            tooltipComponent.show();
+         }
+      };
+      return ret;
+   }
+   // controller
+   // {
+   //    headColor: optional config
+   //    cellColor: optional config
+   //    fold: optional callback function()
+   //    unfold: optional callback function()
+   //    cells[0-8]: cell controllers
+   //    show: function()
+   //    hide: function()
+   //    toggleFold: optional function()
+   // }
+   function createRowFor9(head, cellCreator, controller) {
+      var headElement;
+      if (controller.fold) {
+         var arrowSpan = createElement('span', {'className': 'tri-down'});
+         var textSpan = createElement('span', {'innerHTML': head});
+         var visible = true;
+         var toggleFold = function () {
+            if (visible) {
+               controller.fold();
+               arrowSpan.className = 'tri-right';
+               visible = false;
+            } else {
+               controller.unfold();
+               arrowSpan.className = 'tri-down';
+               visible = true;
+            }
+         };
+         headElement = createElement('th', {'scope': 'row'}, [arrowSpan, textSpan], {
+            'click': toggleFold
+         });
+         headElement.style.cursor = 'pointer';
+         controller.toggleFold = toggleFold;
+      } else {
+         headElement = createElement('th', {'scope': 'row', 'innerHTML': head});
+      }
+      if (controller.headColor) {
+         headElement.style.color = controller.headColor;
+      }
+      var cells = [headElement];
+      var cellControllers = [];
+      for (var i = 0; i < 9; i++) {
+         var cellController = {};
+         var tdElement = createElement('td', undefined, cellCreator(cellController, i));
+         if (controller.cellColor) {
+            tdElement.style.color = controller.cellColor;
+         }
+         cells.push(tdElement);
+         cellControllers.push(cellController);
+      }
+      var rowElement = createElement('tr', undefined, cells);
+      var rowComponent = new LLComponentBase(rowElement);
+      controller.cells = cellControllers;
+      controller.show = function(){ rowComponent.show(); }
+      controller.hide = function(){ rowComponent.hide(); }
+      return rowElement;
+   }
+   // make getXXXs() and setXXXs(val) functions
+   function makeGet9Function(method) {
+      return function() {
+         var ret = [];
+         for (var i = 0; i < 9; i++) {
+            ret.push(method.call(this, i));
+         }
+         return ret;
+      };
+   }
+   function makeSet9Function(method) {
+      return function(val) {
+         if (!val) val = [];
+         for (var i = 0; i < 9; i++) {
+            method.call(this, i, val[i]);
+         }
+      };
+   }
+   function makeHighlightMinFunction(cells) {
+      return function(arr) {
+         var minVal, i;
+         for (i = 0; i < arr.length; i++) {
+            if (i == 0 || arr[i] < minVal) minVal = arr[i];
+            cells[i].set(arr[i]);
+         }
+         for (i = 0; i < arr.length; i++) {
+            cells[i].setColor((arr[i] == minVal) ? 'red' : '');
+         }
+      };
+   }
+   // controller
+   // {
+   //    onPutCardClicked: callback function(i)
+   //    onCenterChanged: callback function()
+   //    putMember: function(i, member)
+   //      member: {main, smile, pure, cool, skilllevel(1-8), mezame(0/1), cardid, maxcost}
+   //    setMember: function(i, member) alias putMember
+   //    setMembers: function(members)
+   //    getMember(i), getMembers()
+   //    getCardId(i), getCardIds()
+   //    getWeight(i), getWeights(), setWeight(i,w), setWeights(i,w)
+   //    setStrengthAttribute(i,s), setStrengthAttributes(s)
+   //    setStrengthDebuff(i,s), setStrengthDebuffs(s)
+   //    setStrengthCardTheories(s)
+   //    setStrengthTotalTheories(s)
+   //    setStrengthSkillTheory(i,s,strengthSupported)
+   //    setHeal(i,s)
+   //    setSwapper: function(swapper)
+   //    getSwapper: function()
+   //    saveData: function()
+   //    loadData: function(data)
+   // }
+   function createTeamTable(controller) {
+      var rows = [];
+      var controllers = {
+         'weight': {},
+         'avatar': {},
+         'info': {'owning': ['info_name', 'skill_trigger', 'skill_effect']},
+         'info_name': {},
+         'skill_trigger': {},
+         'skill_effect': {},
+         'smile': {'headColor': 'red', 'cellColor': 'red', 'memberKey': 'smile', 'memberDefault': 0},
+         'pure': {'headColor': 'green', 'cellColor': 'green', 'memberKey': 'pure', 'memberDefault': 0},
+         'cool': {'headColor': 'blue', 'cellColor': 'blue', 'memberKey': 'cool', 'memberDefault': 0},
+         'skill_level': {'memberKey': 'skilllevel'},
+         'slot': {'owning': ['gem_num', 'gem_single_percent', 'gem_all_percent', 'gem_score', 'gem_acc', 'gem_member', 'gem_nonet']},
+         'gem_num': {'memberKey': 'gemnum'},
+         'gem_single_percent': {'memberKey': 'gemsinglepercent'},
+         'gem_all_percent': {'memberKey': 'gemallpercent'},
+         'gem_score': {'memberKey': 'gemskill'},
+         'gem_acc': {'memberKey': 'gemacc'},
+         'gem_member': {'memberKey': 'gemmember'},
+         'gem_nonet': {'memberKey': 'gemnonet'},
+         'str_attr': {},
+         'str_skill_theory': {},
+         'str_card_theory': {},
+         'str_debuff': {},
+         'str_total_theory': {},
+         'heal': {},
+      };
+      var cardsBrief = new Array(9);
+      var doFold = function() {
+         for (var i = 0; i < this.owning.length; i++) {
+            controllers[this.owning[i]].hide();
+         }
+      };
+      var doUnfold = function() {
+         for (var i = 0; i < this.owning.length; i++) {
+            controllers[this.owning[i]].show();
+         }
+      };
+      var doSetByMember = function(i, member) {
+         if (member[this.memberKey] !== undefined) {
+            this.cells[i].set(member[this.memberKey]);
+         } else if (this.memberDefault !== undefined) {
+            this.cells[i].set(this.memberDefault);
+         }
+      };
+      var doSetToMember = function(i, member) {
+         member[this.memberKey] = this.cells[i].get();
+      };
+      var calcSlot = function(i) {
+         var result = 0;
+         result += LLSisGem.parseSADDSlot(controllers.gem_num.cells[i].get());
+         result += LLSisGem.parseSMULSlot(controllers.gem_single_percent.cells[i].get()*100);
+         result += LLSisGem.parseAMULSlot(controllers.gem_all_percent.cells[i].get()*100);
+         result += controllers.gem_score.cells[i].get()*4;
+         result += controllers.gem_acc.cells[i].get()*4;
+         result += controllers.gem_member.cells[i].get()*4;
+         result += controllers.gem_nonet.cells[i].get()*4;
+         controllers.slot.cells[i].setUsedSlot(result);
+      };
+      for (var i in controllers) {
+         if (controllers[i].owning) {
+            controllers[i].fold = doFold;
+            controllers[i].unfold = doUnfold;
+         }
+         if (controllers[i].memberKey) {
+            controllers[i].setByMember = doSetByMember;
+            controllers[i].setToMember = doSetToMember;
+         }
+      }
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control', 'value': '0'};
+      var selConfig = {'className': 'form-control'};
+      rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
+      rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
+         controller.onPutCardClicked && controller.onPutCardClicked(i);
+         if (i == 4 && controller.onCenterChanged) controller.onCenterChanged();
+      }), {}));
+      rows.push(createRowFor9('卡片', avatarCreator, controllers.avatar));
+      rows.push(createRowFor9('基本信息', textCreator, controllers.info));
+      rows.push(createRowFor9('名字', textCreator, controllers.info_name));
+      rows.push(createRowFor9('技能条件', textCreator, controllers.skill_trigger));
+      rows.push(createRowFor9('技能类型', textCreator, controllers.skill_effect));
+      rows.push(createRowFor9('smile', makeInputCreator(number3Config, parseInt), controllers.smile));
+      rows.push(createRowFor9('pure', makeInputCreator(number3Config, parseInt), controllers.pure));
+      rows.push(createRowFor9('cool', makeInputCreator(number3Config, parseInt), controllers.cool));
+      rows.push(createRowFor9('技能等级', skillLevelCreator, controllers.skill_level));
+      rows.push(createRowFor9('使用槽数', slotCreator, controllers.slot));
+      rows.push(createRowFor9('单体数值', makeSelectCreator(selConfig, gemNumOptions, calcSlot, parseInt), controllers.gem_num));
+      rows.push(createRowFor9('单体百分比', makeSelectCreator(selConfig, gemSinglePercentOptions, calcSlot), controllers.gem_single_percent));
+      rows.push(createRowFor9('全体百分比', makeSelectCreator(selConfig, gemAllPercentOptions, calcSlot), controllers.gem_all_percent));
+      rows.push(createRowFor9('奶/分宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_score));
+      rows.push(createRowFor9('判定宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_acc));
+      rows.push(createRowFor9('个人宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_member));
+      rows.push(createRowFor9('九重奏宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_nonet));
+      rows.push(createRowFor9('换位', makeSwapCreator(controller), {}));
+      rows.push(createRowFor9('属性强度', textCreator, controllers.str_attr));
+      rows.push(createRowFor9('技能强度（理论）', textWithTooltipCreator, controllers.str_skill_theory));
+      rows.push(createRowFor9('卡强度（理论）', textWithColorCreator, controllers.str_card_theory));
+      rows.push(createRowFor9('异色异团惩罚', textCreator, controllers.str_debuff));
+      rows.push(createRowFor9('实际强度（理论）', textWithColorCreator, controllers.str_total_theory));
+      rows.push(createRowFor9('回复', textCreator, controllers.heal));
+
+      controllers.info.toggleFold();
+
+      controller.putMember = function(i, member) {
+         if (!member) member = {};
+         for (var k in controllers) {
+            if (controllers[k].setByMember) {
+               controllers[k].setByMember(i, member);
+            }
+         }
+         controllers.avatar.cells[i].update(member.cardid, member.mezame);
+         var cardid = controllers.avatar.cells[i].getCardId();
+         var cardbrief = undefined;
+         if (cardid) {
+            cardbrief = ((LLCardData && LLCardData.getCachedBriefData()) || {})[cardid];
+         }
+         cardsBrief[i] = cardbrief;
+         if (cardbrief) {
+            controllers.info.cells[i].set(cardbrief.attribute);
+            controllers.info_name.cells[i].set(cardbrief.name);
+            controllers.skill_trigger.cells[i].set(LLConst.getSkillTriggerText(cardbrief.triggertype));
+            controllers.skill_effect.cells[i].set(LLConst.getSkillEffectText(cardbrief.skilleffect));
+         } else {
+            controllers.info.cells[i].reset();
+            controllers.info_name.cells[i].reset();
+            controllers.skill_trigger.cells[i].reset();
+            controllers.skill_effect.cells[i].reset();
+         }
+         if (member.maxcost !== undefined) {
+            controllers.slot.cells[i].setMaxSlot(parseInt(member.maxcost));
+         } else if (cardbrief && cardbrief.rarity) {
+            controllers.slot.cells[i].setMaxSlot(LLConst.getDefaultMinSlot(cardbrief.rarity));
+         }
+         if (i == 4 && controller.onCenterChanged) controller.onCenterChanged();
+      };
+      controller.setMember = controller.putMember;
+      controller.setMembers = makeSet9Function(controller.setMember);
+      controller.getMember = function(i) {
+         var retMember = {};
+         for (var k in controllers) {
+            if (controllers[k].setToMember) {
+               controllers[k].setToMember(i, retMember);
+            }
+         }
+         retMember.cardid = controllers.avatar.cells[i].getCardId();
+         retMember.mezame = controllers.avatar.cells[i].getMezame();
+         retMember.maxcost = controllers.slot.cells[i].getMaxSlot();
+         return retMember;
+      };
+      controller.getMembers = makeGet9Function(controller.getMember);
+      controller.getCardId = function(i) { return controllers.avatar.cells[i].getCardId(); };
+      controller.getCardIds = makeGet9Function(controller.getCardId);
+      controller.getWeight = function(i) { return controllers.weight.cells[i].get(); };
+      controller.getWeights = makeGet9Function(controller.getWeight);
+      controller.setWeight = function(i, w) { controllers.weight.cells[i].set(w); };
+      controller.setWeights = makeSet9Function(controller.setWeight);
+      controller.setStrengthAttribute = function(i, str) { controllers.str_attr.cells[i].set(str); };
+      controller.setStrengthAttributes = makeSet9Function(controller.setStrengthAttribute);
+      controller.setStrengthDebuff = function(i, str) { controllers.str_debuff.cells[i].set(-str); };
+      controller.setStrengthDebuffs = makeSet9Function(controller.setStrengthDebuff);
+      controller.setStrengthCardTheories = makeHighlightMinFunction(controllers.str_card_theory.cells);
+      controller.setStrengthTotalTheories = makeHighlightMinFunction(controllers.str_total_theory.cells);
+      controller.setStrengthSkillTheory = function(i, str, strengthSupported) {
+         controllers.str_skill_theory.cells[i].set(str);
+         controllers.str_skill_theory.cells[i].setTooltip(strengthSupported ? undefined : '该技能暂不支持理论强度计算');
+      };
+      controller.setHeal = function(i, heal) { controllers.heal.cells[i].set(heal); };
+      var swapper = new LLSwapper();
+      controller.setSwapper = function(sw) { swapper = sw; };
+      controller.getSwapper = function(sw) { return swapper; };
+      controller.saveData = controller.getMembers;
+      controller.loadData = controller.setMembers;
+      return createElement('table', {'className': 'table table-bordered table-hover table-condensed team-table'}, [
+         createElement('tbody', undefined, rows)
+      ]);
+   }
+   // LLTeamComponent
+   // {
+   //    callbacks:
+   //       onPutCardClicked: function(i)
+   //       onCenterChanged: function()
+   //    :createTeamTable
+   //    :LLSaveLoadJsonMixin
+   // }
+   function LLTeamComponent_cls(id, callbacks) {
+      var element = LLUnit.getElement(id);
+      element.appendChild(createTeamTable(this));
+      this.onPutCardClicked = callbacks && callbacks.onPutCardClicked;
+      this.onCenterChanged = callbacks && callbacks.onCenterChanged;
+   }
+   var cls = LLTeamComponent_cls;
+   var proto = cls.prototype;
+   LLSaveLoadJsonMixin(proto);
    return cls;
 })();
 

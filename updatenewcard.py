@@ -164,6 +164,11 @@ if __name__ == "__main__":
             if csecondskill:
                 card['Csecondskillattribute'] = csecondskill[3]
                 card['Csecondskilllimit'] = csecondskill[1]
+            else:
+                if card.has_key('Csecondskillattribute'):
+                    del card['Csecondskillattribute']
+                if card.has_key('Csecondskilllimit'):
+                    del card['Csecondskilllimit']
 
         for delkey in ['cardpath','avatarpath','smallcardpath','navipath','cardpluspath','avatarpluspath','smallcardpluspath','navipluspath']:
             if card.has_key(delkey):
