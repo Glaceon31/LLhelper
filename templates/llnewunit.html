@@ -19,7 +19,7 @@
          width: 50px;
       }
       input[type="number"][size="1"] {
-         width: 20px;
+         width: 40px;
       }
       input::-webkit-inner-spin-button {
          -webkit-appearance: none;
@@ -70,6 +70,7 @@
             var memberData = {
                'cardid': comp_cardselector.getCardId(),
                'mezame': (document.getElementById("mezame").checked ? 1 : 0),
+               'hp': parseInt(document.getElementById("hp").value),
                'smile': parseInt(document.getElementById("smile").value),
                'pure': parseInt(document.getElementById("pure").value),
                'cool': parseInt(document.getElementById("cool").value),
@@ -315,6 +316,8 @@
             llmap.perfect = Math.floor(parseFloat(distParam.perfect_percent || 0)/100 * llmap.combo);
             llmap.speed = distParam.speed;
             llmap.combo_fever_pattern = distParam.combo_fever_pattern;
+            llmap.over_heal_pattern = distParam.over_heal_pattern;
+            llmap.perfect_accuracy_pattern = distParam.perfect_accuracy_pattern;
             err = llteam.simulateScoreDistribution(llmap, extraData[0], parseInt(distParam.count));
          } else {
             err = '未知的得分分布';
@@ -351,6 +354,8 @@
       }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
+      document.getElementById('averageaccuracyncoverage').innerHTML = LLUnit.numberToPercentString(llteam.averageAccuracyNCoverage);
+      document.getElementById('totalhp').innerHTML = llteam.totalHP;
 
       var cardStrengthList = [], totalStrengthList = [];
       for (var i=0;i<9;i++){
@@ -457,6 +462,7 @@
    </select>的<select id="percentage" name="percentage">
       <option value=0>0</option>
       <option value=3>3</option>
+      <option value=4>4</option>
       <option value=6 SELECTED>6</option>
       <option value=7>7</option>
       <option value=9>9</option>
@@ -499,6 +505,7 @@
    </select>的<select id="percentage2" name="percentage2">
       <option value=0 SELECTED>0</option>
       <option value=3>3</option>
+      <option value=4>4</option>
       <option value=6>6</option>
       <option value=7>7</option>
       <option value=9>9</option>
@@ -554,13 +561,12 @@
 	<td id="resultcool"></td>
 </tr>
 </table>
+卡组HP:<nospan id="totalhp"></nospan><br>
 卡组强度:<nospan id="resultstrength"></nospan><br>
 <div id="resultmic"></div>
 期望得分:<nospan id="averagescore"></nospan><br>
-
 期望回复:<nospan id="averageheal"></nospan><br>
-
-<!--期望判定覆盖率：<nospan id="averageaccuracy"></nospan><br>-->
+期望判定覆盖率(模拟):<nospan id="averageaccuracyncoverage"></nospan><br>
 </div>
 <div id="errorresult" style="display:none;color:red"></div>
 <div id='distributionresult' style='display:none'>
