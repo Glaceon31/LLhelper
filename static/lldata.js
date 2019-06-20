@@ -816,6 +816,30 @@ var LLConst = (function () {
       }
       return false;
    };
+   ret.getMemberNamesInGroups = function (groups) {
+      if (groups === undefined) return [];
+      if (typeof(groups) == 'number') groups = [groups];
+      var ret = [];
+      for (var mkey in MEMBER_DATA) {
+         var types = MEMBER_DATA[mkey].types;
+         var matched = true;
+         for (var i = 0; i < groups.length; i++) {
+            var found = false;
+            for (var j = 0; j < types.length; j++) {
+               if (groups[i] == types[j]) {
+                  found = true;
+                  break;
+               }
+            }
+            if (!found) {
+               matched = false;
+               break;
+            }
+         }
+         if (matched) ret.push(MEMBER_DATA[mkey].name);
+      }
+      return ret;
+   };
    ret.getMemberGemList = function() { return MEMBER_GEM_LIST; };
    ret.isMemberGemExist = function(member) {
       var memberData = mGetMemberData(member);
@@ -1214,7 +1238,7 @@ var LLUnit = {
       var trigger_target = LLUnit.getTriggerTarget(card.triggertarget);
       var effect_target = LLUnit.getTriggerTarget(card.effecttarget);
       var text = LLUnit.getSkillText(effect_type, card.triggertype, effect_value, discharge_time, level_detail.require, level_detail.possibility, trigger_target, effect_target);
-      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能暂不支持强度计算)';
+      if (!LLUnit.isStrengthSupported(card)) text = text + '(该技能暂不支持理论强度计算，仅支持模拟)';
       return text;
    },
 
@@ -2273,6 +2297,7 @@ var LLSimulateContext = (function() {
       this.memberSkillOrder = [];
       this.syncTargets = []; // syncTargets[memberId] = [memberIds...]
       this.attributeUpBase = []; // attributeUpBonus[memberId] = sum{target_member.attrStrength}
+      this.chainNameBit = []; // chainNameBit[memberId][jpname] = bit
       var skillOrder = []; // [ [i, priority], ...]
       var lvupSkillPriority = 1;
       var otherSkillPriority = 2;
@@ -2283,6 +2308,7 @@ var LLSimulateContext = (function() {
       for (var i = 0; i < 9; i++) {
          var curMember = members[i];
          this.memberToTrigger.push(undefined);
+         this.chainNameBit.push(undefined);
          if ((!curMember.card.skill) || (curMember.skilleffect == 0)) continue;
          var triggerType = curMember.card.triggertype;
          var effectType = curMember.card.skilleffect;
@@ -2312,19 +2338,33 @@ var LLSimulateContext = (function() {
          }
          // 连锁发动条件
          if (triggerType == LLConst.SKILL_TRIGGER_MEMBERS) {
-            targets = getTargetMembers(this.members, curMember.card.triggertarget, i);
+            // 连锁条件是看要求的人物(例如要求μ's二年级的穗乃果的连锁卡, 要求人物为小鸟和海未)都发动过技能
+            // 而不是所有是要求的人物的卡都发动过技能
+            // 上面的例子中, 只要有任何一张鸟的卡和一张海的卡发动过技能就能触发果的连锁
             var conditionBitset = 0;
-            for (var j = 0; j < targets.length; j++) {
+            var possibleBitset = 0;;
+            var nameBits = {};
+            var names = LLConst.getMemberNamesInGroups(curMember.card.triggertarget);
+            for (var j = 0; j < names.length; j++) {
+               nameBits[names[j]] = (1 << j);
+               if (names[j] != curMember.card.jpname) {
+                  conditionBitset |= (1 << j);
+               }
+            }
+            for (var j = 0; j < members.length; j++) {
                // 持有连锁技能的卡牌不计入连锁发动条件
-               if (members[targets[j]].card.triggertype  == LLConst.SKILL_TRIGGER_MEMBERS) continue;
-               conditionBitset |= (1 << targets[j]);
+               if (members[j].card.triggertype  == LLConst.SKILL_TRIGGER_MEMBERS) continue;
+               if (nameBits[members[j].card.jpname] !== undefined) {
+                  possibleBitset |= nameBits[members[j].card.jpname];
+               }
             }
             // 无连锁对象, 不会触发
-            if (conditionBitset == 0) {
+            if ((possibleBitset & conditionBitset) != conditionBitset) {
                neverTrigger = true;
             } else {
                skillRequire = conditionBitset;
             }
+            this.chainNameBit[i] = nameBits;
          }
          if (!neverTrigger) {
             var triggerData = [i, 0, 0, 0, skillRequire, skillDetail.possibility];
@@ -2480,9 +2520,12 @@ var LLSimulateContext = (function() {
       }
       // update chain trigger
       var chainTriggers = this.triggers[LLConst.SKILL_TRIGGER_MEMBERS];
-      if (chainTriggers) {
+      if (chainTriggers && this.members[memberId].card.triggertype != LLConst.SKILL_TRIGGER_MEMBERS) {
          for (var i = 0; i < chainTriggers.length; i++) {
-            chainTriggers[i][1] |= (1 << memberId);
+            var thisNameBit = this.chainNameBit[chainTriggers[i][0]][this.members[memberId].card.jpname];
+            if (thisNameBit !== undefined) {
+               chainTriggers[i][1] |= thisNameBit;
+            }
          }
       }
       // take effect
@@ -2505,9 +2548,6 @@ var LLSimulateContext = (function() {
       } else if (skillEffect == LLConst.SKILL_EFFECT_SCORE) {
          if (this.members[realMemberId].hasSkillGem()) this.currentScore += Math.ceil(skillDetail.score * 2.5);
          else this.currentScore += skillDetail.score;
-         // 由于一帧(16ms)最多发动一次技能, 为防止爆分在某些情况下无限上分导致死循环, 加个16ms的延迟
-         this.activeSkills.push([this.currentTime + 0.016, memberId, realMemberId, skillDetail.score]);
-         this.markTriggerActive(memberId, 1);
       } else if (skillEffect == LLConst.SKILL_EFFECT_POSSIBILITY_UP) {
          // 不可叠加
          this.effects[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = skillDetail.score;
@@ -2553,7 +2593,13 @@ var LLSimulateContext = (function() {
       ret[LLConst.SKILL_TRIGGER_TIME] = makeDeltaTriggerCheck('currentTime');
       ret[LLConst.SKILL_TRIGGER_NOTE] = makeDeltaTriggerCheck('currentNote');
       ret[LLConst.SKILL_TRIGGER_COMBO] = makeDeltaTriggerCheck('currentCombo');
-      ret[LLConst.SKILL_TRIGGER_SCORE] = makeDeltaTriggerCheck('currentScore');
+      ret[LLConst.SKILL_TRIGGER_SCORE] = function(context, data) {
+         if (context.currentScore - data[1] >= data[4]) {
+            data[1] = context.currentScore - (context.currentScore % data[4]);
+            return true;
+         }
+         return false;
+      };
       ret[LLConst.SKILL_TRIGGER_PERFECT] = makeDeltaTriggerCheck('currentPerfect');
       ret[LLConst.SKILL_TRIGGER_STAR_PERFECT] = makeDeltaTriggerCheck('currentStarPerfect');
       ret[LLConst.SKILL_TRIGGER_MEMBERS] = function(context, data) {
@@ -2945,7 +2991,12 @@ var LLTeam = (function() {
          else return 0;
       });
       var maxTime = noteTriggerData[noteTriggerData.length-1].time;
-      if (mapdata.time > maxTime) maxTime = mapdata.time;
+      if (mapdata.time > maxTime + 1e-8) {
+         maxTime = mapdata.time;
+      } else {
+         // 在缺少歌曲长度数据的情况下, 留1秒空白
+         maxTime = maxTime + 1;
+      }
       var memberBonusFactor = [];
       for (i = 0; i < 9; i++) {
          memberBonusFactor.push(this.members[i].getAttrBuffFactor(mapdata.attribute, mapdata.songUnit));
@@ -2976,7 +3027,8 @@ var LLTeam = (function() {
             env.processDeactiveSkills();
             // 2. check if any skill can be activated
             var nextActiveChances = env.getNextTriggerChances();
-            while (nextActiveChances.length) {
+            var quickSkip = !nextActiveChances.length;
+            if (nextActiveChances.length) {
                for (var iChance = 0; iChance < nextActiveChances.length; iChance++) {
                   var nextActiveChance = nextActiveChances[iChance];
                   skillsActiveChanceCount[nextActiveChance]++;
@@ -2987,13 +3039,13 @@ var LLTeam = (function() {
                      env.onSkillActive(nextActiveChance);
                   }
                }
-               nextActiveChances = env.getNextTriggerChances();
             }
             // 3. move to min next time
             var minDeactiveTime = env.getMinDeactiveTime();
             var minTriggerTime = env.getMinTriggerChanceTime();
             var minNoteTime = (noteTriggerIndex < noteTriggerData.length ? noteTriggerData[noteTriggerIndex].time : undefined);
-            var minNextTime = env.totalTime;
+            // 一帧(16ms)最多发动一次技能, 所以如果下一帧可能会需要判断发动的话, 下一个最小处理时间应该是16ms之后
+            var minNextTime = (quickSkip ? env.totalTime : env.currentTime + 0.016);
             var handleNote = false;
             if (minTriggerTime !== undefined && minTriggerTime < minNextTime) {
                minNextTime = minTriggerTime;
@@ -5242,6 +5294,8 @@ var LLTeamComponent = (function () {
          'str_card_theory': {},
          'str_debuff': {},
          'str_total_theory': {},
+         'skill_active_count_sim': {'owning': ['skill_active_chance_sim']},
+         'skill_active_chance_sim': {},
          'heal': {},
       };
       var cardsBrief = new Array(9);
@@ -5318,9 +5372,12 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('卡强度（理论）', textWithColorCreator, controllers.str_card_theory));
       rows.push(createRowFor9('异色异团惩罚', textCreator, controllers.str_debuff));
       rows.push(createRowFor9('实际强度（理论）', textWithColorCreator, controllers.str_total_theory));
+      rows.push(createRowFor9('技能发动次数（模拟）', textCreator, controllers.skill_active_count_sim));
+      rows.push(createRowFor9('技能发动条件达成次数（模拟）', textCreator, controllers.skill_active_chance_sim));
       rows.push(createRowFor9('回复', textCreator, controllers.heal));
 
       controllers.info.toggleFold();
+      controllers.skill_active_count_sim.toggleFold();
 
       controller.putMember = function(i, member) {
          if (!member) member = {};
@@ -5387,8 +5444,12 @@ var LLTeamComponent = (function () {
       controller.setStrengthTotalTheories = makeHighlightMinFunction(controllers.str_total_theory.cells);
       controller.setStrengthSkillTheory = function(i, str, strengthSupported) {
          controllers.str_skill_theory.cells[i].set(str);
-         controllers.str_skill_theory.cells[i].setTooltip(strengthSupported ? undefined : '该技能暂不支持理论强度计算');
+         controllers.str_skill_theory.cells[i].setTooltip(strengthSupported ? undefined : '该技能暂不支持理论强度计算，仅支持模拟');
       };
+      controller.setSkillActiveCountSim = function(i, count) { controllers.skill_active_count_sim.cells[i].set(count === undefined ? '' : LLUnit.numberToString(count, 2)); };
+      controller.setSkillActiveCountSims = makeSet9Function(controller.setSkillActiveCountSim);
+      controller.setSkillActiveChanceSim = function(i, count) { controllers.skill_active_chance_sim.cells[i].set(count === undefined ? '' : LLUnit.numberToString(count, 2)); };
+      controller.setSkillActiveChanceSims = makeSet9Function(controller.setSkillActiveChanceSim);
       controller.setHeal = function(i, heal) { controllers.heal.cells[i].set(heal); };
       var swapper = new LLSwapper();
       controller.setSwapper = function(sw) { swapper = sw; };
