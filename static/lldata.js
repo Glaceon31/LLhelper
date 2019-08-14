@@ -887,7 +887,9 @@ var LLConst = (function () {
          return 1;
       }
       if (curHp <= maxHp*2) return 1;
-      return 1 + (Math.floor(curHp/maxHp + 1e-8)-1) * HEAL_BONUS[maxHp] / 100;
+      var bonus = (Math.floor(curHp/maxHp + 1e-8)-1) * HEAL_BONUS[maxHp];
+      if (bonus > KEYS.SKILL_LIMIT_HEAL_BONUS) bonus = KEYS.SKILL_LIMIT_HEAL_BONUS;
+      return 1 + bonus/100;
    };
 
    var SKILL_TRIGGER_TEXT = {};
@@ -3583,7 +3585,7 @@ var LLSaveData = (function () {
       if (data.length == 0) return 0;
       if (!data[0]) return 0;
       var member = data[0];
-      if (!(member.cardid && member.mezame && member.skilllevel)) return 0;
+      if (!(member.cardid && (member.mezame !== undefined) && member.skilllevel)) return 0;
       if (member.maxcost && !member.smile) return 10;
       if (data.length == 9) return 1;
       if (data.length == 10) return 2;
