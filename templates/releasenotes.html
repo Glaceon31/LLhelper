@@ -20,6 +20,13 @@
          var update_history = [
             {
                'version': LLSiteVersion.current_version,
+               'fixes': [
+                  '修复了模拟计算中溢出奶加成没有设置上限的问题，上限应为+200%',
+                  '修复了#llnewunit#页面中如果1号位的卡是未觉醒的状态时保存队伍会得到无效的队伍文件的问题'
+               ]
+            },
+            {
+               'version': 20190620,
                'features': [
                   '在#llnewunit#页面的组队界面中增加显示技能发动次数和技能发动条件达成次数信息（仅限模拟计算）'
                ],
