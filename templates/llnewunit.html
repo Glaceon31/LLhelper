@@ -233,6 +233,15 @@
       comp_cardselector.saveCookie('llnewunit_cardselector');
    }
 
+   function showErrorResult(text) {
+      document.getElementById('errorresult').innerHTML = text;
+      document.getElementById('errorresult').style.display = '';
+      document.getElementById("errorresult").scrollIntoView();
+   }
+   function hideErrorResult() {
+      document.getElementById('errorresult').style.display = 'none';
+   }
+
    function check(){
    	saveToCookie();
       LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
@@ -249,7 +258,6 @@
    function docalculate(cards, extraData) {
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
-      var atts = ['smile', 'pure', 'cool'];
       var member = comp_team.getMembers();
       var mapcenter = {};
       var llmembers = [];
@@ -265,24 +273,8 @@
       var mainatt = mapcenter['map']
 
       for (var i = 0; i < 9; i++) {
-         member[i]['card'] = cards[member[i]['cardid']];
-         var llsisgems = [];
-         llsisgems = llsisgems.concat(LLSisGem.parseSADD(member[i].gemnum, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(member[i].gemsinglepercent)*100, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(member[i].gemallpercent)*100, mainatt));
-         if (parseInt(member[i].gemskill) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
-         }
-         if (parseInt(member[i].gemacc) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
-         }
-         if (parseInt(member[i].gemmember) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
-         }
-         if (parseInt(member[i].gemnonet) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
-         }
-         member[i].gems = llsisgems;
+         member[i].card = cards[member[i].cardid];
+         member[i].gems = LLSisGem.parseMemberGems(member[i], mainatt);
          llmembers.push(new LLMember(member[i]));
       }
 
@@ -323,11 +315,10 @@
             err = '未知的得分分布';
          }
          if (err) {
-            document.getElementById('errorresult').innerHTML = err;
-            document.getElementById('errorresult').style.display = '';
+            showErrorResult(err);
          } else {
             llteam.calculatePercentileNaive();
-            document.getElementById('errorresult').style.display = 'none';
+            hideErrorResult();
          }
          var t1 = window.performance.now();
          console.debug(llteam);
@@ -350,7 +341,7 @@
       } else {
          document.getElementById('averagescore').innerHTML = llteam.averageScore;
          document.getElementById('distributionresult').style.display = 'none';
-         document.getElementById('errorresult').style.display = 'none';
+         hideErrorResult();
       }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);

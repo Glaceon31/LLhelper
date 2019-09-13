@@ -22,18 +22,24 @@
    var language = 0;
 
    var defer_onload = $.Deferred();
+   var data_mapnote = 0;
    var comp_skill = 0;
    var comp_cardselector = 0;
    var comp_gemstock = 0;
    var comp_resultmic = 0;
    var comp_distribution_chart = 0;
+   var comp_distribution_param = 0;
+   var comp_team = 0;
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
       llsong = new LLSong(songData);
+      data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_resultmic = new LLMicDisplayComponent('resultmic');
+      comp_distribution_param = new LLScoreDistributionParameter('distribution_param');
+      comp_distribution_param.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageDistParamKey));
 
       var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
          LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
@@ -45,6 +51,26 @@
          'loadTeamMember': handleLoadTeamMember,
          'loadGemStock': function(data) { if (comp_gemstock) comp_gemstock.loadData(data); }
       });
+      comp_team = new LLTeamComponent('unit-team', {
+         'onPutCardClicked': function(i) {
+            var curMain = document.getElementById("main").value;
+            var memberData = {
+               'cardid': comp_cardselector.getCardId(),
+               'mezame': (document.getElementById("mezame").checked ? 1 : 0),
+               'hp': parseInt(document.getElementById("hp").value),
+               'smile': parseInt(document.getElementById("smile").value),
+               'pure': parseInt(document.getElementById("pure").value),
+               'cool': parseInt(document.getElementById("cool").value),
+               'skilllevel': parseInt(document.getElementById("skilllevel").innerHTML)
+            };
+            memberData[curMain] += parseInt(document.getElementById("kizuna").value);
+            comp_team.putMember(i, memberData);
+         },
+         'onCenterChanged': function() {
+            LLUnit.changecenter(this.getCardId(4) || 0);
+         }
+      });
+      comp_team.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageLLNewUnitSisTeamKey));
 
       init();
 
@@ -61,29 +87,6 @@
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
 
-   pos = -1
-   function changepos(i){
-      if (pos==-1){
-         document.getElementById('pos'+String(i)).value = '选择' 
-         pos = i
-      }
-      else{
-         document.getElementById('pos'+String(pos)).value = '换位'+String(pos+1)
-         swaplist = ['cardid','mezame','main','smile','pure','cool','skilllevel','gemnum','gemsinglepercent','gemallpercent','gemskill','gemacc','gemmember','gemnonet','maxcost']
-         for (j in swaplist){
-            at = swaplist[j]
-            tmp = document.getElementById(at+String(pos)).value
-            document.getElementById(at+String(pos)).value = document.getElementById(at+String(i)).value
-            document.getElementById(at+String(i)).value = tmp
-         } 
-	 calslot(pos)
-	 calslot(i)
-         LLUnit.changeavatarn(pos)
-         LLUnit.changeavatarn(i)
-         pos = -1 
-      }
-   }
-
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
       // do not update base, secondbase, bonus, because they are set by center
@@ -98,7 +101,7 @@
       var handleTime = function(t) { document.getElementById("time").value = (t ? t : 110); };
       var handlePerfect = function(combo) { document.getElementById("perfect").value = parseInt(combo*19/20); };
       var handleStar = function() { document.getElementById("starperfect").value = 0; };
-      var handleWeight = function(w) { for (var i = 0; i < 9; i++) { document.getElementById("weight"+i).value = parseFloat(w[i]); } };
+      var handleWeight = function(w) { comp_team.setWeights(w); };
       var applyTarget = {
          'attribute': ['map', changemapcolor],
          'combo': ['combo', handlePerfect],
@@ -109,28 +112,15 @@
       llsong.applyDataOfSongWithDiff(applyTarget);
    }
 
-   function calslot(n){
-      result = 0
-      result += LLSisGem.parseSADDSlot(document.getElementById("gemnum"+String(n)).value);
-      result += LLSisGem.parseSMULSlot(parseFloat(document.getElementById("gemsinglepercent"+String(n)).value)*100);
-      result += LLSisGem.parseAMULSlot(parseFloat(document.getElementById("gemallpercent"+String(n)).value)*100);
-      result += parseInt(parseInt(document.getElementById("gemskill"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemacc"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemmember"+String(n)).value)*4)
-      result += parseInt(parseInt(document.getElementById("gemnonet"+String(n)).value)*4)
-      document.getElementById("slot"+String(n)).innerHTML = result
-   }
-
    function changeLanguage(){
       language = 1-language
       llsong.language = language;
       llsong.onSongFilterChange();
       comp_cardselector.setLanguage(language);
    }
-   
+
    function toMezame(){
-   	mezame = 1-mezame
-   	//changecolor()
+      mezame = 1-mezame
       LLUnit.applycarddata();
    }
 
@@ -149,18 +139,12 @@
       setCookie("mezame"+"unit", mezame, -1)
       comp_cardselector.deleteCookie('llnewunitsis_cardselector');
       localStorage.removeItem('llnewunitsis_gemstock');
+      LLHelperLocalStorage.clearData(LLHelperLocalStorage.localStorageLLNewUnitSisTeamKey);
       window.location.href="/llnewunitsis"
    }
 
    function makeSaveData() {
-      var member = [{}, {}, {},{},{},{},{},{},{}];
-      var saveatt = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc','gemmember','gemnonet','maxcost'];
-      for (var i=0; i<9; i++){
-         for (var j in saveatt){
-            member[i][saveatt[j]] = document.getElementById(saveatt[j]+String(i)).value
-         }
-      }
-      return new LLSaveData({'version': 102, 'team': member, 'gemstock': comp_gemstock.saveData(), 'submember': []});
+      return new LLSaveData({'version': 102, 'team': comp_team.getMembers(), 'gemstock': comp_gemstock.saveData(), 'submember': []});
    }
 
    function saveunit(){
@@ -170,23 +154,7 @@
    }
 
    function handleLoadTeamMember(teamMember) {
-      var attlist = ['smile', 'pure', 'cool', 'skilllevel', 'cardid', 'mezame', 'gemnum', 'gemsinglepercent', 'gemallpercent', 'gemskill', 'gemacc', 'gemmember','gemnonet','maxcost'];
-      for (var i = 0; i < 9; i++) {
-         var member = teamMember[i];
-         if (!member) continue;
-         for (var j in attlist) {
-            var att = attlist[j];
-            var value = 0;
-            if (member && member[att] !== undefined) value = member[att];
-            document.getElementById(att + i).value = value;
-         }
-         if (member && member.cardid) {
-            document.getElementById("main" + i).value = comp_cardselector.cards[member.cardid].attribute;
-         }
-         LLUnit.changeavatarn(i);
-         calslot(i);
-      }
-      LLUnit.changecenter();
+      comp_team.setMembers(teamMember);
       precalcu();
    }
 
@@ -236,11 +204,7 @@
    			selects[i].value = getCookie(selects[i].name+"unit");
    	}
       document.getElementById("mezame").checked = mezame
-   	for (i = 0; i < 9; i++){
-   		LLUnit.changeavatarn(i)
-         calslot(i)
-   	}
-      
+
          document.getElementById("songsearch").value = ""
          // above codes may select songs/cards/filters according to cookies, so refresh it...
          llsong.onSongFilterChange();
@@ -290,44 +254,30 @@
          return;
       }
       hideErrorResult();
-   	var inputs = document.getElementsByTagName("input");
-   	for (i in inputs){
-   		if ((inputs[i].type != "text") || (!inputs[i].name) || (inputs[i].name == "songsearch"))
-   			continue
-   		if (!isNumber(inputs[i].value)){
-   			alert("请输入数字");
-   			return false;
-   		}
-   	}
    	saveToCookie();
-      var handle_calculate = function(cards) {
-         docalculate(cards);
-         document.getElementById("result").scrollIntoView()
+      LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
+      LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageLLNewUnitSisTeamKey, comp_team.saveJson());
+      var distParam = comp_distribution_param.saveData();
+      if (distParam.type == 'sim') {
+         LLUnit.calculate(docalculate, comp_team.getCardIds(), [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
+      } else {
+         LLUnit.calculate(docalculate, comp_team.getCardIds());
       }
-      LLUnit.calculate(handle_calculate);
       return true;
    }
 
-   function docalculate(cards) {
-      var result = {};
-      var int_element = ["cardid", "smile", "pure", "cool", "skilllevel", 'gemnum', 'gemskill', 'gemacc', 'gemmember', 'gemnonet', 'maxcost'];
-      var float_element = ["weight",'gemsinglepercent','gemallpercent'];
+   function docalculate(cards, extraData) {
       var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
       var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
-      var sel_float = [];
-      var atts = ['smile', 'pure', 'cool'];
-      var member = [{}, {}, {}, {}, {}, {}, {}, {}, {}];
+      var member = comp_team.getMembers();
       var mapcenter = {};
       var llmembers = [];
-      var weights = [];
+      var weights = comp_team.getWeights();
 
       mapcenter['secondbase'] = document.getElementById('map').value
       mapcenter['secondbase2'] = document.getElementById('map').value
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
-      }
-      for (var i = 0; i < sel_float.length; i++) {
-         mapcenter[sel_float[i]] = parseFloat(document.getElementById(sel_float[i]).value);
       }
       for (var i = 0; i < sel_element.length; i++) {
          mapcenter[sel_element[i]] = document.getElementById(sel_element[i]).value;
@@ -336,34 +286,12 @@
       var mainatt = mapcenter['map']
 
       for (var i = 0; i < 9; i++) {
-         for (var j = 0; j < int_element.length; j++) {
-            member[i][int_element[j]] = parseInt(document.getElementById(int_element[j] + i.toString()).value);
-         }
-         for (var j = 0; j < float_element.length; j++) {
-            member[i][float_element[j]] = parseFloat(document.getElementById(float_element[j] + i.toString()).value);
-         }
-         member[i]['card'] = cards[member[i]['cardid']];
-         var llsisgems = [];
-         llsisgems = llsisgems.concat(LLSisGem.parseSADD(document.getElementById('gemnum'+i).value, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseSMUL(parseFloat(document.getElementById('gemsinglepercent'+i).value)*100, mainatt));
-         llsisgems = llsisgems.concat(LLSisGem.parseAMUL(parseFloat(document.getElementById('gemallpercent'+i).value)*100, mainatt));
-         if (parseInt(document.getElementById('gemskill' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.SCORE_250, {'color': mainatt}));
-         }
-         if (parseInt(document.getElementById('gemacc' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.EMUL_33, {'color': mainatt}));
-         }
-         if (parseInt(document.getElementById('gemmember' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.MEMBER_29, {'member': member[i].card.jpname}));
-         }
-         if (parseInt(document.getElementById('gemnonet' + i).value) == 1) {
-            llsisgems.push(new LLSisGem(LLSisGem.NONET_42, {'color': mainatt, 'unit':(LLConst.isMemberInGroup(member[i].card.jpname, LLConst.GROUP_MUSE) ? 'muse' : 'aqours')}));
-         }
-         member[i].gems = llsisgems;
+         member[i].card = cards[member[i].cardid];
+         member[i].gems = LLSisGem.parseMemberGems(member[i], mainatt);
          llmembers.push(new LLMember(member[i]));
-         weights.push(member[i].weight);
       }
 
+      var distParam = comp_distribution_param.saveData();
       var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
       llmap.attribute = mainatt;
       llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
@@ -374,41 +302,9 @@
       var llteam = new LLTeam(llmembers);
       if (document.getElementById('autoarm0').checked){
          // autoarm
-         var saveData = makeSaveData();
-         llteam.autoArmGem(llmap, saveData.gemStock);
+         llteam.autoArmGem(llmap, comp_gemstock.saveData());  //TODO: member gem
          for (var i = 0; i < 9; i++) {
-            var curGems = llteam.members[i].gems;
-            var sumSADD = 0;
-            var sumSMUL = 0;
-            var sumAMUL = 0;
-            var sumSKILL = 0;
-            var sumMEMBER = 0;
-            var sumNONET = 0;
-            for (var j = 0; j < curGems.length; j++) {
-               var curGem = curGems[j];
-               if (curGem.attr_add && curGem.isEffectRangeSelf()) {
-                  sumSADD += curGem.effect_value;
-               } else if (curGem.attr_mul) {
-                  if (curGem.per_member) {
-                     sumMEMBER++;
-                  } else if (curGem.per_unit) {
-                     sumNONET++;
-                  } else if (curGem.isEffectRangeSelf()) {
-                     sumSMUL += curGem.effect_value;
-                  } else {
-                     sumAMUL += Math.round(curGem.effect_value*10);
-                  }
-               } else if (curGem.isSkillGem()) {
-                  sumSKILL++;
-               }
-            }
-            document.getElementById("gemnum"+String(i)).value=String(sumSADD);
-            document.getElementById("gemsinglepercent"+String(i)).value=String(sumSMUL/100);
-            document.getElementById("gemallpercent"+String(i)).value=String(sumAMUL/1000);
-            document.getElementById("gemskill"+String(i)).value=String(sumSKILL);
-            document.getElementById("gemmember"+String(i)).value=String(sumMEMBER);
-            document.getElementById("gemnonet"+String(i)).value=String(sumNONET);
-            calslot(i);
+            comp_team.setMemberGem(i, llteam.members[i].gems);
          }
       }
       llteam.calculateAttributeStrength(llmap);
@@ -418,16 +314,26 @@
       document.getElementById('resultpure').innerHTML = llteam.finalAttr.pure + ' (+' + llteam.bonusAttr.pure + ')';
       document.getElementById('resultcool').innerHTML = llteam.finalAttr.cool + ' (+' + llteam.bonusAttr.cool + ')';
 
-      for (var i = 0; i < 9; i++) {
-         document.getElementById('attstrength'+String(i)).innerHTML = llteam.attrStrength[i];
-         document.getElementById('cardstrengthdebuff'+String(i)).innerHTML = -llteam.attrDebuff[i];
-      }
+      comp_team.setStrengthAttributes(llteam.attrStrength);
+      comp_team.setStrengthDebuffs(llteam.attrDebuff);
 
-      if (document.getElementById('distribution').checked){
+      if (distParam.type != 'no'){
          var t0 = window.performance.now();
 
          var percentiles = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99];
-         var err = llteam.calculateScoreDistribution();
+         var err;
+         if (distParam.type == 'v1') {
+            err = llteam.calculateScoreDistribution();
+         } else if (distParam.type == 'sim') {
+            llmap.perfect = Math.floor(parseFloat(distParam.perfect_percent || 0)/100 * llmap.combo);
+            llmap.speed = distParam.speed;
+            llmap.combo_fever_pattern = distParam.combo_fever_pattern;
+            llmap.over_heal_pattern = distParam.over_heal_pattern;
+            llmap.perfect_accuracy_pattern = distParam.perfect_accuracy_pattern;
+            err = llteam.simulateScoreDistribution(llmap, extraData[0], parseInt(distParam.count));
+         } else {
+            err = '未知的得分分布';
+         }
          if (err) {
             showErrorResult(err);
          } else {
@@ -435,6 +341,7 @@
             hideErrorResult();
          }
          var t1 = window.performance.now();
+         console.debug(llteam);
 
          console.debug('Elapesd time (ms): ' + (t1 - t0).toFixed(3));
          document.getElementById('averagescore').innerHTML = llteam.naiveExpection;
@@ -458,37 +365,25 @@
       }
 
       document.getElementById('averageheal').innerHTML = LLUnit.healNumberToString(llteam.averageHeal);
+      document.getElementById('averageaccuracyncoverage').innerHTML = LLUnit.numberToPercentString(llteam.averageAccuracyNCoverage);
+      document.getElementById('totalhp').innerHTML = llteam.totalHP;
 
-      var minStrength = 0, minStrengthIndex = -1;
-      var minCardStrength = 0, minCardStrengthIndex = -1;
+      var cardStrengthList = [], totalStrengthList = [];
       for (var i=0;i<9;i++){
          var curCardStrength = llteam.attrStrength[i]+llteam.avgSkills[i].strength;
          var curStrength = curCardStrength - llteam.attrDebuff[i];
-         var strengthHint = '';
-         if (!LLUnit.isStrengthSupported(llteam.members[i].card)) {
-            strengthHint = '<span class="lltooltip llsup">(*)<span class="tooltiptext">该技能暂不支持强度计算</span></span>';
-         }
-         document.getElementById('cardstrength'+String(i)).innerHTML = curCardStrength.toString();
-         document.getElementById('cardstrength'+String(i)).style.color = '';
-         document.getElementById('strength'+String(i)).innerHTML = curStrength.toString();
-         document.getElementById('strength'+String(i)).style.color = '';
-         document.getElementById('skillstrength'+String(i)).innerHTML = llteam.avgSkills[i].strength + strengthHint;
-         document.getElementById('heal'+String(i)).innerHTML = LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal);
-
-         if (minCardStrengthIndex < 0 || curCardStrength < minCardStrength) {
-            minCardStrength = curCardStrength;
-            minCardStrengthIndex = i;
-         }
-         if (minStrengthIndex < 0 || curStrength < minStrength) {
-            minStrength = curStrength;
-            minStrengthIndex = i;
-         }
+         cardStrengthList.push(curCardStrength);
+         totalStrengthList.push(curStrength);
+         comp_team.setStrengthSkillTheory(i, llteam.avgSkills[i].strength, LLUnit.isStrengthSupported(llteam.members[i].card));
+         comp_team.setHeal(i, LLUnit.healNumberToString(llteam.avgSkills[i].averageHeal));
       }
       document.getElementById('resultstrength').innerHTML = llteam.totalStrength + ' (属性 ' + llteam.totalAttrStrength + ' + 技能 ' + llteam.totalSkillStrength + ')';
       //document.getElementById('averageaccuracy').innerHTML = (totalaccuracy*100).toFixed(1).toString()+'%'
 
-      document.getElementById('strength'+String(minStrengthIndex)).style.color = 'red';
-      document.getElementById('cardstrength'+String(minCardStrengthIndex)).style.color = 'red';
+      comp_team.setStrengthCardTheories(cardStrengthList);
+      comp_team.setStrengthTotalTheories(totalStrengthList);
+      comp_team.setSkillActiveCountSims(llteam.averageSkillsActiveCount);
+      comp_team.setSkillActiveChanceSims(llteam.averageSkillsActiveChanceCount);
 
       llteam.calculateMic();
       comp_resultmic.set(llteam.micNumber, llteam.equivalentURLevel);
@@ -566,226 +461,13 @@
 
 <div style="clear:both"></div>
 <h3>队伍属性</h3>
-<div class="col-xs-12 col-md-9" style="overflow-x:auto">
-<table border='1'>
-   <tr>
-      <td>权重</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="weight{{i}}" name="weight{{i}}" size=2 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td></td>
-      {% for i in range(0,9) %}
-      <td><input type="button" value="放卡{{i+1}}" onclick="LLUnit.copyTo({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>卡片</td>
-   	<td ><img  id='avatar0' src='/static/null.png'/></td>
-   	<td><img  id='avatar1' src='/static/null.png'/></td>
-   	<td><img  id='avatar2' src='/static/null.png'/></td>
-   	<td><img  id='avatar3' src='/static/null.png'/></td>
-   	<td><img  id='avatar4' src='/static/null.png'/></td>
-   	<td><img  id='avatar5' src='/static/null.png'/></td>
-   	<td><img  id='avatar6' src='/static/null.png'/></td>
-   	<td><img  id='avatar7' src='/static/null.png'/></td>
-   	<td><img  id='avatar8' src='/static/null.png'/></td>
-   </tr>
-   <tr style="display:none">
-      <td>id</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="cardid{{i}}" name="cardid{{i}}" size=1 value=0 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr style="display:none">
-      <td>mezame</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="mezame{{i}}" name="mezame{{i}}" size=1 value=0 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>主属性</td>
-      {% for i in range(0,9) %}
-      <td><select id="main{{i}}" name="main{{i}}">
-         <option value="smile" style="color:red">smile</option>
-         <option value="pure" style="color:green">pure</option>
-         <option value="cool" style="color:blue">cool</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:red">smile</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:red" id="smile{{i}}" name="smile{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:green">pure</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:green" id="pure{{i}}" name="pure{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td style="color:blue">cool</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" style="color:blue" id="cool{{i}}" name="cool{{i}}" size=3 autocomplete="off"></td>
-      {% endfor %}
-	</tr>
-	<tr>
-      <td>总槽数</td>
-      {% for i in range(0,9) %}
-      <td><input type="text" id="maxcost{{i}}" name="maxcost{{i}}" value="1" autocomplete="off" size=1 style="width:40px"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>技能</td>
-      {% for i in range(0,9) %}
-      <td>Lv<input type="text" id="skilllevel{{i}}" name="skilllevel{{i}}" value="1" autocomplete="off" size=1 style="width:40px" onchange="LLUnit.changeunitskilllevel({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>单体数值</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemnum{{i}}" name="gemnum{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="200" >200</option>
-         <option value="450" >450</option>
-         <option value="650" >650</option>
-         <option value="1400" >1400</option>
-         <option value="1600" >1600</option>
-         <option value="1850" >1850</option>
-         <option value="2050" >2050</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>单体百分比</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemsinglepercent{{i}}" name="gemsinglepercent{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="0.1" >10%</option>
-         <option value="0.16" >16%</option>
-         <option value="0.26" >26%</option>
-         <option value="0.28" >28%</option>
-         <option value="0.38" >38%</option>
-         <option value="0.44" >44%</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>全体百分比</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemallpercent{{i}}" name="gemallpercent{{i}}" onchange="calslot({{i}})">
-         <option value="0" >0</option>
-         <option value="0.018" >1.8%</option>
-         <option value="0.024" >2.4%</option>
-         <option value="0.04" >4.0%</option>
-         <option value="0.042" >4.2%</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>奶/分宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemskill{{i}}" name="gemskill{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr style="display:none">
-      <td>判定宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemacc{{i}}" name="gemacc{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>个人宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemmember{{i}}" name="gemmember{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>九重奏宝石</td>
-      {% for i in range(0,9) %}
-      <td><select id="gemnonet{{i}}" name="gemnonet{{i}}" onchange="calslot({{i}})">
-         <option value="0" >无</option>
-         <option value="1" >有</option>
-      </select></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>使用槽数</td>
-      {% for i in range(0,9) %}
-      <td id="slot{{i}}" name="slot{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td></td>
-      {% for i in range(0,9) %}
-      <td><input type="button" id="pos{{i}}" name="pos{{i}}" value="换位{{i+1}}" onclick="changepos({{i}})"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>属性强度</td>
-      {% for i in range(0,9) %}
-      <td id="attstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>技能强度</td>
-      {% for i in range(0,9) %}
-      <td id="skillstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>卡强度</td>
-      {% for i in range(0,9) %}
-      <td id="cardstrength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>异色异团惩罚</td>
-      {% for i in range(0,9) %}
-      <td id="cardstrengthdebuff{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <tr>
-      <td>实际强度</td>
-      {% for i in range(0,9) %}
-      <td id="strength{{i}}"></td>
-      {% endfor %}
-   </tr>
-   <!--
-   <tr>
-      <td>判定</td>
-      {% for i in range(0,9) %}
-      <td id="accuracy{{i}}"></td>
-      {% endfor %}
-   </tr>
--->
-   <tr>
-      <td>回复</td>
-      {% for i in range(0,9) %}
-      <td id="heal{{i}}"></td>
-      {% endfor %}
-   </tr>
-</table>
-</div>
+<div class="col-xs-12 col-lg-9" style="overflow-x:auto" id="unit-team"></div>
 <div class="col-xs-12 col-md-3">
+   <input type="button" value="保存队伍" onclick="saveunit()">
+   <input type="file" name="file"/>
+   <input type="submit" value="读取队伍" onclick="loadunit()">
 
-<input type="button" value="保存队伍" onclick="saveunit()">
-<input type="file" name="file"/>
-<input type="submit" value="读取队伍" onclick="loadunit()">
-
-<div id="unit-storage" style="margin-top:30px">
+   <div id="unit-storage" style="margin-top:30px">
 </div>
 
 </div>
@@ -882,7 +564,9 @@
    </select>%<br>
 点击得分增加：<input id="tapup" name="tapup" value="0" size=2></input>%<br>
 技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
-<input type="button" value="calculate" onclick="check()"> <input type="checkbox" id="distribution" name="distribution">计算分布</input>
+<div id="distribution_param"></div>
+<input type="button" value="calculate" onclick="check()">
+<!--<input type="checkbox" id="distribution" name="distribution">计算分布</input>-->
 <input type="checkbox" id="autoarm0" name="autoarm0" onclick="autoarm()">自动配饰</input>
 </div>
 </form>
@@ -906,13 +590,12 @@
 	<td id="resultcool"></td>
 </tr>
 </table>
+卡组HP:<nospan id="totalhp"></nospan><br>
 卡组强度:<nospan id="resultstrength"></nospan><br>
 <div id="resultmic"></div>
 期望得分:<nospan id="averagescore"></nospan><br>
-
 期望回复:<nospan id="averageheal"></nospan><br>
-
-<!--期望判定覆盖率：<nospan id="averageaccuracy"></nospan><br>-->
+期望判定覆盖率(模拟):<nospan id="averageaccuracyncoverage"></nospan><br>
 </div>
 <div id="errorresult" style="display:none;color:red"></div>
 <div id='distributionresult' style='display:none'>

@@ -114,6 +114,7 @@ var LLHelperLocalStorage = {
    'localStorageDataVersionKey': 'llhelper_data_version__',
    'localStorageDistParamKey': 'llhelper_dist_param__',
    'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
+   'localStorageLLNewUnitSisTeamKey': 'llhelper_llnewunitsis_team__',
 
    'getDataVersion': function () {
       var version;
@@ -815,6 +816,20 @@ var LLConst = (function () {
          if (groups[i] == groupid) return true;
       }
       return false;
+   };
+   ret.getMemberGrade = function (member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return undefined;
+      var groups = memberData.types;
+      for (var i = 0; i < groups.length; i++) {
+         if (groups[i] >= 1 && groups[i] <= 3) return groups[i];
+      }
+      return undefined;
+   };
+   ret.getMemberColor = function (member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return undefined;
+      return memberData.color;
    };
    ret.getMemberNamesInGroups = function (groups) {
       if (groups === undefined) return [];
@@ -1737,26 +1752,6 @@ var LLSisGem = (function () {
       {'name': 'member', 'key': 'MEMBER_29', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 29, 'per_member': 1, 'attr_mul': 1},
       {'name': 'nonet', 'key': 'NONET_42', 'slot': 4, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 4.2, 'per_color': 1, 'per_unit': 1, 'attr_mul': 1}
    ];
-   var MEMBER_COLOR = {
-      "高坂穂乃果": 'smile',
-      "絢瀬絵里": 'cool',
-      "南ことり": 'pure',
-      "園田海未": 'cool',
-      "星空凛": 'smile',
-      "西木野真姫": 'cool',
-      "東條希": 'pure',
-      "小泉花陽": 'pure',
-      "矢澤にこ": 'smile',
-      "高海千歌": 'smile',
-      "桜内梨子": 'cool',
-      "松浦果南": 'pure',
-      "黒澤ダイヤ": 'cool',
-      "渡辺曜": 'pure',
-      "津島善子": 'cool',
-      "国木田花丸": 'smile',
-      "小原鞠莉": 'smile',
-      "黒澤ルビィ": 'pure'
-   };
    var EPSILON = 1e-8;
    function LLSisGem_cls(type, options) {
       // options: {grade:(1~3), member:(member name), color:({smile|pure|cool}), unit:({muse|aqours})}
@@ -1772,7 +1767,7 @@ var LLSisGem = (function () {
       if (data.per_grade && options.grade) this.grade = options.grade;
       if (data.per_member && options.member) {
          this.member = options.member;
-         this.color = MEMBER_COLOR[options.member];
+         this.color = LLConst.getMemberColor(options.member);
       }
       if (data.per_color && options.color) this.color = options.color;
       if (data.per_unit && options.unit) this.unit = options.unit;
@@ -1839,6 +1834,33 @@ var LLSisGem = (function () {
       val = parseFloat(val);
       if (Math.abs(val - 4.2) < EPSILON) return createGems([cls.AMUL_24, cls.AMUL_18], {'color': color});
       return createGems(bitSplit(val+EPSILON, [cls.AMUL_40, cls.AMUL_24, cls.AMUL_18]), {'color': color});
+   };
+   cls.parseMemberGems = function (member, color) {
+      var ret = [];
+      ret = ret.concat(cls.parseSADD(member.gemnum, color));
+      ret = ret.concat(cls.parseSMUL(parseFloat(member.gemsinglepercent)*100, color, LLConst.getMemberGrade(member.card.jpname)));
+      ret = ret.concat(cls.parseAMUL(parseFloat(member.gemallpercent)*100, color));
+      if (parseInt(member.gemskill) == 1) {
+         ret.push(new LLSisGem(cls.SCORE_250, {'color': color}));
+      }
+      if (parseInt(member.gemacc) == 1) {
+         ret.push(new LLSisGem(cls.EMUL_33, {'color': color}));
+      }
+      if (parseInt(member.gemmember) == 1) {
+         ret.push(new LLSisGem(cls.MEMBER_29, {'member': member.card.jpname}));
+      } else if (parseInt(member.gemmember) == 2) {
+         ret.push(new LLSisGem(cls.MEMBER_29, {'member': member.card.jpname, 'color': color}));
+      }
+      if (parseInt(member.gemnonet) == 1) {
+         var unit = undefined;
+         if (LLConst.isMemberInGroup(member.card.jpname, LLConst.GROUP_MUSE)) {
+            unit = 'muse';
+         } else if (LLConst.isMemberInGroup(member.card.jpname, LLConst.GROUP_AQOURS)) {
+            unit = 'aqours';
+         }
+         ret.push(new LLSisGem(cls.NONET_42, {'color': color, 'unit':unit}));
+      }
+      return ret;
    };
    cls.getGemStockCount = function (gemStock, gemStockKeys) {
       var cur = gemStock;
@@ -2233,15 +2255,9 @@ var LLMember = (function() {
    proto.getGrade = function () {
       if (!this.card) throw "No card data";
       if (this.grade !== undefined) return this.grade;
-      for (var i = 1; i <= 3; i++) {
-         if (LLConst.isMemberInGroup(this.card.jpname, i)) {
-            this.grade = i;
-            return i;
-         }
-      }
       // N card and some special card has no grade
-      this.grade = 0;
-      return 0;
+      this.grade = LLConst.getMemberGrade(this.card.jpname) || 0;
+      return this.grade;
    };
    proto.getSkillDetail = function(levelBoost) {
       if (!levelBoost) {
@@ -3858,7 +3874,7 @@ var LLGemStockComponent = (function () {
       var item;
       var textSpan = createElement('span', {'className': 'gem-text', 'innerHTML': (textMapping[text] ? textMapping[text] : text)});
 
-      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function (e) {
+      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count num-size-2'}, undefined, {'click': function (e) {
          var curEvent = window.event || e;
          curEvent.cancelBubble = true;
       }, 'change': function () {
@@ -4654,7 +4670,7 @@ var LLScoreDistributionParameter = (function () {
       }});
       detailLink.style.cursor = 'help';
       var simParamCount = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 5, 'value': 2000});
-      var simParamPerfectPercent = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 3, 'value': 90});
+      var simParamPerfectPercent = createElement('input', {'className': 'form-control num-size-3', 'type': 'number', 'size': 3, 'value': 90});
       var simParamSpeedComponent = new LLSelectComponent(createElement('select', {'className': 'form-control', 'value': '8'}));
       simParamSpeedComponent.setOptions(speedSelectOptions);
       simParamSpeedComponent.set('8');
@@ -4947,7 +4963,7 @@ var LLTeamComponent = (function () {
    //    set: function(value)
    // }
    function skillLevelCreator(controller) {
-      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control num-size-1'});
       var inputComponent = new LLValuedComponent(inputElement);
       controller.get = function() {
          return parseInt(inputComponent.get());
@@ -4963,7 +4979,7 @@ var LLTeamComponent = (function () {
    //    setUsedSlot: function(value)
    // }
    function slotCreator(controller) {
-      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control num-size-1'});
       var inputComponent = new LLValuedComponent(inputElement);
       var textElement = createElement('span', {'innerHTML': '0'});
       var curUsedSlot = 0;
@@ -5342,8 +5358,8 @@ var LLTeamComponent = (function () {
             controllers[i].setToMember = doSetToMember;
          }
       }
-      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control', 'value': '0'};
-      var number1Config = {'type': 'number', 'step': '1', 'size': 1, 'autocomplete': 'off', 'className': 'form-control', 'value': '1'};
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control num-size-3', 'value': '0'};
+      var number1Config = {'type': 'number', 'step': '1', 'size': 1, 'autocomplete': 'off', 'className': 'form-control num-size-1', 'value': '1'};
       var selConfig = {'className': 'form-control'};
       rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
@@ -5432,6 +5448,39 @@ var LLTeamComponent = (function () {
          return retMember;
       };
       controller.getMembers = makeGet9Function(controller.getMember);
+      controller.setMemberGem = function(i, gems) {
+         var sumSADD = 0;
+         var sumSMUL = 0;
+         var sumAMUL = 0;
+         var sumSKILL = 0;
+         var sumMEMBER = 0;
+         var sumNONET = 0;
+         for (var j = 0; j < gems.length; j++) {
+            var curGem = gems[j];
+            if (curGem.attr_add && curGem.isEffectRangeSelf()) {
+               sumSADD += curGem.effect_value;
+            } else if (curGem.attr_mul) {
+               if (curGem.per_member) {
+                  sumMEMBER++;
+               } else if (curGem.per_unit) {
+                  sumNONET++;
+               } else if (curGem.isEffectRangeSelf()) {
+                  sumSMUL += curGem.effect_value;
+               } else {
+                  sumAMUL += Math.round(curGem.effect_value*10);
+               }
+            } else if (curGem.isSkillGem()) {
+               sumSKILL++;
+            }
+         }
+         controllers.gem_num.cells[i].set(sumSADD);
+         controllers.gem_single_percent.cells[i].set(String(sumSMUL/100));
+         controllers.gem_all_percent.cells[i].set(String(sumAMUL/1000));
+         controllers.gem_score.cells[i].set(sumSKILL);
+         controllers.gem_member.cells[i].set(sumMEMBER);
+         controllers.gem_nonet.cells[i].set(sumNONET);
+      };
+      controller.setMemberGems = makeSet9Function(controller.setMemberGem);
       controller.getCardId = function(i) { return controllers.avatar.cells[i].getCardId(); };
       controller.getCardIds = makeGet9Function(controller.getCardId);
       controller.getWeight = function(i) { return controllers.weight.cells[i].get(); };

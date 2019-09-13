@@ -44,6 +44,7 @@
    font-weight: 700;
    text-align: center;
    vertical-align: middle;
+   width: 50px;
 }
 .gem-text {
    display: inline-block;
@@ -143,5 +144,14 @@
 .team-table >tbody >tr >th {
    min-width: 7em;
    vertical-align: middle;
+}
+input.num-size-3 {
+   width: 60px;
+}
+input.num-size-2 {
+   width: 50px;
+}
+input.num-size-1 {
+   width: 40px;
 }
 
