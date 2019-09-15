@@ -316,7 +316,6 @@
       var cardid=document.getElementById("cardchoice").value;
       var subunit={}
       if ((cardid != 0) && (cardid != "") && (cardid != "0")){
-         var cardbrief = ((LLCardData && LLCardData.getCachedBriefData()) || {})[cardid];
          subunit["main"]=document.getElementById("main").value
          subunit["smile"]=parseInt(document.getElementById("smile").value)
          subunit["pure"]=parseInt(document.getElementById("pure").value)
@@ -326,7 +325,7 @@
          subunit["mezame"]=parseInt(mezame)
          subunit["cardid"]=cardid;
          subunit["maxcost"]=comp_cardselector.cards[cardid].minslot;
-         subunit.hp = (parseInt(mezame) ? cardbrief.hp+1 : cardbrief.hp);
+         subunit.hp = parseInt(document.getElementById("hp").value);
          comp_submember.add(subunit);
       }
    }
