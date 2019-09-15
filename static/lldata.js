@@ -114,6 +114,8 @@ var LLHelperLocalStorage = {
    'localStorageDataVersionKey': 'llhelper_data_version__',
    'localStorageDistParamKey': 'llhelper_dist_param__',
    'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
+   'localStorageLLNewUnitSisTeamKey': 'llhelper_llnewunitsis_team__',
+   'localStorageLLNewAutoUnitTeamKey': 'llhelper_llnewautounit_team__',
 
    'getDataVersion': function () {
       var version;
@@ -815,6 +817,20 @@ var LLConst = (function () {
          if (groups[i] == groupid) return true;
       }
       return false;
+   };
+   ret.getMemberGrade = function (member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return undefined;
+      var groups = memberData.types;
+      for (var i = 0; i < groups.length; i++) {
+         if (groups[i] >= 1 && groups[i] <= 3) return groups[i];
+      }
+      return undefined;
+   };
+   ret.getMemberColor = function (member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return undefined;
+      return memberData.color;
    };
    ret.getMemberNamesInGroups = function (groups) {
       if (groups === undefined) return [];
@@ -1734,29 +1750,10 @@ var LLSisGem = (function () {
       {'name': 'wink', 'key': 'SADD_1400', 'slot': 5, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 1400, 'per_color': 1, 'attr_add': 1},
       {'name': 'trill', 'key': 'SMUL_28', 'slot': 5, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 28, 'per_color': 1, 'per_grade': 1, 'attr_mul': 1},
       {'name': 'bloom', 'key': 'AMUL_40', 'slot': 6, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 4, 'per_color': 1, 'attr_mul': 1},
-      {'name': 'member', 'key': 'MEMBER_29', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 29, 'per_member': 1, 'attr_mul': 1},
+      {'name': 'member', 'key': 'MEMBER_29', 'slot': 4, 'effect_range': EFFECT_RANGE.SELF, 'effect_value': 29, 'per_member': 1, 'per_color': 1, 'attr_mul': 1},
       {'name': 'nonet', 'key': 'NONET_42', 'slot': 4, 'effect_range': EFFECT_RANGE.ALL, 'effect_value': 4.2, 'per_color': 1, 'per_unit': 1, 'attr_mul': 1}
    ];
-   var MEMBER_COLOR = {
-      "高坂穂乃果": 'smile',
-      "絢瀬絵里": 'cool',
-      "南ことり": 'pure',
-      "園田海未": 'cool',
-      "星空凛": 'smile',
-      "西木野真姫": 'cool',
-      "東條希": 'pure',
-      "小泉花陽": 'pure',
-      "矢澤にこ": 'smile',
-      "高海千歌": 'smile',
-      "桜内梨子": 'cool',
-      "松浦果南": 'pure',
-      "黒澤ダイヤ": 'cool',
-      "渡辺曜": 'pure',
-      "津島善子": 'cool',
-      "国木田花丸": 'smile',
-      "小原鞠莉": 'smile',
-      "黒澤ルビィ": 'pure'
-   };
+   var GEM_MEMBER_COLOR = ['', '', 'smile', 'pure', 'cool'];
    var EPSILON = 1e-8;
    function LLSisGem_cls(type, options) {
       // options: {grade:(1~3), member:(member name), color:({smile|pure|cool}), unit:({muse|aqours})}
@@ -1772,7 +1769,7 @@ var LLSisGem = (function () {
       if (data.per_grade && options.grade) this.grade = options.grade;
       if (data.per_member && options.member) {
          this.member = options.member;
-         this.color = MEMBER_COLOR[options.member];
+         this.color = LLConst.getMemberColor(options.member);
       }
       if (data.per_color && options.color) this.color = options.color;
       if (data.per_unit && options.unit) this.unit = options.unit;
@@ -1839,6 +1836,34 @@ var LLSisGem = (function () {
       val = parseFloat(val);
       if (Math.abs(val - 4.2) < EPSILON) return createGems([cls.AMUL_24, cls.AMUL_18], {'color': color});
       return createGems(bitSplit(val+EPSILON, [cls.AMUL_40, cls.AMUL_24, cls.AMUL_18]), {'color': color});
+   };
+   cls.parseMemberGems = function (member, color) {
+      var ret = [];
+      ret = ret.concat(cls.parseSADD(member.gemnum, color));
+      ret = ret.concat(cls.parseSMUL(parseFloat(member.gemsinglepercent)*100, color, LLConst.getMemberGrade(member.card.jpname)));
+      ret = ret.concat(cls.parseAMUL(parseFloat(member.gemallpercent)*100, color));
+      if (parseInt(member.gemskill) == 1) {
+         ret.push(new LLSisGem(cls.SCORE_250, {'color': color}));
+      }
+      if (parseInt(member.gemacc) == 1) {
+         ret.push(new LLSisGem(cls.EMUL_33, {'color': color}));
+      }
+      var gemMemberInt = parseInt(member.gemmember);
+      if (gemMemberInt == 1) {
+         ret.push(new LLSisGem(cls.MEMBER_29, {'member': member.card.jpname, 'color': color}));
+      } else if (gemMemberInt >= 2) {
+         ret.push(new LLSisGem(cls.MEMBER_29, {'member': member.card.jpname, 'color': GEM_MEMBER_COLOR[gemMemberInt]}));
+      }
+      if (parseInt(member.gemnonet) == 1) {
+         var unit = undefined;
+         if (LLConst.isMemberInGroup(member.card.jpname, LLConst.GROUP_MUSE)) {
+            unit = 'muse';
+         } else if (LLConst.isMemberInGroup(member.card.jpname, LLConst.GROUP_AQOURS)) {
+            unit = 'aqours';
+         }
+         ret.push(new LLSisGem(cls.NONET_42, {'color': color, 'unit':unit}));
+      }
+      return ret;
    };
    cls.getGemStockCount = function (gemStock, gemStockKeys) {
       var cur = gemStock;
@@ -2233,15 +2258,9 @@ var LLMember = (function() {
    proto.getGrade = function () {
       if (!this.card) throw "No card data";
       if (this.grade !== undefined) return this.grade;
-      for (var i = 1; i <= 3; i++) {
-         if (LLConst.isMemberInGroup(this.card.jpname, i)) {
-            this.grade = i;
-            return i;
-         }
-      }
       // N card and some special card has no grade
-      this.grade = 0;
-      return 0;
+      this.grade = LLConst.getMemberGrade(this.card.jpname) || 0;
+      return this.grade;
    };
    proto.getSkillDetail = function(levelBoost) {
       if (!levelBoost) {
@@ -3578,6 +3597,8 @@ var LLSaveData = (function () {
    //       "ALL": "<number>" | "<gem type key>" : {...}
    //     }
    //     added "ALL" for any type/sub-type dict, when specified, all sub-types having "<number>" of gem
+   // ver 103 :
+   //   member gem now is also per_color (gem stock and gemmember need convert)
    var checkSaveDataVersion = function (data) {
       if (data === undefined) return 0;
       if (data.version !== undefined) return parseInt(data.version);
@@ -3645,6 +3666,59 @@ var LLSaveData = (function () {
    };
    var getSubMemberV10 = function (data) {
       return data;
+   };
+   var GEM_MEMBER_COLOR_102_TO_103 = {
+      'smile': 2,
+      'pure': 3,
+      'cool': 4
+   };
+   var convertV102ToV103 = function (me) {
+      if (me.hasGemStock && me.gemStock) {
+         var stock = me.gemStock;
+         if (stock['MEMBER_29']) {
+            var m29 = stock['MEMBER_29'];
+            var members = LLConst.getMemberGemList();
+            if (m29['ALL'] === undefined) {
+               for (var i = 0; i < members.length; i++) {
+                  var curMemberName = members[i];
+                  if (m29[curMemberName] !== undefined) {
+                     var memberGemCount = m29[curMemberName];
+                     if (memberGemCount > 0) {
+                        var memberGemPerColor = {
+                           'smile': 0,
+                           'pure': 0,
+                           'cool': 0
+                        };
+                        memberGemPerColor[LLConst.getMemberColor(curMemberName)] = memberGemCount;
+                        m29[curMemberName] = memberGemPerColor;
+                     } else {
+                        m29[curMemberName] = {'ALL': 0};
+                     }
+                  }
+               }
+            } else if (m29['ALL'] > 0) {
+               var memberGemCount = m29['ALL'];
+               stock['MEMBER_29'] = {};
+               for (var i = 0; i < members.length; i++) {
+                  stock['MEMBER_29'][members[i]] = {'ALL': memberGemCount};
+               }
+            }
+         }
+      }
+      if (me.teamMember) {
+         var teamMember = me.teamMember;
+         for (var i = 0; i < teamMember.length; i++) {
+            var curMember = teamMember[i];
+            if (curMember.gemmember && parseInt(curMember.gemmember) == 1) {
+               var memberColor = LLConst.getMemberColor(LLCardData.getCachedBriefData()[curMember.cardid].jpname);
+               curMember.gemmember = GEM_MEMBER_COLOR_102_TO_103[memberColor];
+            } else if (!curMember.gemmember) {
+               curMember.gemmember = 0;
+            }
+            if (!curMember.gemnonet) curMember.gemnonet = 0;
+         }
+      }
+      return me;
    };
    var SUB_MEMBER_ATTRS = ['cardid', 'mezame', 'skilllevel', 'maxcost'];
    var shrinkSubMembers = function (submembers) {
@@ -3732,10 +3806,12 @@ var LLSaveData = (function () {
          this.hasGemStock = true;
          this.subMember = data.submember;
       }
+      if (this.rawVersion <= 102) {
+         convertV102ToV103(this);
+      }
    };
    var cls = LLSaveData_cls;
    cls.checkSaveDataVersion = checkSaveDataVersion;
-   cls.calculateSlot = calculateSlot;
    cls.makeFullyExpandedGemStock = function() {
       var ret = {};
       fillDefaultGemStock(ret, 9);
@@ -3783,9 +3859,9 @@ var LLSaveData = (function () {
    proto.serializeV11 = function() {
       return JSON.stringify(this.getLegacyGemStock());
    };
-   proto.serializeV102 = function(excludeTeam, excludeGemStock, excludeSubMember) {
+   proto.serializeV103 = function(excludeTeam, excludeGemStock, excludeSubMember) {
       return JSON.stringify({
-         'version': 102,
+         'version': 103,
          'team': (excludeTeam ? [] : this.teamMember),
          'gemstock': (excludeGemStock ? {} : this.gemStock),
          'submember': (excludeSubMember ? [] : shrinkSubMembers(this.subMember))
@@ -3833,7 +3909,7 @@ var LLGemStockComponent = (function () {
       'SADD_1400': 'Wink (C5/1400)',
       'SMUL_28': 'Trill (C5/28%)',
       'AMUL_40': 'Bloom (C6/4%)',
-      'MEMBER_29': '个人宝石 (C4/29%/本色)',
+      'MEMBER_29': '个人宝石 (C4/29%)',
       'NONET_42': '九重奏 (C4/4.2%)',
       '1': '一年级',
       '2': '二年级',
@@ -3858,7 +3934,7 @@ var LLGemStockComponent = (function () {
       var item;
       var textSpan = createElement('span', {'className': 'gem-text', 'innerHTML': (textMapping[text] ? textMapping[text] : text)});
 
-      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count'}, undefined, {'click': function (e) {
+      var gemCountInput = createElement('input', {'type': 'text', 'size': 2, 'className': 'gem-count num-size-2'}, undefined, {'click': function (e) {
          var curEvent = window.event || e;
          curEvent.cancelBubble = true;
       }, 'change': function () {
@@ -4483,7 +4559,7 @@ var LLSaveStorageComponent = (function () {
                key = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
             }
             var savedJson = loadStorageJSON();
-            savedJson[key] = data.serializeV102(!teamMemberToggleController.included, !gemStockToggleController.included, !subMemberToggleController.included);
+            savedJson[key] = data.serializeV103(!teamMemberToggleController.included, !gemStockToggleController.included, !subMemberToggleController.included);
             saveStorageJSON(savedJson);
             if (controller.reload) controller.reload(savedJson);
          }
@@ -4654,7 +4730,7 @@ var LLScoreDistributionParameter = (function () {
       }});
       detailLink.style.cursor = 'help';
       var simParamCount = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 5, 'value': 2000});
-      var simParamPerfectPercent = createElement('input', {'className': 'form-control', 'type': 'number', 'size': 3, 'value': 90});
+      var simParamPerfectPercent = createElement('input', {'className': 'form-control num-size-3', 'type': 'number', 'size': 3, 'value': 90});
       var simParamSpeedComponent = new LLSelectComponent(createElement('select', {'className': 'form-control', 'value': '8'}));
       simParamSpeedComponent.setOptions(speedSelectOptions);
       simParamSpeedComponent.set('8');
@@ -4921,6 +4997,13 @@ var LLTeamComponent = (function () {
       {'value': '0', 'text': '无'},
       {'value': '1', 'text': '有'}
    ];
+   var gemMemberOptions = [
+      {'value': '0', 'text': '无'},
+      {'value': '1', 'text': '曲属性'},
+      {'value': '2', 'text': 'smile'},
+      {'value': '3', 'text': 'pure'},
+      {'value': '4', 'text': 'cool'}
+   ];
    // controller
    // {
    //    get: function()
@@ -4947,7 +5030,7 @@ var LLTeamComponent = (function () {
    //    set: function(value)
    // }
    function skillLevelCreator(controller) {
-      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '1', 'autocomplete': 'off', 'className': 'form-control num-size-1'});
       var inputComponent = new LLValuedComponent(inputElement);
       controller.get = function() {
          return parseInt(inputComponent.get());
@@ -4963,7 +5046,7 @@ var LLTeamComponent = (function () {
    //    setUsedSlot: function(value)
    // }
    function slotCreator(controller) {
-      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control'});
+      var inputElement = createElement('input', {'type': 'number', 'step': '1', 'size': 1, 'value': '0', 'autocomplete': 'off', 'className': 'form-control num-size-1'});
       var inputComponent = new LLValuedComponent(inputElement);
       var textElement = createElement('span', {'innerHTML': '0'});
       var curUsedSlot = 0;
@@ -5256,6 +5339,7 @@ var LLTeamComponent = (function () {
    //    setMember: function(i, member) alias putMember
    //    setMembers: function(members)
    //    getMember(i), getMembers()
+   //    setMemberGem(i, g), setMemberGems(g)
    //    getCardId(i), getCardIds()
    //    getWeight(i), getWeights(), setWeight(i,w), setWeights(i,w)
    //    setStrengthAttribute(i,s), setStrengthAttributes(s)
@@ -5328,7 +5412,7 @@ var LLTeamComponent = (function () {
          result += LLSisGem.parseAMULSlot(controllers.gem_all_percent.cells[i].get()*100);
          result += controllers.gem_score.cells[i].get()*4;
          result += controllers.gem_acc.cells[i].get()*4;
-         result += controllers.gem_member.cells[i].get()*4;
+         result += (controllers.gem_member.cells[i].get() > 0 ? 4 : 0);
          result += controllers.gem_nonet.cells[i].get()*4;
          controllers.slot.cells[i].setUsedSlot(result);
       };
@@ -5342,8 +5426,8 @@ var LLTeamComponent = (function () {
             controllers[i].setToMember = doSetToMember;
          }
       }
-      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control', 'value': '0'};
-      var number1Config = {'type': 'number', 'step': '1', 'size': 1, 'autocomplete': 'off', 'className': 'form-control', 'value': '1'};
+      var number3Config = {'type': 'number', 'step': 'any', 'size': 3, 'autocomplete': 'off', 'className': 'form-control num-size-3', 'value': '0'};
+      var number1Config = {'type': 'number', 'step': '1', 'size': 1, 'autocomplete': 'off', 'className': 'form-control num-size-1', 'value': '1'};
       var selConfig = {'className': 'form-control'};
       rows.push(createRowFor9('权重', makeInputCreator(number3Config, parseFloat), controllers.weight));
       rows.push(createRowFor9('放卡', makeButtonCreator('放卡', function(i) {
@@ -5366,7 +5450,7 @@ var LLTeamComponent = (function () {
       rows.push(createRowFor9('全体百分比', makeSelectCreator(selConfig, gemAllPercentOptions, calcSlot), controllers.gem_all_percent));
       rows.push(createRowFor9('奶/分宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_score));
       rows.push(createRowFor9('判定宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_acc));
-      rows.push(createRowFor9('个人宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_member));
+      rows.push(createRowFor9('个人宝石', makeSelectCreator(selConfig, gemMemberOptions, calcSlot, parseInt), controllers.gem_member));
       rows.push(createRowFor9('九重奏宝石', makeSelectCreator(selConfig, gemYesNoOptions, calcSlot, parseInt), controllers.gem_nonet));
       rows.push(createRowFor9('换位', makeSwapCreator(controller), {}));
       rows.push(createRowFor9('属性强度', textCreator, controllers.str_attr));
@@ -5432,6 +5516,39 @@ var LLTeamComponent = (function () {
          return retMember;
       };
       controller.getMembers = makeGet9Function(controller.getMember);
+      controller.setMemberGem = function(i, gems) {
+         var sumSADD = 0;
+         var sumSMUL = 0;
+         var sumAMUL = 0;
+         var sumSKILL = 0;
+         var sumMEMBER = 0;
+         var sumNONET = 0;
+         for (var j = 0; j < gems.length; j++) {
+            var curGem = gems[j];
+            if (curGem.attr_add && curGem.isEffectRangeSelf()) {
+               sumSADD += curGem.effect_value;
+            } else if (curGem.attr_mul) {
+               if (curGem.per_member) {
+                  sumMEMBER++;
+               } else if (curGem.per_unit) {
+                  sumNONET++;
+               } else if (curGem.isEffectRangeSelf()) {
+                  sumSMUL += curGem.effect_value;
+               } else {
+                  sumAMUL += Math.round(curGem.effect_value*10);
+               }
+            } else if (curGem.isSkillGem()) {
+               sumSKILL++;
+            }
+         }
+         controllers.gem_num.cells[i].set(sumSADD);
+         controllers.gem_single_percent.cells[i].set(String(sumSMUL/100));
+         controllers.gem_all_percent.cells[i].set(String(sumAMUL/1000));
+         controllers.gem_score.cells[i].set(sumSKILL);
+         controllers.gem_member.cells[i].set(sumMEMBER);
+         controllers.gem_nonet.cells[i].set(sumNONET);
+      };
+      controller.setMemberGems = makeSet9Function(controller.setMemberGem);
       controller.getCardId = function(i) { return controllers.avatar.cells[i].getCardId(); };
       controller.getCardIds = makeGet9Function(controller.getCardId);
       controller.getWeight = function(i) { return controllers.weight.cells[i].get(); };
