@@ -164,7 +164,7 @@
    }
 
    function makeSaveData() {
-      return new LLSaveData({'version': 102, 'team': comp_team.getMembers(), 'gemstock': comp_gemstock.saveData(), 'submember': comp_submember.saveData()});
+      return new LLSaveData({'version': 103, 'team': comp_team.getMembers(), 'gemstock': comp_gemstock.saveData(), 'submember': comp_submember.saveData()});
    }
 
    function handleLoadTeamMember(teamMember) {
@@ -188,6 +188,7 @@
                      cur.pure = (intMezame ? card.pure2 : card.pure);
                      cur.cool = (intMezame ? card.cool2 : card.cool);
                      cur[cur.main] += kizuna[card.rarity][intMezame];
+                     cur.hp = (intMezame ? card.hp+1 : card.hp);
                   }
                }));
             }
@@ -215,23 +216,23 @@
 
    function savesis(){
       var saveData = makeSaveData();
-      var unitjson = saveData.serializeV102(true, false, true);
+      var unitjson = saveData.serializeV103(true, false, true);
       window.location.href="/llsavesis/"+unitjson;
    }
    function saveunit(){
       var saveData = makeSaveData();
-      var unitjson = saveData.serializeV102();
+      var unitjson = saveData.serializeV103();
       window.location.href="/llsaveunit/"+unitjson;
    }
    function savesubmembers(){
       var saveData = makeSaveData();
-      var submembersjson = saveData.serializeV102(true, true, false);
+      var submembersjson = saveData.serializeV103(true, true, false);
       window.location.href="/llsavesubmembers/"+submembersjson;
    }
    function saveallmembers(){
       var saveData = makeSaveData();
       saveData.subMember = saveData.subMember.concat(saveData.teamMember);
-      var submembersjson = saveData.serializeV102(true, true, false);
+      var submembersjson = saveData.serializeV103(true, true, false);
       window.location.href="/llsaveallmembers/"+submembersjson;
    }
    function handleLoadSis(sis) {
@@ -311,21 +312,23 @@
       localStorage.setItem('llnewautounit_submember', comp_submember.saveJson());
    }
    //////////
-	function addselectsub(){
-		var cardid=document.getElementById("cardchoice").value;
-		var subunit={}
-		if ((cardid != 0) && (cardid != "") && (cardid != "0")){
-			subunit["main"]=document.getElementById("main").value
-			subunit["smile"]=parseInt(document.getElementById("smile").value)
-			subunit["pure"]=parseInt(document.getElementById("pure").value)
-			subunit["cool"]=parseInt(document.getElementById("cool").value)
-			subunit[subunit["main"]]+=parseInt(document.getElementById("kizuna").value)
-		subunit["skilllevel"]=comp_skill.skillLevel+1;
-		subunit["mezame"]=parseInt(mezame)
-		subunit["cardid"]=cardid;
-		subunit["maxcost"]=comp_cardselector.cards[cardid].minslot;
-        comp_submember.add(subunit);
-	}
+   function addselectsub(){
+      var cardid=document.getElementById("cardchoice").value;
+      var subunit={}
+      if ((cardid != 0) && (cardid != "") && (cardid != "0")){
+         var cardbrief = ((LLCardData && LLCardData.getCachedBriefData()) || {})[cardid];
+         subunit["main"]=document.getElementById("main").value
+         subunit["smile"]=parseInt(document.getElementById("smile").value)
+         subunit["pure"]=parseInt(document.getElementById("pure").value)
+         subunit["cool"]=parseInt(document.getElementById("cool").value)
+         subunit[subunit["main"]]+=parseInt(document.getElementById("kizuna").value)
+         subunit["skilllevel"]=comp_skill.skillLevel+1;
+         subunit["mezame"]=parseInt(mezame)
+         subunit["cardid"]=cardid;
+         subunit["maxcost"]=comp_cardselector.cards[cardid].minslot;
+         subunit.hp = (parseInt(mezame) ? cardbrief.hp+1 : cardbrief.hp);
+         comp_submember.add(subunit);
+      }
    }
    function autoarm(){
       if(document.getElementById('autoarm0').checked){

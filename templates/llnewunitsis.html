@@ -144,12 +144,12 @@
    }
 
    function makeSaveData() {
-      return new LLSaveData({'version': 102, 'team': comp_team.getMembers(), 'gemstock': comp_gemstock.saveData(), 'submember': []});
+      return new LLSaveData({'version': 103, 'team': comp_team.getMembers(), 'gemstock': comp_gemstock.saveData(), 'submember': []});
    }
 
    function saveunit(){
       var saveData = makeSaveData();
-      var unitjson = saveData.serializeV102();
+      var unitjson = saveData.serializeV103();
       window.location.href="/llsaveunit/"+unitjson;
    }
 
