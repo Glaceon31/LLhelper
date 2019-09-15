@@ -115,6 +115,7 @@ var LLHelperLocalStorage = {
    'localStorageDistParamKey': 'llhelper_dist_param__',
    'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
    'localStorageLLNewUnitSisTeamKey': 'llhelper_llnewunitsis_team__',
+   'localStorageLLNewAutoUnitTeamKey': 'llhelper_llnewautounit_team__',
 
    'getDataVersion': function () {
       var version;
@@ -5272,6 +5273,7 @@ var LLTeamComponent = (function () {
    //    setMember: function(i, member) alias putMember
    //    setMembers: function(members)
    //    getMember(i), getMembers()
+   //    setMemberGem(i, g), setMemberGems(g)
    //    getCardId(i), getCardIds()
    //    getWeight(i), getWeights(), setWeight(i,w), setWeights(i,w)
    //    setStrengthAttribute(i,s), setStrengthAttributes(s)
