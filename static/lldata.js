@@ -290,7 +290,7 @@ var LLData = (function () {
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'jpseries', 'series', 'eponym', 'jpeponym', 'hp']);
 var LLSongData = new LLData('/lldata/songbrief', '/lldata/song/',
-   ['id', 'aqours', 'muse', 'attribute', 'name', 'jpname', 'easy', 'normal', 'hard', 'expert', 'master', 'arcade']);
+   ['id', 'aqours', 'muse', 'attribute', 'name', 'jpname', 'easy', 'normal', 'hard', 'expert', 'master', 'arcade', 'expert_swing']);
 
 var LLMapNoteData = (function () {
    function LLMapNoteData_cls(base_url) {
