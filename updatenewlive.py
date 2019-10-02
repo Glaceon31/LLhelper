@@ -30,7 +30,8 @@ live_setting_query_str = (
 ' live_setting_m.a_rank_score,'
 ' live_setting_m.s_rank_score,'
 ' live_setting_m.s_rank_combo,'
-' live_setting_m.ac_flag as is_ac '
+' live_setting_m.ac_flag as is_ac,'
+' live_setting_m.swing_flag as is_swing '
 'FROM live_setting_m '
 'WHERE live_track_id = %s;'
 )
@@ -70,6 +71,8 @@ if __name__ == "__main__":
 			# AC charts
 			if livetmp[10] == 1:
 				diffname = 'arcade'
+			elif livetmp[11] == 1 and livetmp[1] == 4:
+				diffname = 'expert_swing'
 			else:
 				diffname = difficulty[livetmp[1]]
 			if diffname =='random':

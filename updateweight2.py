@@ -38,7 +38,7 @@ NUMBER_OF_THREAD = 20
 
 FILENAME_SONG_LIST_JSON = 'newsongsjson.txt'
 
-difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade']
+difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade', 'expert_swing']
 
 liveDataKeysForNumber = ['time', 'star', 'slider', 'swing', 'swingslider']
 liveDataKeysForPositiveNumber = ['time']

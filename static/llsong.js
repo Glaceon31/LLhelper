@@ -227,8 +227,8 @@ LLSong.prototype.filterDiff = function (diffsel, songindex, cnhave, defaultdiff)
    if (!savediff) savediff = this.getElementValue(this.songDiffId, "");
    if (!savediff) savediff = defaultdiff;
 
-   var diffname = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade'];
-   var diffDisplay = ['容易(Easy)', '普通(Normal)', '困难(Hard)', '专家(Expert)', '大师(Master)', 'Master Arcade'];
+   var diffname = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade', 'expert_swing'];
+   var diffDisplay = ['容易(Easy)', '普通(Normal)', '困难(Hard)', '专家(Expert)', '大师(Master)', 'Master Arcade', 'Expert Swing'];
    var curSong = this.songs[songindex];
    for (var i in diffname) {
       var diff = diffname[i];
