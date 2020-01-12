@@ -33,8 +33,9 @@
  *   LLScoreDistributionParameter
  *   LLScoreDistributionChart
  *   LLTeamComponent
+ *   LLCSkillComponent
  *
- * v1.3.0
+ * v1.4.0
  * By ben1222
  */
 
@@ -655,6 +656,13 @@ var LLConst = (function () {
       'MEMBER_HANAYO': 8,
       'MEMBER_NICO': 9,
 
+      '綺羅ツバサ': 80,
+      '優木あんじゅ': 81,
+      '統堂英玲奈': 82,
+      'MEMBER_TSUBASA': 80,
+      'MEMBER_ANJU': 81,
+      'MEMBER_ERENA': 82,
+
       '高海千歌': 101,
       '桜内梨子': 102,
       '松浦果南': 103,
@@ -674,6 +682,30 @@ var LLConst = (function () {
       'MEMBER_MARI': 108,
       'MEMBER_RUBY': 109,
 
+      '鹿角理亞': 112,
+      '鹿角聖良': 113,
+      'MEMBER_LEAH': 112,
+      'MEMBER_SARAH': 113,
+
+      '上原歩夢': 201,
+      '中須かすみ': 202,
+      '桜坂しずく': 203,
+      '朝香果林':  204,
+      '宮下愛': 205,
+      '近江彼方': 206,
+      '優木せつ菜': 207,
+      'エマ・ヴェルデ': 208,
+      '天王寺璃奈': 209,
+      'MEMBER_AYUMU': 201,
+      'MEMBER_KASUMI': 202,
+      'MEMBER_SHIZUKU': 203,
+      'MEMBER_KARIN': 204,
+      'MEMBER_AI': 205,
+      'MEMBER_KANATA': 206,
+      'MEMBER_SETSUNA': 207,
+      'MEMBER_EMMA': 208,
+      'MEMBER_RINA': 209,
+
       'GROUP_UNKNOWN': 0,
       'GROUP_GRADE1': 1,
       'GROUP_GRADE2': 2,
@@ -686,6 +718,37 @@ var LLConst = (function () {
       'GROUP_CYARON': 9,
       'GROUP_AZALEA': 10,
       'GROUP_GUILTYKISS': 11,
+      'GROUP_ARISE': 12,
+      'GROUP_SAINTSNOW': 13,
+      'GROUP_HONOKA_RIN': 23,
+      'GROUP_NOZOMI_NICO': 24,
+      'GROUP_KOTORI_HANAYO': 25,
+      'GROUP_KOTORI_UMI': 26,
+      'GROUP_RIN_MAKI': 27,
+      'GROUP_MAKI_NICO': 28,
+      'GROUP_ELI_UMI': 29,
+      'GROUP_ELI_NOZOMI': 30,
+      'GROUP_MUSE_COOL': 31,
+      'GROUP_MUSE_GRADE2': 32,
+      'GROUP_NICORINHANA': 33,
+      'GROUP_AQOURS_GRADE2': 34,
+      'GROUP_MUSE_GRADE1': 35,
+      'GROUP_MUSE_GRADE3': 36,
+      'GROUP_SOMEDAY': 37,
+      'GROUP_AQOURS_GRADE1': 38,
+      'GROUP_LOVE_WING_BELL':  39,
+      'GROUP_AQOURS_GRADE3': 40,
+      'GROUP_TRANSFER_STUDENT': 50,
+      'GROUP_RIVAL': 51,
+      'GROUP_SUPPORT': 52,
+      'GROUP_RIKO_HANAMARU_MARI': 53,
+      'GROUP_KUROSAWA_SISTERS': 54,
+      'GROUP_YOU_YOSHIKO': 55,
+      'GROUP_CHIKA_KANAN': 56,
+      'GROUP_SAINT_AQOURS_SNOW': 57,
+      'GROUP_NIJIGASAKI': 60,
+      'GROUP_ELI_NOZOMI2': 83,
+      'GROUP_YOSHIKO_HANAMARU': 137,
 
       'NOTE_TYPE_NORMAL': 1,
       'NOTE_TYPE_EVENT': 2,
@@ -752,28 +815,79 @@ var LLConst = (function () {
    MEMBER_DATA[KEYS.MEMBER_MARI] =     {'name': '小原鞠莉',   'color': 'smile', 'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE3, KEYS.GROUP_GUILTYKISS], 'member_gem': 1};
    MEMBER_DATA[KEYS.MEMBER_RUBY] =     {'name': '黒澤ルビィ', 'color': 'pure',  'types': [KEYS.GROUP_AQOURS, KEYS.GROUP_GRADE1, KEYS.GROUP_CYARON], 'member_gem': 1};
 
+   MEMBER_DATA[KEYS.MEMBER_AYUMU] =   {'name': '上原歩夢',       'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_KASUMI] =  {'name': '中須かすみ',     'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_SHIZUKU] = {'name': '桜坂しずく',     'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_KARIN] =   {'name': '朝香果林',       'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_AI] =      {'name': '宮下愛',         'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_KANATA] =  {'name': '近江彼方',       'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_SETSUNA] = {'name': '優木せつ菜',     'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_EMMA] =    {'name': 'エマ・ヴェルデ', 'types': [KEYS.GROUP_NIJIGASAKI]};
+   MEMBER_DATA[KEYS.MEMBER_RINA] =    {'name': '天王寺璃奈',     'types': [KEYS.GROUP_NIJIGASAKI]};
+
+   // TODO: retrieve from DB
    var GROUP_DATA = {};
+   // empty members will be filled by MEMBER_DATA.types later
    GROUP_DATA[KEYS.GROUP_UNKNOWN] = {'name': '<Unknown>'};
-   GROUP_DATA[KEYS.GROUP_GRADE1] = {'name': '一年级'};
-   GROUP_DATA[KEYS.GROUP_GRADE2] = {'name': '二年级'};
-   GROUP_DATA[KEYS.GROUP_GRADE3] = {'name': '三年级'};
-   GROUP_DATA[KEYS.GROUP_MUSE] =   {'name': "μ's"};
-   GROUP_DATA[KEYS.GROUP_AQOURS] = {'name': 'Aqours'};
-   GROUP_DATA[KEYS.GROUP_PRINTEMPS] =  {'name': 'Printemps'};
-   GROUP_DATA[KEYS.GROUP_LILYWHITE] =  {'name': 'lilywhite'};
-   GROUP_DATA[KEYS.GROUP_BIBI] =       {'name': 'BiBi'};
-   GROUP_DATA[KEYS.GROUP_CYARON] =     {'name': 'CYaRon!'};
-   GROUP_DATA[KEYS.GROUP_AZALEA] =     {'name': 'AZALEA'};
-   GROUP_DATA[KEYS.GROUP_GUILTYKISS] = {'name': 'Guilty Kiss'};
+   GROUP_DATA[KEYS.GROUP_GRADE1] = {'name': '一年级', 'members': []};
+   GROUP_DATA[KEYS.GROUP_GRADE2] = {'name': '二年级', 'members': []};
+   GROUP_DATA[KEYS.GROUP_GRADE3] = {'name': '三年级', 'members': []};
+   GROUP_DATA[KEYS.GROUP_MUSE] =   {'name': "μ's", 'members': []};
+   GROUP_DATA[KEYS.GROUP_AQOURS] = {'name': 'Aqours', 'members': []};
+   GROUP_DATA[KEYS.GROUP_PRINTEMPS] =  {'name': 'Printemps', 'members': []};
+   GROUP_DATA[KEYS.GROUP_LILYWHITE] =  {'name': 'lilywhite', 'members': []};
+   GROUP_DATA[KEYS.GROUP_BIBI] =       {'name': 'BiBi', 'members': []};
+   GROUP_DATA[KEYS.GROUP_CYARON] =     {'name': 'CYaRon!', 'members': []};
+   GROUP_DATA[KEYS.GROUP_AZALEA] =     {'name': 'AZALEA', 'members': []};
+   GROUP_DATA[KEYS.GROUP_GUILTYKISS] = {'name': 'Guilty Kiss', 'members': []};
+   GROUP_DATA[KEYS.GROUP_ARISE] =     {'name': 'A-RISE', 'members': [KEYS.MEMBER_TSUBASA, KEYS.MEMBER_ANJU, KEYS.MEMBER_ERENA]};
+   GROUP_DATA[KEYS.GROUP_SAINTSNOW] = {'name': 'Saint Snow', 'members': [KEYS.MEMBER_LEAH, KEYS.MEMBER_SARAH]};
+   GROUP_DATA[KEYS.GROUP_HONOKA_RIN] =    {'name': '穂乃果＆凛', 'members': [KEYS.MEMBER_HONOKA, KEYS.MEMBER_RIN]};
+   GROUP_DATA[KEYS.GROUP_NOZOMI_NICO] =   {'name': '希＆にこ', 'members': [KEYS.MEMBER_NOZOMI, KEYS.MEMBER_NICO]};
+   GROUP_DATA[KEYS.GROUP_KOTORI_HANAYO] = {'name': 'ことり＆花陽', 'members': [KEYS.MEMBER_KOTORI, KEYS.MEMBER_HANAYO]};
+   GROUP_DATA[KEYS.GROUP_KOTORI_UMI] =    {'name': 'ことり＆海未', 'members': [KEYS.MEMBER_KOTORI, KEYS.MEMBER_UMI]};
+   GROUP_DATA[KEYS.GROUP_RIN_MAKI] =      {'name': '凛＆真姫', 'members': [KEYS.MEMBER_RIN, KEYS.MEMBER_MAKI]};
+   GROUP_DATA[KEYS.GROUP_MAKI_NICO] =     {'name': '真姫＆にこ', 'members': [KEYS.MEMBER_MAKI, KEYS.MEMBER_NICO]};
+   GROUP_DATA[KEYS.GROUP_ELI_UMI] =       {'name': '絵里＆海未', 'members': [KEYS.MEMBER_ELI, KEYS.MEMBER_UMI]};
+   GROUP_DATA[KEYS.GROUP_ELI_NOZOMI] =    {'name': '絵里＆希', 'members': [KEYS.MEMBER_ELI, KEYS.MEMBER_NOZOMI]};
+   GROUP_DATA[KEYS.GROUP_MUSE_COOL] =     {'name': '海未＆真姫＆絵里', 'members': [KEYS.MEMBER_UMI, KEYS.MEMBER_MAKI, KEYS.MEMBER_ELI]};
+   GROUP_DATA[KEYS.GROUP_MUSE_GRADE2] =   {'name': '穂乃果＆ことり＆海未', 'members': [KEYS.MEMBER_HONOKA, KEYS.MEMBER_KOTORI, KEYS.MEMBER_UMI]};
+   GROUP_DATA[KEYS.GROUP_NICORINHANA] =   {'name': '凛＆花陽＆にこ', 'members': [KEYS.MEMBER_RIN, KEYS.MEMBER_HANAYO, KEYS.MEMBER_NICO]};
+   GROUP_DATA[KEYS.GROUP_AQOURS_GRADE2] = {'name': '千歌＆梨子＆曜', 'members': [KEYS.MEMBER_CHIKA, KEYS.MEMBER_RIKO, KEYS.MEMBER_YOU]};
+   GROUP_DATA[KEYS.GROUP_MUSE_GRADE1] =   {'name': '凛＆花陽＆真姫', 'members': [KEYS.MEMBER_RIN, KEYS.MEMBER_HANAYO, KEYS.MEMBER_MAKI]};
+   GROUP_DATA[KEYS.GROUP_MUSE_GRADE3] =   {'name': '絵里＆にこ＆希', 'members': [KEYS.MEMBER_ELI, KEYS.MEMBER_NICO, KEYS.MEMBER_NOZOMI]};
+   GROUP_DATA[KEYS.GROUP_SOMEDAY] =       {'name': 'これからのSomedayメンバー', 'members': [KEYS.MEMBER_HONOKA, KEYS.MEMBER_KOTORI, KEYS.MEMBER_UMI, KEYS.MEMBER_RIN, KEYS.MEMBER_MAKI, KEYS.MEMBER_HANAYO, KEYS.MEMBER_NICO]};
+   GROUP_DATA[KEYS.GROUP_AQOURS_GRADE1] = {'name': '国木田花丸＆黒澤ルビィ＆津島善子', 'members': [KEYS.MEMBER_HANAMARU, KEYS.MEMBER_RUBY, KEYS.MEMBER_YOSHIKO]};
+   GROUP_DATA[KEYS.GROUP_LOVE_WING_BELL] = {'name': '凛＆真姫＆花陽＆絵里＆希＆にこ', 'members': [KEYS.MEMBER_RIN, KEYS.MEMBER_MAKI, KEYS.MEMBER_HANAYO, KEYS.MEMBER_ELI, KEYS.MEMBER_NOZOMI, KEYS.MEMBER_NICO]};
+   GROUP_DATA[KEYS.GROUP_AQOURS_GRADE3] = {'name': '果南&ダイヤ&鞠莉', 'members': [KEYS.MEMBER_KANAN, KEYS.MEMBER_DIA, KEYS.MEMBER_MARI]};
+   GROUP_DATA[KEYS.GROUP_TRANSFER_STUDENT] = {'name': '转校生'};
+   GROUP_DATA[KEYS.GROUP_RIVAL] =            {'name': '竞争对手'};
+   GROUP_DATA[KEYS.GROUP_SUPPORT] =          {'name': '辅助社员'};
+   GROUP_DATA[KEYS.GROUP_RIKO_HANAMARU_MARI] = {'name': '桜内梨子＆国木田花丸＆小原鞠莉', 'members': [KEYS.MEMBER_RIKO, KEYS.MEMBER_HANAMARU, KEYS.MEMBER_MARI]};
+   GROUP_DATA[KEYS.GROUP_KUROSAWA_SISTERS] =   {'name': '黒澤ダイヤ＆黒澤ルビィ', 'members': [KEYS.MEMBER_DIA, KEYS.MEMBER_RUBY]};
+   GROUP_DATA[KEYS.GROUP_YOU_YOSHIKO] =        {'name': '渡辺 曜＆津島善子', 'members': [KEYS.MEMBER_YOU, KEYS.MEMBER_YOSHIKO]};
+   GROUP_DATA[KEYS.GROUP_CHIKA_KANAN] =        {'name': '高海千歌＆松浦果南', 'members': [KEYS.MEMBER_CHIKA, KEYS.MEMBER_KANAN]};
+   GROUP_DATA[KEYS.GROUP_SAINT_AQOURS_SNOW] =  {'name': 'Saint Aqours Snow', 'members': [KEYS.MEMBER_CHIKA, KEYS.MEMBER_RIKO, KEYS.MEMBER_KANAN, KEYS.MEMBER_DIA, KEYS.MEMBER_YOU, KEYS.MEMBER_YOSHIKO, KEYS.MEMBER_HANAMARU, KEYS.MEMBER_MARI, KEYS.MEMBER_RUBY, KEYS.MEMBER_LEAH, KEYS.MEMBER_SARAH]};
+   GROUP_DATA[KEYS.GROUP_NIJIGASAKI] =         {'name': '虹咲', 'members': []};
+   GROUP_DATA[KEYS.GROUP_ELI_NOZOMI2] =        {'name': '絵里、希', 'members': [KEYS.MEMBER_ELI, KEYS.MEMBER_NOZOMI]};
+   GROUP_DATA[KEYS.GROUP_YOSHIKO_HANAMARU] =   {'name': '善子、花丸', 'members': [KEYS.MEMBER_YOSHIKO, KEYS.MEMBER_HANAMARU]};
 
    var MEMBER_GEM_LIST = [];
-   for (var k in MEMBER_DATA) {
-      if (MEMBER_DATA[k].member_gem) MEMBER_GEM_LIST.push(MEMBER_DATA[k].name);
-   };
+   (function() {
+      for (var k in MEMBER_DATA) {
+         if (MEMBER_DATA[k].member_gem) MEMBER_GEM_LIST.push(MEMBER_DATA[k].name);
+         if (MEMBER_DATA[k].types) {
+            var memberTypes = MEMBER_DATA[k].types;
+            for (var i = 0; i < memberTypes.length; i++) {
+               GROUP_DATA[memberTypes[i]].members.push(k);
+            }
+         }
+      }
+   })();
 
    var NOT_FOUND_MEMBER = {};
 
-   var mGetMemberData = function (member) {
+   var mGetMemberId = function (member) {
       var memberid = member;
       if (typeof(memberid) != 'number') {
          memberid = KEYS[memberid];
@@ -786,7 +900,33 @@ var LLConst = (function () {
             return undefined;
          }
       }
-      return MEMBER_DATA[memberid];
+      return memberid;
+   };
+   var mGetMemberData = function (member) {
+      var memberid = mGetMemberId(member);
+      if (memberid !== undefined) {
+         return MEMBER_DATA[memberid];
+      }
+      return undefined;
+   };
+   var mGetGroupId = function (group) {
+      var groupid = group;
+      if (typeof(groupid) != 'number') {
+         groupid = parseInt(groupid);
+         if (groupid == 0) {
+            console.error('Unknown group ' + group);
+            return undefined;
+         }
+      }
+      return groupid;
+   };
+   var mGetGroupData = function (group) {
+      var groupid = mGetGroupId(group);
+      if (groupid !== undefined) {
+         return GROUP_DATA[groupid];
+      }
+      console.error('Not found group data for ' + group);
+      return undefined;
    };
 
    var NOTE_APPEAR_OFFSET_S = [1.8, 1.6, 1.45, 1.3, 1.15, 1, 0.9, 0.8, 0.7, 0.6];
@@ -798,23 +938,14 @@ var LLConst = (function () {
    };
    ret.isMemberInGroup = function (member, group) {
       if (group === undefined || group == '') return false;
-      var memberData = mGetMemberData(member);
-      if (!memberData) return false;
-      var groupid = group;
-      if (typeof(groupid) != 'number') {
-         groupid = parseInt(groupid);
-         if (groupid == 0) {
-            console.error('Unknown group ' + group);
-            return false;
+      var memberId = mGetMemberId(member);
+      var groupData = mGetGroupData(group);
+      if (memberId === undefined || groupData === undefined) return false;
+      var groupMembers = groupData.members;
+      if (groupMembers) {
+         for (var i = 0; i < groupMembers.length; i++) {
+            if (groupMembers[i] == memberId) return true;
          }
-      }
-      if (!GROUP_DATA[groupid]) {
-         console.error('Not found group data for ' + groupid);
-         return false;
-      }
-      var groups = memberData.types;
-      for (var i = 0; i < groups.length; i++) {
-         if (groups[i] == groupid) return true;
       }
       return false;
    };
@@ -1144,48 +1275,6 @@ var LLUnit = {
       }
    },
 
-   changecenter: function (cardid) {
-      if (cardid === undefined) {
-         cardid = document.getElementById("cardid4").value;
-      }
-      if (!cardid) return;
-      cardid = parseInt(cardid);
-      LoadingUtil.startSingle(LLCardData.getDetailedData(cardid)).then(function(card) {
-         document.getElementById("bonus").value = card["attribute"]
-         document.getElementById("percentage").value = card["Cskillpercentage"]
-         document.getElementById("base").value = card["Cskillattribute"]
-         document.getElementById("secondpercentage").value = "0"
-         if (card["rarity"] == "SSR" || card["rarity"] == "UR"){
-            document.getElementById("secondlimit").value = card["Csecondskilllimit"]
-            document.getElementById("secondbase").innerHTML = card["attribute"] // ?
-            document.getElementById("secondpercentage").value = card["Csecondskillattribute"]
-         }
-      }, defaultHandleFailedRequest);
-   },
-
-   copyTo: function (n) {
-      var index=document.getElementById("cardchoice").value;
-      var copyList = ["main", "smile", "pure", "cool"];
-      for (var i in copyList){
-         if (copyList[i] == document.getElementById("main").value)
-            document.getElementById(copyList[i]+String(n)).value = parseInt(document.getElementById(copyList[i]).value)+parseInt(document.getElementById("kizuna").value)
-         else
-            document.getElementById(copyList[i]+String(n)).value = document.getElementById(copyList[i]).value
-      }
-      document.getElementById("skilllevel"+String(n)).value = document.getElementById('skilllevel').innerHTML
-      document.getElementById("mezame"+String(n)).value = (document.getElementById("mezame").checked ? 1 : 0);
-      document.getElementById("cardid"+String(n)).value = index;
-      if (index != "" && document.getElementById("maxcost"+String(n))) {
-         LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
-            document.getElementById("maxcost"+String(n)).value = card.minslot;
-         }, defaultHandleFailedRequest);
-      }
-      if (n == 4){
-         LLUnit.changecenter()
-      }
-      LLUnit.changeavatarn(n)
-   },
-
    getSkillText: function (effect_type, trigger_type, effect_value, discharge_time, trigger_value, activation_rate, trigger_target, effect_target) {
       var trigger_text = '(未知条件)';
       if (trigger_type == LLConst.SKILL_TRIGGER_TIME)
@@ -1260,6 +1349,32 @@ var LLUnit = {
       return text;
    },
 
+   getCardCSkillText: function (card, withbr) {
+      if (!card.Cskill) return '无';
+      var nameSuffix = '<Unknown>';
+      var majorPercentage = parseInt(card.Cskillpercentage);
+      var majorEffect = '';
+      var secondEffect = '';
+      if (majorPercentage == 3) nameSuffix = '的力量';
+      else if (majorPercentage == 4) nameSuffix = '能量';
+      else if (majorPercentage == 6) nameSuffix = '之心';
+      else if (majorPercentage == 7) nameSuffix = '之星';
+      else if (majorPercentage == 9 || majorPercentage == 12) {
+         if (card.Cskillattribute == 'smile') nameSuffix = '公主';
+         else if (card.Cskillattribute == 'pure') nameSuffix = '天使';
+         else if (card.Cskillattribute == 'cool') nameSuffix = '皇后';
+      }
+      if (card.Cskillattribute == card.attribute) {
+         majorEffect = card.attribute + '属性提升' + majorPercentage + '%';
+      } else {
+         majorEffect = card.attribute + '属性提升' + card.Cskillattribute + '的' + majorPercentage +  '%';
+      }
+      if (card.Csecondskilllimit !== undefined) {
+         secondEffect = (withbr ? '<br/>' : '+') + LLConst.getGroupName(parseInt(card.Csecondskilllimit)) + '的社员进一步将' + card.attribute + '属性提升' + card.Csecondskillattribute + '%';
+      }
+      return card.attribute + nameSuffix + '：' + (withbr ? '<br/>' : '') + majorEffect + secondEffect;
+   },
+
    isStrengthSupported: function (card) {
       if (card && card.skill && (card.skilleffect > 11 || card.triggertype > 12)) return false;
       return true;
@@ -1319,6 +1434,19 @@ var LLUnit = {
       var tbodyElement = createElement('tbody', undefined, rowElements);
       var tableElement = createElement('table', {'className': 'table-bordered table-condensed'}, [tbodyElement]);
       return tableElement;
+   },
+
+   createColorSelectComponent: function (emptyName, options) {
+      var selectComponent = new LLSelectComponent(LLUnit.createElement('select', options));
+      var options = [];
+      if (emptyName !== undefined) {
+         options.push({'value': '', 'text': emptyName});
+      }
+      options.push({'value': 'smile', 'text': 'Smile', 'color': 'red'});
+      options.push({'value': 'pure',  'text': 'Pure',  'color': 'green'});
+      options.push({'value': 'cool',  'text': 'Cool',  'color': 'blue'});
+      selectComponent.setOptions(options);
+      return selectComponent;
    }
 };
 
@@ -5596,6 +5724,175 @@ var LLTeamComponent = (function () {
    var cls = LLTeamComponent_cls;
    var proto = cls.prototype;
    LLSaveLoadJsonMixin(proto);
+   return cls;
+})();
+
+var LLCSkillComponent = (function () {
+   var createElement = LLUnit.createElement;
+   var defaultCSkill = {
+      'attribute': 'smile',
+      'Cskillattribute': 'smile',
+      'Cskillpercentage': 0,
+      'Csecondskilllimit': LLConst.GROUP_UNKNOWN,
+      'Csecondskillattribute': 0
+   };
+   var majorPercentageSelectOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '3', 'text': '3'},
+      {'value': '4', 'text': '4'},
+      {'value': '6', 'text': '6'},
+      {'value': '7', 'text': '7'},
+      {'value': '9', 'text': '9'},
+      {'value': '12', 'text': '12'}
+   ];
+   var secondPercentageSelectOptions = [
+      {'value': '0', 'text': '0'},
+      {'value': '1', 'text': '1'},
+      {'value': '2', 'text': '2'},
+      {'value': '3', 'text': '3'},
+      {'value': '6', 'text': '6'},
+      {'value': '7', 'text': '7'}
+   ];
+   var secondLimitIds = [
+      LLConst.GROUP_MUSE,
+      LLConst.GROUP_AQOURS,
+      LLConst.GROUP_GRADE1,
+      LLConst.GROUP_GRADE2,
+      LLConst.GROUP_GRADE3,
+      LLConst.GROUP_PRINTEMPS,
+      LLConst.GROUP_LILYWHITE,
+      LLConst.GROUP_BIBI,
+      LLConst.GROUP_CYARON,
+      LLConst.GROUP_AZALEA,
+      LLConst.GROUP_GUILTYKISS,
+      LLConst.GROUP_NIJIGASAKI,
+      LLConst.GROUP_ELI_NOZOMI2,
+      LLConst.GROUP_YOSHIKO_HANAMARU
+   ];
+   var secondLimitSelectOptions = (function() {
+      var ret = [];
+      for (var i = 0; i < secondLimitIds.length; i++) {
+         ret.push({'value': secondLimitIds[i], 'text': LLConst.getGroupName(secondLimitIds[i])});
+      }
+      return ret;
+   })();
+   function copyCSkill(cFrom, cTo) {
+      cTo.attribute = cFrom.attribute;
+      cTo.Cskillattribute = cFrom.Cskillattribute;
+      cTo.Cskillpercentage = cFrom.Cskillpercentage;
+      cTo.Csecondskilllimit = cFrom.Csecondskilllimit;
+      cTo.Csecondskillattribute = cFrom.Csecondskillattribute;
+   }
+   // controller
+   // {
+   //    setCSkill: function(cskill)
+   //    getCSkill: function()
+   //    setMapColor: function(color)
+   // }
+   function createTextDisplay(controller, title) {
+      var textElement = createElement('span', {'innerHTML': 'N/A'});
+      var cskill = {};
+      copyCSkill(defaultCSkill, cskill);
+      controller.setCSkill = function(cs) {
+         if (cs.attribute) {
+            textElement.innerHTML = title + LLUnit.getCardCSkillText(cs, false);
+            copyCSkill(cs, cskill);
+         } else {
+            textElement.innerHTML = title + 'N/A';
+            copyCSkill(defaultCSkill, cskill);
+         }
+      };
+      controller.getCSkill = function() {
+         return cskill;
+      };
+      controller.setMapColor = function(color) {}; // do nothing
+      return textElement;
+   }
+   // controller
+   // {
+   //    setCSkill: function(cskill)
+   //    getCSkill: function()
+   //    setMapColor: function(color)
+   // }
+   function createEditable(controller, title) {
+      var selectClass = {'className': 'form-control no-padding'};
+      var addToColorComp = LLUnit.createColorSelectComponent(undefined, selectClass);
+      var addFromColorComp = LLUnit.createColorSelectComponent(undefined, selectClass);
+      var majorPercentageComp = new LLSelectComponent(createElement('select', selectClass));
+      majorPercentageComp.setOptions(majorPercentageSelectOptions);
+      majorPercentageComp.set('0');
+      var secondPercentageComp = new LLSelectComponent(createElement('select', selectClass));
+      secondPercentageComp.setOptions(secondPercentageSelectOptions);
+      secondPercentageComp.set('0');
+      var secondLimitComp = new LLSelectComponent(createElement('select', selectClass));
+      secondLimitComp.setOptions(secondLimitSelectOptions);
+      var secondColorElement = createElement('span', {'innerHTML': '歌曲'});
+      addToColorComp.onValueChange = function(v) {
+         secondColorElement.innerHTML = v;
+      };
+      controller.setCSkill = function(cs) {
+         addToColorComp.set(cs.attribute || 'smile');
+         secondColorElement.innerHTML = cs.attribute || 'smile';
+         addFromColorComp.set(cs.Cskillattribute || 'smile');
+         majorPercentageComp.set(cs.Cskillpercentage || '0');
+         if (cs.Csecondskilllimit) {
+            secondLimitComp.set(cs.Csecondskilllimit);
+         }
+         secondPercentageComp.set(cs.Csecondskillattribute || '0');
+      };
+      controller.getCSkill = function() {
+         return {
+            'attribute': addToColorComp.get(),
+            'Cskillattribute': addFromColorComp.get(),
+            'Cskillpercentage': parseInt(majorPercentageComp.get()),
+            'Csecondskilllimit': parseInt(secondLimitComp.get()),
+            'Csecondskillattribute': parseInt(secondPercentageComp.get())
+         };
+      };
+      controller.setMapColor = function(color) {
+         if (addFromColorComp.get() == addToColorComp.get()) {
+            addFromColorComp.set(color);
+         }
+         addToColorComp.set(color);
+         secondColorElement.innerHTML = color;
+      };
+      return createElement('div', {'className': 'form-inline'}, [
+         title,
+         addToColorComp.element,
+         '属性提升',
+         addFromColorComp.element,
+         '的',
+         majorPercentageComp.element,
+         '%+',
+         secondLimitComp.element,
+         '的社员进一步将',
+         secondColorElement,
+         '属性提升',
+         secondPercentageComp.element,
+         '%'
+      ]);
+   }
+   // LLCSkillComponent
+   // {
+   //    setCSkill: function(cskill)
+   //    getCSkill: function()
+   //    setMapColor: function(color)
+   // }
+   // options
+   // {
+   //    editable: bool
+   //    title: string (default: '主唱技能')
+   // }
+   function LLCSkillComponent_cls(id, options) {
+      var element = LLUnit.getElement(id);
+      var opt = options || {};
+      var editable = opt.editable || false;
+      var title = opt.title || '主唱技能';
+      title = title + '：';
+      var innerElement = (editable ? createEditable(this, title) : createTextDisplay(this, title));
+      element.appendChild(innerElement);
+   }
+   var cls = LLCSkillComponent_cls;
    return cls;
 })();
 

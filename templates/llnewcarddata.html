@@ -235,8 +235,8 @@
          comp_skill.setCardData(curCard);
          comp_skill2.setCardData(curCard);
          var skilllevel = comp_skill.skillLevel;
-   		document.getElementById('centerskill').innerHTML = cskilltext(curCard)
-   		document.getElementById('centerskill2').innerHTML = cskilltext(curCard)
+   		document.getElementById('centerskill').innerHTML = LLUnit.getCardCSkillText(curCard, true)
+   		document.getElementById('centerskill2').innerHTML = LLUnit.getCardCSkillText(curCard, true)
    		changeskilleffect(curCard, skilllevel)
    		for (i in infolist2){
    			document.getElementById(infolist2[i]+'1').innerHTML = curCard[infolist2[i]]
@@ -359,40 +359,6 @@
       language = 1-language
       comp_cardselector.setLanguage(language);
    }
-   
-   
-   function cskilltext(c){
-      
-      if (!c.Cskill)
-         return '无'
-   	if (parseInt(c.Cskillpercentage) == 3){
-   		cpostfix = '的力量'
-   		ceffect = c.attribute+'P提升3%'
-   	}
-   	else if (parseInt(c.Cskillpercentage) == 6){
-   		cpostfix = '之心'
-   		ceffect = c.attribute+'P提升6%'
-   	}
-      else if (parseInt(c.Cskillpercentage) == 7){
-         cpostfix = '之星'
-         ceffect = c.attribute+'P提升7%'
-      }
-   	else if (parseInt(c.Cskillpercentage) == 9){
-   		cpostfix = cskill[c.Cskillattribute]
-   		ceffect = c.attribute+'P提升9%'
-   	}
-   	else if (parseInt(c.Cskillpercentage) == 12){
-   		cpostfix = cskill[c.Cskillattribute]
-   		ceffect = c.attribute+'P提升'+c.Cskillattribute+'的12%'
-   	}
-      if (parseInt(c.Cskillpercentage) >= 7){
-         csecondeffect = member[parseInt(c.Csecondskilllimit)]+'成员'+c.attribute+'P提升'+c.Csecondskillattribute+'%'
-         return c.attribute+cpostfix+'<br>'+ceffect+'<br>'+csecondeffect
-      }
-      
-   	return c.attribute+cpostfix+'<br>'+ceffect
-   }
-   
    </script>
 {% endblock %}
 

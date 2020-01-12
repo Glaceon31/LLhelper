@@ -249,6 +249,37 @@
    }
 
    function getGemStock_60AllGem() {
+      var names = [
+         "高坂穂乃果", "絢瀬絵里", "南ことり", "園田海未", "星空凛", "西木野真姫", "東條希", "小泉花陽", "矢澤にこ",
+         "高海千歌", "桜内梨子", "松浦果南", "黒澤ダイヤ", "渡辺曜", "津島善子", "国木田花丸", "小原鞠莉", "黒澤ルビィ"
+      ];
+      var member_29 = {};
+      for (var i = 0; i < names.length; i++) {
+         var per_color = {'smile': 0, 'pure': 0, 'cool': 0}
+         per_color[LLConst.getMemberColor(names[i])] = 9;
+         member_29[names[i]] = per_color;
+      }
+      var ms = {'smile': 9, 'pure': 0, 'cool': 0};
+      var mp
+      return {
+         'SADD_200': {'ALL': 9},
+         'SADD_450': {'ALL': 9},
+         'SMUL_10': {'ALL': 9},
+         'SMUL_16': {'ALL': 9},
+         'AMUL_18': {'ALL': 9},
+         'AMUL_24': {'ALL': 9},
+         'SCORE_250': {'ALL': 9},
+         'HEAL_480': {'ALL': 9},
+         'EMUL_33': {'ALL': 9},
+         'SADD_1400': {'ALL': 9},
+         'SMUL_28': {'ALL': 9},
+         'AMUL_40': {'ALL': 9},
+         'MEMBER_29': member_29,
+         'NONET_42': {'ALL': 9}
+      };
+   }
+
+   function getGemStock_65AllGem() {
       return {'ALL': 9};
    }
 
@@ -337,14 +368,14 @@
             return 0;
          });
       }});
-      addTestItem({'name': 'Smile team with smile song with friend - autoarm all gem', 'after': test1, 'run': function () {
+      addTestItem({'name': 'Smile team with smile song with friend - autoarm 6.0 gem', 'after': test1, 'run': function () {
          var cardConfigs = getSmileTeam();
          var song = getSmileSong('oyasuminasann');
          song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
          var mapdata = new LLMap(song);
          return loadCardsByConfig(cardConfigs).then(function (cards) {
             var llteam = buildTeam(cards, cardConfigs, mapdata);
-            llteam.autoArmGem(mapdata, {'ALL': 9});
+            llteam.autoArmGem(mapdata, getGemStock_60AllGem());
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
@@ -353,6 +384,25 @@
             assertEqual(llteam.totalStrength, 90936);
             assertEqual(llteam.totalAttrStrength, 74798);
             assertEqual(llteam.totalSkillStrength, 16138);
+            return 0;
+         });
+      }});
+      addTestItem({'name': 'Smile team with smile song with friend - autoarm 6.5 gem', 'after': test1, 'run': function () {
+         var cardConfigs = getSmileTeam();
+         var song = getSmileSong('oyasuminasann');
+         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
+         var mapdata = new LLMap(song);
+         return loadCardsByConfig(cardConfigs).then(function (cards) {
+            var llteam = buildTeam(cards, cardConfigs, mapdata);
+            llteam.autoArmGem(mapdata, getGemStock_65AllGem());
+            llteam.calculateAttributeStrength(mapdata);
+            llteam.calculateSkillStrength(mapdata);
+            console.log(llteam);
+            assertAttributeP(llteam.finalAttr, 85016, 37230, 36880);
+            assertAttributeP(llteam.bonusAttr, 17542, 0, 0);
+            assertEqual(llteam.totalStrength, 92305);
+            assertEqual(llteam.totalAttrStrength, 78025);
+            assertEqual(llteam.totalSkillStrength, 14280);
             return 0;
          });
       }});
