@@ -39,6 +39,8 @@
    var comp_distribution_chart = 0;
    var comp_distribution_param = 0;
    var comp_team = 0;
+   var comp_cskill_team = 0;
+   var comp_cskill_friend = 0;
 
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
       // init components
@@ -50,6 +52,8 @@
       comp_resultmic = new LLMicDisplayComponent('resultmic');
       comp_distribution_param = new LLScoreDistributionParameter('distribution_param');
       comp_distribution_param.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageDistParamKey));
+      comp_cskill_team = new LLCSkillComponent('cskill_team');
+      comp_cskill_friend = new LLCSkillComponent('cskill_friend', {'editable': true, 'title': '好友主唱技能'});
 
       var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
          LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
@@ -78,7 +82,9 @@
             comp_team.putMember(i, memberData);
          },
          'onCenterChanged': function() {
-            LLUnit.changecenter(this.getCardId(4) || 0);
+            LoadingUtil.startSingle(LLCardData.getDetailedData(this.getCardId(4) || 0)).then(function(card) {
+               comp_cskill_team.setCSkill(card);
+            }, defaultHandleFailedRequest);
          }
       });
       comp_team.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageLLNewAutoUnitTeamKey));
@@ -108,12 +114,10 @@
 
    function changemapcolor(attr) {
       if (attr === undefined) attr = document.getElementById('map').value;
-      // do not update base, secondbase, bonus, because they are set by center
       document.getElementById('map').style.color = llsong.attcolor[attr];
       if (attr == llsong.getSongAttr()) document.getElementById('songchoice').style.color = llsong.attcolor[attr];
-      document.getElementById('secondbase2').innerHTML = attr;
-      if (document.getElementById("percentage2").value != 12) document.getElementById('base2').value = attr;
-      document.getElementById('bonus2').value = attr;
+      // do not update comp_cskill_team, because it is set by center
+      comp_cskill_friend.setMapColor(attr);
    }
 
    function applysongdata() {
@@ -389,23 +393,17 @@
    }
 
    function docalculate(cards, extraData) {
-      var sel_element = ['base', 'base2', 'bonus', 'bonus2', 'map'];
-      var sel_int = ['percentage', 'percentage2', 'secondlimit', 'secondlimit2', 'secondpercentage', 'secondpercentage2', 'combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
+      var sel_int = ['combo', 'perfect', 'starperfect', 'time', 'skillup', 'tapup'];
       var member = comp_team.getMembers();
       var mapcenter = {};
       var llmembers = [];
       var weights = comp_team.getWeights();
 
-      mapcenter['secondbase'] = document.getElementById('map').value
-      mapcenter['secondbase2'] = document.getElementById('map').value
       for (var i = 0; i < sel_int.length; i++) {
          mapcenter[sel_int[i]] = parseInt(document.getElementById(sel_int[i]).value);
       }
-      for (var i = 0; i < sel_element.length; i++) {
-         mapcenter[sel_element[i]] = document.getElementById(sel_element[i]).value;
-      }
 
-      var mainatt = mapcenter['map']
+      var mainatt = document.getElementById('map').value;
 
       for (var i = 0; i < 9; i++) {
          member[i].card = cards[member[i].cardid];
@@ -414,12 +412,15 @@
       }
 
       var distParam = comp_distribution_param.saveData();
-      var llmap = new LLMap({'song': llsong.getSelectedSong(), 'diff': document.getElementById('diffchoice').value});
+      var llmap = new LLMap({
+         'song': llsong.getSelectedSong(),
+         'diff': document.getElementById('diffchoice').value,
+         'friendCSkill': comp_cskill_friend.getCSkill()
+      });
       llmap.attribute = mainatt;
       llmap.setSongDifficultyData(mapcenter.combo, mapcenter.starperfect, mapcenter.time, mapcenter.perfect, mapcenter.starperfect);
       llmap.setMapBuff(mapcenter.tapup, mapcenter.skillup);
       llmap.setWeights(weights);
-      llmap.setFriendCSkill(mapcenter.bonus2, mapcenter.base2, mapcenter.percentage2, mapcenter.secondlimit2, mapcenter.secondpercentage2);
 
       var llteam = new LLTeam(llmembers);
       if (document.getElementById('autoarm0').checked){
@@ -627,92 +628,8 @@
 </div>
 
 <div class="col-xs-12 col-md-9">
-主唱技能 :<select id="bonus" name="bonus">
-		<option value="smile" style="color:red">smile</option>
-		<option value="pure" style="color:green">pure</option>
-		<option value="cool" style="color:blue">cool</option>
-	</select>增加<select id="base" name="base">
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
-   </select>的<select id="percentage" name="percentage">
-      <option value=0>0</option>
-      <option value=3>3</option>
-      <option value=4>4</option>
-      <option value=6 SELECTED>6</option>
-      <option value=7>7</option>
-      <option value=9>9</option>
-      <option value=12>12</option>
-   </select>%+
-   <select id="secondlimit" name="secondlimit">
-      <option value=""></option>
-      <option value="4" SELECTED>μ's</option>
-      <option value="5">Aqours</option>
-      <option value="1">一年级</option>
-      <option value="2">二年级</option>
-      <option value="3">三年级</option>
-      <option value="6">Printemps</option>
-      <option value="7">lilywhite</option>
-      <option value="8">BiBi</option>
-      <option value="9">CYaRon!</option>
-      <option value="10">AZALEA</option>
-      <option value="11">Guilty Kiss</option>
-   </select>的<nospan id="secondbase" name="secondbase">
-   属性
-   <!--
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>-->
-   </nospan>增加<select id="secondpercentage" name="secondpercentage">
-      <option value=0 SELECTED>0</option>
-      <option value=1>1</option>
-      <option value=2>2</option>
-      <option value=3>3</option>
-      <option value=6>6</option>
-   </select>%<br>
-好友主唱技能 :<select id="bonus2" name="bonus2">
-		<option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
-	</select>增加<select id="base2" name="base2">
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>
-   </select>的<select id="percentage2" name="percentage2">
-      <option value=0 SELECTED>0</option>
-      <option value=3>3</option>
-      <option value=4>4</option>
-      <option value=6>6</option>
-      <option value=7>7</option>
-      <option value=9>9</option>
-      <option value=12>12</option>
-   </select>%+
-   <select id="secondlimit2" name="secondlimit2">
-      <option value=""></option>
-      <option value="4" SELECTED>μ's</option>
-      <option value="5">Aqours</option>
-      <option value="1">一年级</option>
-      <option value="2">二年级</option>
-      <option value="3">三年级</option>
-      <option value="6">Printemps</option>
-      <option value="7">lilywhite</option>
-      <option value="8">BiBi</option>
-      <option value="9">CYaRon!</option>
-      <option value="10">AZALEA</option>
-      <option value="11">Guilty Kiss</option>
-   </select>的<nospan id="secondbase2" name="secondbase2">
-   歌曲属性
-   <!--
-      <option value="smile" style="color:red">smile</option>
-      <option value="pure" style="color:green">pure</option>
-      <option value="cool" style="color:blue">cool</option>-->
-   </nospan>增加<select id="secondpercentage2" name="secondpercentage2">
-      <option value=0 SELECTED>0</option>
-      <option value=1>1</option>
-      <option value=2>2</option>
-      <option value=3>3</option>
-      <option value=6>6</option>
-   </select>%<br>
+<div id='cskill_team'></div>
+<div id='cskill_friend'></div>
 点击得分增加：<input id="tapup" name="tapup" value="0" size=2></input>%<br>
 技能发动率增加：<input id="skillup" name="skillup" value="0" size=2></input>%<br>
 <div id="distribution_param"></div>

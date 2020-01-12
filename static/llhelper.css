@@ -145,6 +145,10 @@
    min-width: 7em;
    vertical-align: middle;
 }
+.no-padding {
+   padding: 0;
+   height: auto;
+}
 input.num-size-3 {
    width: 60px;
 }
