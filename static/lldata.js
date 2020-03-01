@@ -21,7 +21,8 @@
  * components:
  *   LLComponentBase
  *     +- LLValuedComponent
- *       +- LLSelectComponent
+ *     | +- LLSelectComponent
+ *     +- LLImageComponent
  *   LLComponentCollection
  *     +- LLSkillContainer
  *     +- LLCardSelector
@@ -362,7 +363,8 @@ var LLMapNoteData = (function () {
  * base components:
  *   LLComponentBase
  *     +- LLValuedComponent
- *       +- LLSelectComponent
+ *     | +- LLSelectComponent
+ *     +- LLImageComponent
  *   LLComponentCollection
  */
 var LLComponentBase = (function () {
@@ -571,6 +573,63 @@ var LLSelectComponent = (function() {
       }
       this.filter = filter;
    };
+   return cls;
+})();
+
+var LLImageComponent = (function() {
+   /* Properties:
+    *    srcList
+    *    curSrcIndex
+    * Methods:
+    *    setSrcList(list)
+    */
+   function LLValuedComponent_cls(id, options) {
+      LLComponentBase.call(this, id, options);
+      if (!this.exist) {
+         this.srcList = undefined;
+         this.curSrcIndex = undefined;
+         return this;
+      }
+      var srcList = (options && options.srcList ? options.srcList : [this.element.src]);
+      var me = this;
+      this.on('error', function (e) {
+         if (me.curSrcIndex === undefined) return;
+         if (me.curSrcIndex < me.srcList.length-1) {
+            me.curSrcIndex++;
+            me.element.src = me.srcList[me.curSrcIndex];
+         } else {
+            console.error('Failed to load image');
+            console.error(me.srcList);
+         }
+      });
+      this.on('reset', function (e) {
+         console.error('reset called, src=' + me.element.src);
+         console.error(e);
+      });
+      this.setSrcList(srcList);
+   };
+   var cls = LLValuedComponent_cls;
+   cls.prototype = new LLComponentBase();
+   cls.prototype.constructor = cls;
+   var proto = cls.prototype;
+   proto.setSrcList = function (srcList) {
+      this.srcList = srcList;
+      if (srcList.length > 0) {
+         for (var i = 0; i < srcList.length; i++) {
+            // skip if already in list
+            if (this.element.src == srcList[i]) {
+               this.curSrcIndex = i;
+               return;
+            }
+         }
+         this.curSrcIndex = 0;
+         this.element.src = '';
+         this.element.src = this.srcList[0];
+      } else {
+         this.curSrcIndex = undefined;
+         this.element.src = '';
+      }
+   }
    return cls;
 })();
 
@@ -1205,7 +1264,31 @@ var LLUnit = {
       } else {
          comp_skill.setCardData();
       }
-      LLUnit.changeavatar('imageselect', index, mezame);
+      comp_cardavatar.setSrcList(LLUnit.getImagePathList(index, 'avatar', mezame));
+   },
+
+   getImagePathList: function (cardid, type, mezame) {
+      if ((!cardid) || cardid == "0") {
+         if (type == 'avatar') return ['/static/null.png'];
+         return [''];
+      }
+      var ret = [];
+      var isHttp = ('http:' == document.location.protocol);
+      if (type == 'avatar' || type == 'card') {
+         var f = (type == 'avatar' ? 'icon' : 'unit');
+         var m = (mezame ? 'rankup' : 'normal');
+         for (var i = 0; i < 4; i++) {
+            ret.push((isHttp ^ (i>=2) ? 'http' : 'https') + '://gitcdn.' + (i%2==0 ? 'xyz' : 'link') + '/repo/iebb/SIFStatic/master/' + f + '/' + m + '/' + cardid + '.png');
+         }
+      } else if (type == 'navi') {
+         var m = (mezame ? '1' : '0');
+         for (var i = 0; i < 2; i++) {
+            ret.push((isHttp ^ (i>=1) ? 'http' : 'https') + '://db.loveliv.es/png/navi/' + cardid + '/' + m);
+         }
+      } else {
+         ret.push('');
+      }
+      return ret;
    },
 
    // getimagepath require twintailosu.js
@@ -4327,6 +4410,7 @@ var LLSubMemberComponent = (function () {
       var bSwapping = false;
       var bDeleting = false;
       var image = createElement('img');
+      var imageComp = new LLImageComponent(image);
       var levelInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 1, 'max': 8, 'value': 1});
       levelInput.addEventListener('change', function() {
          localMember.skilllevel = parseInt(levelInput.value);
@@ -4373,7 +4457,7 @@ var LLSubMemberComponent = (function () {
          }
          levelInput.value = m.skilllevel;
          slotInput.value = m.maxcost;
-         LLUnit.changeavatare(image, m.cardid, parseInt(m.mezame));
+         imageComp.setSrcList(LLUnit.getImagePathList(m.cardid, 'avatar', parseInt(m.mezame)));
       };
       controller.startSwapping = function() {
          swapButton.innerHTML = '选择';
@@ -5275,7 +5359,8 @@ var LLTeamComponent = (function () {
    //    getMezame: function()
    // }
    function avatarCreator(controller) {
-      var imgElement = createElement('img', {'src': '/static/null.png'});
+      var imgElement = createElement('img');
+      var imgComp = new LLImageComponent(imgElement, {'srcList': ['/static/null.png']});
       var curCardid = undefined;
       var curMezame = undefined;
       controller.update = function(cardid, mezame) {
@@ -5284,7 +5369,7 @@ var LLTeamComponent = (function () {
          if (cardid != curCardid || mezame != curMezame) {
             curCardid = cardid;
             curMezame = mezame;
-            LLUnit.changeavatare(imgElement, cardid, mezame);
+            imgComp.setSrcList(LLUnit.getImagePathList(cardid, 'avatar', mezame));
          }
       };
       controller.getCardId = function() { return curCardid; };
