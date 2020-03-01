@@ -32,6 +32,7 @@
    var data_mapnote = 0;
    var comp_skill = 0;
    var comp_cardselector = 0;
+   var comp_cardavatar = 0;
    var comp_gemstock = 0;
    var comp_submember = 0;
    var comp_swapper = 0;
@@ -49,6 +50,7 @@
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.onCardChange = LLUnit.applycarddata;
+      comp_cardavatar = new LLImageComponent('imageselect');
       comp_resultmic = new LLMicDisplayComponent('resultmic');
       comp_distribution_param = new LLScoreDistributionParameter('distribution_param');
       comp_distribution_param.loadJson(LLHelperLocalStorage.getData(LLHelperLocalStorage.localStorageDistParamKey));

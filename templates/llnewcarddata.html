@@ -48,6 +48,12 @@
    var comp_skill = 0;
    var comp_skill2 = 0;
    var comp_cardselector = 0;
+   var comp_image_avatar = 0;
+   var comp_image_avatar2 = 0;
+   var comp_image_card = 0;
+   var comp_image_card2 = 0;
+   var comp_image_navi = 0;
+   var comp_image_navi2 = 0;
 
    // TODO: need load skill data for lowbound filter to work on skill calculation...
    LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
@@ -78,6 +84,15 @@
          return (v == '' || isNaN(v) || getmaxstrength(card) >= parseInt(v));
       });
       comp_cardselector.onCardChange = changecolor;
+
+      // init image
+      comp_image_avatar = new LLImageComponent('avatar1');
+      comp_image_avatar2 = new LLImageComponent('avatar2');
+      comp_image_card = new LLImageComponent('card');
+      comp_image_card2 = new LLImageComponent('card2');
+      comp_image_navi = new LLImageComponent('navi');
+      comp_image_navi2 = new LLImageComponent('navi2');
+
       var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
          LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
             comp_cardselector.setCardData(cards, true);
@@ -137,54 +152,51 @@
    }
 
    function update_visible(elementid, show, show_callback) {
-      if (show) {
-         document.getElementById(elementid).style.display = '';
-         if (show_callback) show_callback(elementid);
+      if (typeof(elementid) == 'string') {
+         if (show) {
+            document.getElementById(elementid).style.display = '';
+            if (show_callback) show_callback(elementid);
+         } else {
+            document.getElementById(elementid).style.display = 'none';
+         }
       } else {
-         document.getElementById(elementid).style.display = 'none';
+         if (show) {
+            elementid.show();
+            if (show_callback) show_callback(elementid);
+         } else {
+            elementid.hide();
+         }
       }
    }
 
-   function update_avatar(elementid, cardid, mezame, show) {
-      update_visible(elementid, show, function() {
-         LLUnit.changeavatar(elementid, cardid, mezame);
+   function update_avatar(comp, cardid, mezame, show) {
+      update_visible(comp, show, function() {
+         comp.setSrcList(LLUnit.getImagePathList(cardid, 'avatar', mezame));
       });
    }
 
-   function update_card_image(elementid, cardid, mezame, show, small) {
-      update_visible(elementid, show, function() {
-         var element = document.getElementById(elementid);
-         var path = ((cardid && cardid != "0") ? getimagepath(cardid, 'card', mezame) : '');
-         if (path != element.src) {
-            // avoid showing last image before new image is loaded
-            element.src = '';
-         }
-         element.src = path;
+   function update_card_image(comp, cardid, mezame, show, small) {
+      update_visible(comp, show, function() {
+         comp.setSrcList(LLUnit.getImagePathList(cardid, 'card', mezame));
          if (small) {
-            element.style.height = '422px';
-            element.style.width = '300px';
+            comp.element.style.height = '422px';
+            comp.element.style.width = '300px';
          } else {
-            element.style.height = '';
-            element.style.width = '';
+            comp.element.style.height = '';
+            comp.element.style.width = '';
          }
       });
    }
 
-   function update_navi_image(elementid, cardid, mezame, show, small) {
-      update_visible(elementid, show, function() {
-         var element = document.getElementById(elementid);
-         var path = ((cardid && cardid != "0") ? getimagepath(cardid, 'navi', mezame) : '');
-         if (path != element.src) {
-            // avoid showing last image before new image is loaded
-            element.src = '';
-         }
-         element.src = path;
+   function update_navi_image(comp, cardid, mezame, show, small) {
+      update_visible(comp, show, function() {
+         comp.setSrcList(LLUnit.getImagePathList(cardid, 'navi', mezame));
          if (small) {
-            element.style.height = '300px';
-            element.style.width = '300px';
+            comp.element.style.height = '300px';
+            comp.element.style.width = '300px';
          } else {
-            element.style.height = '';
-            element.style.width = '';
+            comp.element.style.height = '';
+            comp.element.style.width = '';
          }
       });
    }
@@ -207,12 +219,12 @@
          var show_card = document.getElementById('showcard').checked;
          var show_small = document.getElementById('smallcard').checked;
          document.getElementById('notmezame').style.display = (show_not_mezame ? '' : 'none');
-         update_avatar('avatar1', index, 0, show_not_mezame);
-         update_avatar('avatar2', index, 1, true);
-         update_card_image('card', index, 0, show_not_mezame && show_card, show_small);
-         update_card_image('card2', index, 1, show_card, show_small);
-         update_navi_image('navi', index, 0, show_not_mezame && show_card, show_small);
-         update_navi_image('navi2', index, 1, show_card, show_small);
+         update_avatar(comp_image_avatar, index, 0, show_not_mezame);
+         update_avatar(comp_image_avatar2, index, 1, true);
+         update_card_image(comp_image_card, index, 0, show_not_mezame && show_card, show_small);
+         update_card_image(comp_image_card2, index, 1, show_card, show_small);
+         update_navi_image(comp_image_navi, index, 0, show_not_mezame && show_card, show_small);
+         update_navi_image(comp_image_navi2, index, 1, show_card, show_small);
          update_visible('skill2', !show_not_mezame);
          update_visible('skillslot2', !show_not_mezame);
          update_visible('centerskill2', !show_not_mezame);
