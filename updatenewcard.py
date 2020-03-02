@@ -179,7 +179,7 @@ if __name__ == "__main__":
                 card['Cskillattribute'] = base[(cskill[0]/10)%10]
             else:
                 card['Cskillattribute'] = base[cskill[0]%10]
-            Csecondskilldetail = jpdbconn.execute('SELECT leader_skill_effect_type, effect_value FROM unit_leader_skill_extra_m WHERE unit_leader_skill_id = %d;' % jptmp[9])
+            Csecondskilldetail = jpdbconn.execute('SELECT member_tag_id, effect_value FROM unit_leader_skill_extra_m WHERE unit_leader_skill_id = %d;' % jptmp[9])
             csecondskill = Csecondskilldetail.fetchone()
             if csecondskill:
                 card['Csecondskillattribute'] = csecondskill[1]
