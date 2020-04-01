@@ -328,6 +328,7 @@ var LLMapNoteData = (function () {
          return defer;
       }
       var jsonPath = song[diff].jsonpath;
+      var liveId = song[diff].liveid;
       if (!jsonPath) {
          console.error('No json path found for difficulty : ' + diff);
          console.error(song);
@@ -348,9 +349,28 @@ var LLMapNoteData = (function () {
             defer.resolve(data);
          },
          'error': function (xhr, textStatus, errorThrown) {
-            console.error("Failed on request to " + url + ": " + textStatus);
-            console.error(errorThrown);
-            defer.reject();
+            console.info("Failed on request to " + url + ": " + textStatus + ', retry on local cache');
+            console.info(errorThrown);
+            if (!liveId) {
+               console.error('No live id found for difficulty : ' + diff);
+               console.error(song);
+               defer.reject();
+            } else {
+               $.ajax({
+                  'url': '/static/live/json/' + liveId + '.json',
+                  'type': 'GET',
+                  'success': function (data) {
+                     me.cache[jsonPath] = data;
+                     defer.resolve(data);
+                  },
+                  'error': function (xhr, textStatus, errorThrown) {
+                     console.error("Failed on request to local cache for live id " + liveId + ": " + textStatus);
+                     console.error(errorThrown);
+                     defer.reject();
+                  },
+                  'dataType': 'json'
+               });
+            }
          },
          'dataType': 'json'
       });
