@@ -131,7 +131,8 @@
             'skilllevel': skillLevel,
             'maxcost': maxcost,
             'gems': [],
-            'card': cards[id]
+            'card': cards[id],
+            'hp': (mezame ? cards[id].hp+1 : cards[id].hp)
          };
          member[cards[id].attribute] += kizuna[cards[id].rarity][mezame];
          for (var j in gems) {
@@ -158,7 +159,8 @@
             'skilllevel': skillLevel,
             'maxcost': maxcost,
             'gems': [],
-            'card': cards[id]
+            'card': cards[id],
+            'hp': (mezame ? cards[id].hp+1 : cards[id].hp)
          };
          member[cards[id].attribute] += kizuna[cards[id].rarity][mezame];
          members.push(new LLMember(member));
@@ -304,7 +306,8 @@
    }
 
    LLCardData.setVersion('cn');
-   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+   $.when(LLCardData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, metaData) {
+      LLConst.initMetadata(metaData);
       defer_test_load.resolve();
       // done
       document.getElementById('loadingbox').style.display = 'none';

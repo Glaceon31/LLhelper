@@ -57,7 +57,8 @@
 
    // TODO: need load skill data for lowbound filter to work on skill calculation...
    LLCardData.briefKeys.push('minslot', 'maxslot', 'smile2', 'pure2', 'cool2');
-   $.when(LLCardData.getAllBriefData(), defer_onload).then(function (cardData) {
+   $.when(LLCardData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, metaData) {
+      LLConst.initMetadata(metaData);
       // init 2 skill containers
       comp_skill = new LLSkillContainer({'showall': 1});
       comp_skill2 = new LLSkillContainer({

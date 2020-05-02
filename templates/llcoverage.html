@@ -30,8 +30,9 @@
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
-   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
+   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, songData, metaData) {
       // init components
+      LLConst.initMetadata(metaData);
       llsong = new LLSong(songData);
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);

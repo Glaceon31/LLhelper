@@ -45,7 +45,8 @@ unit_column_str = (
 ' unit_m.hp_max,'  # 15
 ' unit_m.smile_max,'
 ' unit_m.pure_max,'
-' unit_m.cool_max '
+' unit_m.cool_max,'
+' unit_m.album_series_id '
 )
 
 def namechange(name):
@@ -74,8 +75,6 @@ if __name__ == "__main__":
             cards[card_key] = {}
             card = cards[card_key]
             card['cnhave'] = 0
-            card['series'] = ''
-            card['jpseries'] = ''
             card['type'] = u'卡池卡'
         skillid = jptmp[8]
         card = cards[card_key]
@@ -107,6 +106,7 @@ if __name__ == "__main__":
         card['special'] = 0
         card['minslot'] = jptmp[11]
         card['maxslot'] = jptmp[12]
+        card['album'] = jptmp[19]
 
         #card['type'] = ''
         card['Cskillattribute'] = card['attribute']
