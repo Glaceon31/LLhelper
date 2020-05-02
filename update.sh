@@ -31,6 +31,7 @@ python2 updatenewlive.py
 # argument is thread number, 1 to use single-thread mode
 #python2 updateweight2.py 1
 python2 updateweight2.py 10
+python2 updatemetadata.py
 
 if [ "$do_cleanup" = "y" ]; then
   rm $livedb

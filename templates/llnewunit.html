@@ -47,8 +47,9 @@
    var comp_cskill_team = 0;
    var comp_cskill_friend = 0;
 
-   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), defer_onload).then(function (cardData, songData) {
+   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, songData, metaData) {
       // init components
+      LLConst.initMetadata(metaData);
       llsong = new LLSong(songData);
       data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();

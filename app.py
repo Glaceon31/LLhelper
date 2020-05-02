@@ -21,6 +21,8 @@ g_llsongdata = LLData('newsongsjson.txt', 60)
 # snapshot for older card data, should have much less chance to update
 g_llcarddata_cn = LLData('newcardsjson-20181021.txt', 3600)
 g_llcarddata_mix = LLDataMix([g_llcarddata_cn, g_llcarddata], 'cn-mix', 60)
+# metadata
+g_llmetadata = LLData('metadata.txt', 60)
 
 
 ### activity ###
@@ -111,6 +113,10 @@ def lldata_songbrief():
 @app.route("/lldata/song/<index>", methods=['GET'])
 def lldata_songdetail(index):
     return json.dumps(g_llsongdata.queryByIndex(index))
+
+@app.route("/lldata/metadata", methods=['GET'])
+def lldata_metadata():
+    return json.dumps(g_llmetadata.queryByIndexes(request.args['keys']))
 
 ### data api ###
 @app.route("/llcardapiwiki")

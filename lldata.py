@@ -114,6 +114,19 @@ class LLData:
             self.lock.releaseRead()
         return ret;
 
+    def queryByIndexes(self, indexes):
+        ret = {}
+        indexlist = indexes.split(',')
+        self.reloadJson()
+        self.lock.acquireRead()
+        try:
+            for index in indexlist:
+                if index in self.data:
+                    ret[index] = self.data[index]
+        finally:
+            self.lock.releaseRead()
+        return ret;
+
 class LLDataMix(LLData):
     def __init__(self, lldataList, name, check_interval):
         self.lldataList = lldataList
