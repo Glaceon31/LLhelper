@@ -5,6 +5,8 @@
  *   LLData
  *     (instance) LLCardData
  *     (instance) LLSongData
+ *   LLSimpleKeyData
+ *     (instance) LLMetaData
  *   LLMapNoteData
  *   LLConst
  *   LLUnit
@@ -26,6 +28,7 @@
  *   LLComponentCollection
  *     +- LLSkillContainer
  *     +- LLCardSelector
+ *     +- LLSongSelector
  *   LLGemStockComponent
  *   LLSubMemberComponent
  *   LLMicDisplayComponent
@@ -36,7 +39,7 @@
  *   LLTeamComponent
  *   LLCSkillComponent
  *
- * v1.5.0
+ * v1.6.0
  * By ben1222
  */
 
@@ -118,6 +121,8 @@ var LLHelperLocalStorage = {
    'localStorageLLNewUnitTeamKey': 'llhelper_llnewunit_team__',
    'localStorageLLNewUnitSisTeamKey': 'llhelper_llnewunitsis_team__',
    'localStorageLLNewAutoUnitTeamKey': 'llhelper_llnewautounit_team__',
+   'localStorageSongSelectKey': 'llhelper_song_select__',
+   'localStorageCardSelectKey': 'llhelper_card_select__',
 
    'getDataVersion': function () {
       var version;
@@ -165,8 +170,10 @@ var LLHelperLocalStorage = {
 
 /*
  * LLData: class to load json data from backend
+ * LLSimpleKeyData: class to load json data from backend
  * LLCardData: instance for LLData, load card data
  * LLSongData: instance for LLData, load song data
+ * LLMetaData: instance for LLSimpleKeyData, load meta data
  * require jQuery
  */
 var LLData = (function () {
@@ -289,13 +296,13 @@ var LLData = (function () {
    return cls;
 })();
 
-var LLMetaData = (function () {
-   function LLMetaData_cls(url, keys) {
+var LLSimpleKeyData = (function () {
+   function LLSimpleKeyData_cls(url, keys) {
       this.url = url;
       this.keys = keys;
       this.cache = {};
    }
-   var cls = LLMetaData_cls;
+   var cls = LLSimpleKeyData_cls;
    var proto = cls.prototype;
    proto.get = function(keys, url) {
       if (keys === undefined) keys = this.keys;
@@ -342,8 +349,8 @@ var LLMetaData = (function () {
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
    ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'eponym', 'jpeponym', 'hp', 'album']);
 var LLSongData = new LLData('/lldata/songbrief', '/lldata/song/',
-   ['id', 'aqours', 'muse', 'attribute', 'name', 'jpname', 'easy', 'normal', 'hard', 'expert', 'master', 'arcade', 'expert_swing']);
-var LLMetaData = new LLMetaData('/lldata/metadata', ['album', 'member_tag', 'unit_type', 'cskill_groups']);
+   ['id', 'attribute', 'name', 'jpname', 'settings', 'group']);
+var LLMetaData = new LLSimpleKeyData('/lldata/metadata', ['album', 'member_tag', 'unit_type', 'cskill_groups']);
 
 var LLMapNoteData = (function () {
    function LLMapNoteData_cls(base_url) {
@@ -371,17 +378,17 @@ var LLMapNoteData = (function () {
       }
       return data;
    }
-   proto.getMapNoteData = function (song, diff) {
+   proto.getMapNoteData = function (song, songSetting) {
       var defer = $.Deferred();
       if (song.attribute == '') {
          // 默认曲目
-         defer.resolve(createMapData(song[diff].combo, song[diff].time));
+         defer.resolve(createMapData(songSetting.combo, songSetting.time));
          return defer;
       }
-      var jsonPath = song[diff].jsonpath;
-      var liveId = song[diff].liveid;
+      var jsonPath = songSetting.jsonpath;
+      var liveId = songSetting.liveid;
       if (!jsonPath) {
-         console.error('No json path found for difficulty : ' + diff);
+         console.error('No json path found for liveSetting id : ' + liveId);
          console.error(song);
          defer.reject();
          return defer;
@@ -403,7 +410,7 @@ var LLMapNoteData = (function () {
             console.info("Failed on request to " + url + ": " + textStatus + ', retry on local cache');
             console.info(errorThrown);
             if (!liveId) {
-               console.error('No live id found for difficulty : ' + diff);
+               console.error('No live id found for liveSetting id : ' + liveId);
                console.error(song);
                defer.reject();
             } else {
@@ -712,6 +719,11 @@ var LLComponentCollection = (function() {
     *    getComponent(name)
     *    serialize()
     *    deserialize(v)
+    *    saveJson()
+    *    loadJson(json)
+    *    saveLocalStorage(key)
+    *    loadLocalStorage(key)
+    *    deleteLocalStorage(key)
     *    saveCookie(key) (require setCookie)
     *    loadCookie(key) (require getCookie)
     *    deleteCookie(key) (require setCookie)
@@ -747,10 +759,19 @@ var LLComponentCollection = (function() {
       }
    };
    proto.saveCookie = function (key) {
-      setCookie(key, JSON.stringify(this.serialize()), 1);
+      setCookie(key, this.saveJson(), 1);
    };
    proto.loadCookie = function (key) {
       var data = getCookie(key);
+      this.loadJson(data);
+   };
+   proto.deleteCookie = function (key) {
+      setCookie(key, '', -1);
+   };
+   proto.saveJson = function () {
+      return JSON.stringify(this.serialize());
+   };
+   proto.loadJson = function (data) {
       if (data && data != 'undefined') {
          try {
             this.deserialize(JSON.parse(data));
@@ -759,12 +780,22 @@ var LLComponentCollection = (function() {
          }
       }
    };
-   proto.deleteCookie = function (key) {
-      setCookie(key, '', -1);
+   proto.saveLocalStorage = function (key) {
+      LLHelperLocalStorage.setData(key, this.saveJson());
+   };
+   proto.loadLocalStorage = function (key) {
+      var data = LLHelperLocalStorage.getData(key);
+      this.loadJson(data);
+   };
+   proto.deleteLocalStorage = function (key) {
+      LLHelperLocalStorage.clearData(key);
    };
    return cls;
 })();
 
+/*
+ * LLConst: static meta data
+ */
 var LLConst = (function () {
    var KEYS = {
       '高坂穂乃果': 1,
@@ -924,8 +955,23 @@ var LLConst = (function () {
       'SKILL_LIMIT_PERFECT_SCORE_UP': 100000,
       'SKILL_LIMIT_COMBO_FEVER': 1000,
       'SKILL_LIMIT_HEAL_BONUS': 200,
+
+      'SONG_GROUP_MUSE': 1,
+      'SONG_GROUP_AQOURS': 2,
+      'SONG_GROUP_NIJIGASAKI': 3,
+
+      'SONG_DIFFICULTY_EASY': 1,
+      'SONG_DIFFICULTY_NORMAL': 2,
+      'SONG_DIFFICULTY_HARD': 3,
+      'SONG_DIFFICULTY_EXPERT': 4,
+      'SONG_DIFFICULTY_RANDOM': 5,
+      'SONG_DIFFICULTY_MASTER': 6,
+
+      'SONG_DEFAULT_SET_1': 1,
+      'SONG_DEFAULT_SET_2': 2,
    };
    var COLOR_ID_TO_NAME = ['', 'smile', 'pure', 'cool'];
+   var COLOR_NAME_TO_COLOR = {'smile': 'red', 'pure': 'green', 'cool': 'blue', '': 'purple'};
    var MEMBER_DATA = {};
    MEMBER_DATA[KEYS.MEMBER_HONOKA] = {'name': '高坂穂乃果', 'color': 'smile', 'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE2, KEYS.GROUP_PRINTEMPS], 'member_gem': 1};
    MEMBER_DATA[KEYS.MEMBER_ELI] =    {'name': '絢瀬絵里',   'color': 'cool',  'types': [KEYS.GROUP_MUSE, KEYS.GROUP_GRADE3, KEYS.GROUP_BIBI], 'member_gem': 1};
@@ -1089,6 +1135,13 @@ var LLConst = (function () {
    };
 
    var NOTE_APPEAR_OFFSET_S = [1.8, 1.6, 1.45, 1.3, 1.15, 1, 0.9, 0.8, 0.7, 0.6];
+   var DEFAULT_SPEED = {};
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_EASY] = 2;
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_NORMAL] = 4;
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_HARD] = 6;
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_EXPERT] = 8;
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_RANDOM] = 8;
+   DEFAULT_SPEED[KEYS.SONG_DIFFICULTY_MASTER] = 9;
 
    var ret = KEYS;
    ret.getGroupName = function (groupid) {
@@ -1157,6 +1210,9 @@ var LLConst = (function () {
    };
    ret.getNoteAppearTime = function(noteTimeSec, speed) {
       return noteTimeSec - NOTE_APPEAR_OFFSET_S[speed - 1];
+   };
+   ret.getDefaultSpeed = function (difficulty) {
+      return DEFAULT_SPEED[difficulty] || 8;
    };
    ret.isHoldNote = function(note_effect) {
       return (note_effect == KEYS.NOTE_TYPE_HOLD || note_effect == KEYS.NOTE_TYPE_SWING_HOLD);
@@ -1292,6 +1348,82 @@ var LLConst = (function () {
          CSKILL_GROUPS = metadata['cskill_groups'];
          metaDataInited['cskill_groups'] = 1;
       }
+   };
+
+   ret.getAttributeColor = function (attribute) {
+      return COLOR_NAME_TO_COLOR[attribute] || 'black';
+   };
+
+   var SONG_GROUP_NAME = {};
+   SONG_GROUP_NAME[KEYS.SONG_GROUP_MUSE] = '缪';
+   SONG_GROUP_NAME[KEYS.SONG_GROUP_AQOURS] = '水';
+   SONG_GROUP_NAME[KEYS.SONG_GROUP_NIJIGASAKI] = '虹';
+
+   var SONG_DIFFICULTY_NAME = {};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_EASY] = {'cn': '简单', 'en': 'Easy'};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_NORMAL] = {'cn': '普通', 'en': 'Normal'};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_HARD] = {'cn': '困难', 'en': 'Hard'};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_EXPERT] = {'cn': '专家', 'en': 'Expert'};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_RANDOM] = {'cn': '随机', 'en': 'Random'};
+   SONG_DIFFICULTY_NAME[KEYS.SONG_DIFFICULTY_MASTER] = {'cn': '大师', 'en': 'Master'};
+
+   var SONG_GROUP_TO_GROUP = {};
+   SONG_GROUP_TO_GROUP[KEYS.SONG_GROUP_MUSE] = KEYS.GROUP_MUSE;
+   SONG_GROUP_TO_GROUP[KEYS.SONG_GROUP_AQOURS] = KEYS.GROUP_AQOURS;
+   SONG_GROUP_TO_GROUP[KEYS.SONG_GROUP_NIJIGASAKI] = KEYS.GROUP_NIJIGASAKI;
+
+   ret.getSongGroupShortName = function (song_group) {
+      return SONG_GROUP_NAME[parseInt(song_group)] || '?';
+   };
+   ret.getSongGroupIds = function () {
+      return [KEYS.SONG_GROUP_MUSE, KEYS.SONG_GROUP_AQOURS, KEYS.SONG_GROUP_NIJIGASAKI];
+   };
+   ret.getGroupForSongGroup = function (song_group) {
+      if (SONG_GROUP_TO_GROUP[parseInt(song_group)] !== undefined) {
+         return SONG_GROUP_TO_GROUP[parseInt(song_group)];
+      }
+      return KEYS.GROUP_UNKNOWN;
+   };
+   ret.getDefaultSongSetIds = function () {
+      return [KEYS.SONG_DEFAULT_SET_1, KEYS.SONG_DEFAULT_SET_2];
+   };
+   ret.getSongDifficultyName = function (diff, cn) {
+      return SONG_DIFFICULTY_NAME[parseInt(diff)][cn ? 'cn' : 'en'];
+   };
+   ret.getDefaultSong = function (song_group, default_set) {
+      song_group = parseInt(song_group);
+      default_set = parseInt(default_set);
+      var expert_default = {
+         'time': 110,
+         'star': 65,
+         'difficulty': KEYS.SONG_DIFFICULTY_EXPERT,
+         'stardifficulty': 9,
+         'liveid': String(-(song_group*100+default_set*10+KEYS.SONG_DIFFICULTY_EXPERT))
+      };
+      var master_default = {
+         'time': 110,
+         'star': 65,
+         'difficulty': KEYS.SONG_DIFFICULTY_MASTER,
+         'stardifficulty': 11,
+         'liveid': String(-(song_group*100+default_set*10+KEYS.SONG_DIFFICULTY_MASTER))
+      };
+      if (default_set == KEYS.SONG_DEFAULT_SET_1) {
+         expert_default.positionweight = [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75];
+         expert_default.combo = 500;
+         master_default.positionweight = [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5];
+         master_default.combo = 700;
+      } else if (default_set == KEYS.SONG_DEFAULT_SET_2) {
+         expert_default.positionweight = [63,63,63,63,0,63,63,63,63];
+         expert_default.combo = 504;
+         master_default.positionweight = [88,88,88,88,0,88,88,88,88];
+         master_default.combo = 704;
+      }
+      var default_song = {'group': song_group, 'bpm': 200, 'attribute': '', 'settings': {}};
+      default_song.name = '默认曲目' + default_set + '（' + ret.getSongGroupShortName(song_group) + '）';
+      default_song.jpname = default_song.name;
+      default_song.settings[expert_default.liveid] = expert_default;
+      default_song.settings[master_default.liveid] = master_default;
+      return default_song;
    };
    return ret;
 })();
@@ -1693,6 +1825,7 @@ var LLUnit = {
  * componsed components
  *   LLSkillContainer (require LLUnit)
  *   LLCardSelector
+ *   LLSongSelector
  */
 var LLSkillContainer = (function() {
    function LLSkillContainer_cls(options) {
@@ -1773,9 +1906,8 @@ var LLCardSelector = (function() {
     *    language (serialize)
     *    filters
     *    freezeCardFilter
-    *    attcolor (const)
-    *    unitgradechr (const)
     *    cardOptions
+    *    setNameOptions
     * Methods:
     *    handleCardFilter()
     *    setLanguage(language)
@@ -1783,12 +1915,9 @@ var LLCardSelector = (function() {
     *    addComponentAsFilter(name, component, filterfunction)
     *    serialize() (override)
     *    deserialize(v) (override)
+    * Callbacks:
+    *    onCardChange(cardid)
     */
-   var const_attcolor = {
-      'smile': 'red',
-      'pure': 'green',
-      'cool': 'blue'
-   };
    function LLCardSelector_cls(cards, options) {
       LLComponentCollection.call(this);
 
@@ -1796,7 +1925,6 @@ var LLCardSelector = (function() {
       this.language = 0;
       this.filters = {};
       this.freezeCardFilter = 1;
-      this.attcolor = const_attcolor;
 
       // init components
       options = options || {
@@ -1897,7 +2025,7 @@ var LLCardSelector = (function() {
          fullname += ' ' + curCard.rarity + ' ';
          var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + curCard.name + ' ' + (albumGroup.cnname ? "("+albumGroup.cnname+")" : '');
          var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + curCard.jpname + ' ' + (albumGroup.name ? "("+albumGroup.name+")" : '');
-         var color = this.attcolor[curCard.attribute];
+         var color = LLConst.getAttributeColor(curCard.attribute);
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
       }
@@ -1943,6 +2071,313 @@ var LLCardSelector = (function() {
    return cls;
 })();
 
+var LLSongSelector = (function() {
+//  removed difficulty (easy, normal, hard, expert, master, arcade, expert_swing)
+//  added live settings (settings: {"<liveid>": {<similar to old difficulty>, difficulty: <difficulty id>, isac: <isac>, isswing: <isswing>}, ...})
+//  removed separate group (muse, aqours, niji)
+//  added group (group: <1(muse)|2(aqours)|3(niji)>
+   /* Properties:
+    *    songs
+    *    songSettings
+    *    language (serialize)
+    *    songFilters
+    *    songSettingFilters
+    *    freezeSongFilter
+    *    songOptions
+    *    songSettingOptions
+    * Methods:
+    *    getSelectedSongId()
+    *    getSelectedSong()
+    *    getSelectedSongSettingId()
+    *    getSelectedSongSetting()
+    *    handleSongFilter()
+    *    setLanguage(language)
+    *    addComponentAsFilter(name, component, songFilterFunction, songSettingFilterFunction)
+    *    serialize() (override)
+    *    deserialize(v) (override)
+    * Callback:
+    *    onSongSettingChange(songSettingId)
+    *    onSongColorChange(attribute)
+    */
+   function LLSong_cls(songjson, includeDefaultSong) {
+      LLComponentCollection.call(this);
+
+      this.language = 0;
+      this.songFilters = {};
+      this.songSettingFilters = {};
+
+      var me = this;
+      var addComp = function (name, comp, sf, ssf) {
+         if (sf === undefined) {
+            sf = function (s, v) {
+               for (var k in s.settings) {
+                  if (ssf(s.settings[k], v)) return true;
+               }
+               return false;
+            };
+         }
+         if (ssf === undefined) {
+            ssf = function (ss, v) { return sf(me.songs[ss.song], v); }
+         }
+         me.addComponentAsFilter(name, comp, sf, ssf);
+      };
+      var addSelect = function (name, sf, ssf) {
+         addComp(name, new LLSelectComponent(name), sf, ssf);
+      };
+      var addValued = function (name, sf, ssf) {
+         addComp(name, new LLValuedComponent(name), sf, ssf);
+      };
+      me.add('diffchoice', new LLSelectComponent('diffchoice'));
+      me.getComponent('diffchoice').onValueChange = function (v) {
+         if (me.onSongSettingChange) me.onSongSettingChange(v);
+      };
+      addSelect('songchoice',
+         function (s, v) { return true; },
+         function (ss, v) { return (v == '' || ss.song == v); }
+      );
+      addSelect('songatt', function (s, v) { return (v == '' || s.attribute == '' || s.attribute == v); });
+      addSelect('songunit', function (s, v) { return (v == '' || s.group == v); });
+      addValued('songsearch',
+         function (s, v) {
+            if (v == '') return true;
+            v == v.toLowerCase();
+            return (s.name.toLowerCase().indexOf(v) != -1 || s.jpname.toLowerCase().indexOf(v) != -1)
+         }
+      );
+      addSelect('songdiff', undefined, function (ss, v) { return (v == '' || ss.difficulty == v); });
+      addSelect('songac', undefined, function (ss, v) { return (v == '' || ss.isac == v); });
+      addSelect('songswing', undefined, function (ss, v) { return (v == '' || ss.isswing == v); });
+      addSelect('songstardiff', undefined, function (ss, v) { return (v == '' || ss.stardifficulty == v); });
+      var comp_mapAtt = new LLSelectComponent('map');
+      if (comp_mapAtt.exist) {
+         me.add('map', comp_mapAtt);
+         me.getComponent('map').onValueChange = function (v) {
+            if (me.onSongColorChange) me.onSongColorChange(v);
+         };
+      }
+
+      me.setSongData(songjson, includeDefaultSong);
+   };
+
+   var cls = LLSong_cls;
+   cls.prototype = new LLComponentCollection();
+   cls.prototype.constructor = cls;
+   var proto = cls.prototype;
+
+   proto.setSongData = function (songjson, includeDefaultSong) {
+      var songs = songjson;
+      if (typeof(songs) == "string") {
+         songs = JSON.parse(songs);
+      }
+      if (includeDefaultSong === undefined || includeDefaultSong) {
+         var songGroups = LLConst.getSongGroupIds();
+         var songDefaultSets = LLConst.getDefaultSongSetIds();
+         for (var i = 0; i < songGroups.length; i++) {
+            for (var j = 0; j < songDefaultSets.length; j++) {
+               var defaultSong = LLConst.getDefaultSong(songGroups[i], songDefaultSets[j]);
+               songs[String(-((i+1)*100 + j))] = defaultSong;
+            }
+         }
+      }
+
+      var songSettings = {};
+      for (var i in songs) {
+         if (!songs[i].settings) continue;
+         for (var j in songs[i].settings) {
+            songSettings[j] = songs[i].settings[j];
+            songs[i].settings[j].song = i;
+         }
+      }
+
+      this.songs = songs;
+      this.songSettings = songSettings;
+      this.freezeSongFilter = 1;
+      // build song setting options for both language
+      var songSettingAvailableStarDiff = new Array(20);
+      var songSettingOptionsCN = [{'value': '', 'text': '谱面', 'color': 'black'}];
+      var songSettingOptionsJP = [{'value': '', 'text': '谱面', 'color': 'black'}];
+      var songSettingKeys = Object.keys(songSettings).sort(function (a,b){
+         var ia = parseInt(a), ib =  parseInt(b);
+         if (ia < 0 && ib < 0) return ib - ia;
+         return ia - ib;
+      });
+      var i;
+      for (i = 0; i < songSettingKeys.length; i++) {
+         var liveId = songSettingKeys[i];
+         var curSongSetting = songSettings[liveId];
+         var curSong = songs[curSongSetting.song];
+         var fullname = String(liveId);
+         if (parseInt(liveId) > 0) {
+            while (fullname.length < 3) fullname = '0' + fullname;
+         }
+         fullname += ' ★ ' + curSongSetting.stardifficulty + ' [';
+         var cnName = fullname + LLConst.getSongDifficultyName(curSongSetting.difficulty, 1) + (curSongSetting.isac ? ' 街机' : '') + (curSongSetting.isswing ? ' 滑键' : '') + '][' + curSongSetting.combo + ' 连击] ' + curSong.name;
+         var jpName = fullname + LLConst.getSongDifficultyName(curSongSetting.difficulty, 0) + (curSongSetting.isac ? ' Arcade' : '') + (curSongSetting.isswing ? ' Swing' : '') + '][' + curSongSetting.combo + ' COMBO] ' + curSong.jpname;
+         var color = LLConst.getAttributeColor(curSong.attribute);
+         songSettingOptionsCN.push({'value': liveId, 'text': cnName, 'color': color});
+         songSettingOptionsJP.push({'value': liveId, 'text': jpName, 'color': color});
+
+         songSettingAvailableStarDiff[parseInt(curSongSetting.stardifficulty)] = 1;
+      }
+      this.songSettingOptions = [songSettingOptionsCN, songSettingOptionsJP];
+      this.getComponent('diffchoice').setOptions(this.songSettingOptions[this.language]);
+
+      // build song options for both language
+      var songOptionsCN = [{'value': '', 'text': '歌曲', 'color': 'black'}];
+      var songOptionsJP = [{'value': '', 'text': '歌曲', 'color': 'black'}];
+      var songKeys = Object.keys(songs).sort(function (a,b){
+         var ia = parseInt(a), ib =  parseInt(b);
+         if (ia < 0 && ib < 0) return ib - ia;
+         return ia - ib;
+      });
+      for (i = 0; i < songKeys.length; i++) {
+         var songId = songKeys[i];
+         var curSong = songs[songId];
+         var color = LLConst.getAttributeColor(curSong.attribute);
+         songOptionsCN.push({'value': songId, 'text': curSong.name, 'color': color});
+         songOptionsJP.push({'value': songId, 'text': curSong.jpname, 'color': color});
+      }
+      this.songOptions = [songOptionsCN, songOptionsJP];
+      this.getComponent('songchoice').setOptions(this.songOptions[this.language]);
+
+      // set other options
+      this.getComponent('songdiff').setOptions([
+         {'value': '',  'text': '难度'},
+         {'value': '1', 'text': '简单（Easy）'},
+         {'value': '2', 'text': '普通（Normal）'},
+         {'value': '3', 'text': '困难（Hard）'},
+         {'value': '4', 'text': '专家（Expert）'},
+         {'value': '5', 'text': '随机（Random）'},
+         {'value': '6', 'text': '大师（Master）'}
+      ]);
+      this.getComponent('songatt').setOptions([
+         {'value': '',      'text': '属性',  'color': 'black'},
+         {'value': 'smile', 'text': 'Smile', 'color': 'red'},
+         {'value': 'pure',  'text': 'Pure',  'color': 'green'},
+         {'value': 'cool',  'text': 'Cool',  'color': 'blue'}
+      ]);
+      this.getComponent('songunit').setOptions([
+         {'value': '',  'text': '组合'},
+         {'value': '1', 'text': "μ's"},
+         {'value': '2', 'text': 'Aqours'},
+         {'value': '3', 'text': '虹咲'}
+      ]);
+      this.getComponent('songswing').setOptions([
+         {'value': '',  'text': '是否滑键谱面'},
+         {'value': '0', 'text': '非滑键'},
+         {'value': '1', 'text': '滑键'},
+      ]);
+      this.getComponent('songac').setOptions([
+         {'value': '',  'text': '是否街机谱面'},
+         {'value': '0', 'text': '非街机'},
+         {'value': '1', 'text': '街机'},
+      ]);
+      var songStarDifficultyOptions = [{'value': '', 'text': '星级'}];
+      for (i = 0; i < songSettingAvailableStarDiff.length; i++) {
+         if (songSettingAvailableStarDiff[i]) {
+            songStarDifficultyOptions.push({'value': String(i), 'text': '★ ' + i});
+         }
+      }
+      this.getComponent('songstardiff').setOptions(songStarDifficultyOptions);
+      if (this.getComponent('map')) {
+         this.getComponent('map').setOptions([
+            {'value': 'smile', 'text': 'Smile', 'color': 'red'},
+            {'value': 'pure',  'text': 'Pure',  'color': 'green'},
+            {'value': 'cool',  'text': 'Cool',  'color': 'blue'}
+         ]);
+      }
+
+      // at last, unfreeze the filter
+      this.freezeSongFilter = 0;
+      this.handleSongFilter();
+   };
+
+   proto.addComponentAsFilter = function (name, comp, sf, ssf) {
+      var me = this;
+      me.add(name, comp);
+      comp.onValueChange = function (v) {
+         me.songFilters[name] = function (song) { return sf(song, v); };
+         me.songSettingFilters[name] = function (songsetting) { return ssf(songsetting, v); };
+         if (!me.freezeSongFilter) me.handleSongFilter();
+      };
+      comp.onValueChange(comp.get());
+   };
+
+   var doFilter = function (data, filters, option) {
+      var index = option.value;
+      if (!index) return true;
+      var s = data[index];
+      if (!s) return true;
+      for (var i in filters) {
+         if (!filters[i](s)) return false;
+      }
+      return true;
+   };
+
+   proto.handleSongFilter = function () {
+      var me = this;
+      this.getComponent('songchoice').filterOptions(function (option) {
+         return doFilter(me.songs, me.songFilters, option);
+      });
+      this.getComponent('diffchoice').filterOptions(function (option) {
+         return doFilter(me.songSettings, me.songSettingFilters, option);
+      });
+      if (this.getComponent('map')) {
+         var curSong = me.getSelectedSong();
+         var curSongAttr = (curSong ? curSong.attribute : '');
+         this.getComponent('map').filterOptions(function (option) {
+            return curSongAttr == '' || option.value == curSongAttr;
+         });
+      }
+   };
+
+   proto.setLanguage = function (language) {
+      if (this.language == language) return;
+      this.language = language;
+      this.getComponent('songchoice').setOptions(this.songOptions[this.language]);
+      this.getComponent('diffchoice').setOptions(this.songSettingOptions[this.language]);
+   };
+
+   var super_serialize = proto.serialize;
+   var super_deserialize = proto.deserialize;
+   proto.serialize = function () {
+      return {
+         language: this.language,
+         components: super_serialize.call(this)
+      };
+   };
+   proto.deserialize = function (v) {
+      if (!v) return;
+      this.freezeSongFilter = 1;
+      if (v.language !== undefined) {
+         this.setLanguage(v.language);
+      }
+      super_deserialize.call(this, v.components);
+      this.freezeSongFilter = 0;
+      this.handleSongFilter();
+      if (this.onSongChange) this.onSongChange(this.getSelectedSongId());
+   };
+   proto.getSelectedSongId = function () {
+      var curSongId = this.getComponent('songchoice').get();
+      if (curSongId) return curSongId;
+      var curSongSettingId = this.getComponent('diffchoice').get();
+      if (curSongSettingId && this.songSettings[curSongSettingId]) {
+         return this.songSettings[curSongSettingId].song || '';
+      }
+      return '';
+   };
+   proto.getSelectedSong = function () {
+      return this.songs[this.getSelectedSongId()];
+   };
+   proto.getSelectedSongSettingId = function () {
+      return this.getComponent('diffchoice').get();
+   };
+   proto.getSelectedSongSetting = function () {
+      return this.songSettings[this.getSelectedSongSettingId()];
+   };
+   return cls;
+})();
+
 /*
  * strength calculation helper
  *   LLMap
@@ -1953,29 +2388,18 @@ var LLCardSelector = (function() {
  *   LLTeam
  */
 var LLMap = (function () {
-   var DEFAULT_EXPERT = {
-      'positionweight': [63.75,63.75,63.75,63.75,0,63.75,63.75,63.75,63.75],
-      'combo': 500,
-      'time': 110,
-      'star': 65
-   };
-   var DEFAULT_MASTER = {
-      'positionweight': [87.5,87.5,87.5,87.5,0,87.5,87.5,87.5,87.5],
-      'combo': 700,
-      'time': 110,
-      'star': 65
-   };
-   var DEFAULT_SONG_MUSE = {
-      'attribute': '',
-      'muse': 1,
-      'aqours': 0,
-      'expert': DEFAULT_EXPERT,
-      'master': DEFAULT_MASTER
-   };
+   var DEFAULT_SONG_MUSE = LLConst.getDefaultSong(LLConst.SONG_GROUP_MUSE, LLConst.SONG_DEFAULT_SET_1);
+   var DEFAULT_SONG_SETTING = (function (s) {
+      for (var k in s.settings) {
+         if (s.settings[k].difficulty == LLConst.SONG_DIFFICULTY_EXPERT) {
+            return s.settings[k];
+         }
+      }
+      console.error('failed to find default song setting');
+      return undefined;
+   })(DEFAULT_SONG_MUSE);
    // properties:
    //   attribute: {'smile'|'pure'|'cool'}
-   //   muse: {0|1}
-   //   aqours: {0|1}
    //   weights: [w1, w2, ..., w9]
    //   totalWeight: sum(weights)
    //   friendCSkill:
@@ -1991,12 +2415,12 @@ var LLMap = (function () {
    //   starPerfect: int
    //   tapup: percentage
    //   skillup: percentage
-   //   songUnit: {GROUP_MUSE|GROUP_AQOURS|GROUP_UNKNOWN}
+   //   songUnit: {GROUP_MUSE|GROUP_AQOURS|GROUP_NIJIGASAKI|GROUP_UNKNOWN}
    function LLMap_cls(options) {
       if (options.song) {
-         this.setSong(options.song, options.diff);
+         this.setSong(options.song, options.songSetting);
       } else {
-         this.setSong(DEFAULT_SONG_MUSE, 'expert');
+         this.setSong(DEFAULT_SONG_MUSE, DEFAULT_SONG_SETTING);
       }
       if (options.friendCSkill) {
          this.friendCSkill = options.friendCSkill;
@@ -2008,38 +2432,16 @@ var LLMap = (function () {
    };
    var cls = LLMap_cls;
    var proto = cls.prototype;
-   proto.setSong = function (song, diff) {
-      if (!song) {
+   proto.setSong = function (song, songSetting) {
+      if ((!song) || (!songSetting)) {
          console.error('No song data');
          return;
       }
-      // only return when difficulty is given but not found it in song data
-      var songdiff = (diff === undefined ? {} : song[diff]);
-      if (!songdiff) {
-         console.error('The song has no difficulty of ' + diff);
-         return;
-      }
       this.attribute = song.attribute || '';
-      this.muse = song.muse || 0;
-      this.aqours = song.aqours || 0;
-      this.updateSongUnit();
+      this.songUnit = LLConst.getGroupForSongGroup(song.group);
       // when difficulty is not given, use 0 for difficulty-specific data
-      this.setSongDifficultyData(songdiff.combo, songdiff.star, songdiff.time);
-      this.setWeights(songdiff.positionweight || [0, 0, 0, 0, 0, 0, 0, 0, 0]);
-   };
-   proto.setGroup = function (group) {
-      if (group == 'muse') {
-         this.muse = 1;
-         this.aqours = 0;
-      } else if (group == 'aqours') {
-         this.muse = 0;
-         this.aqours = 1;
-      } else {
-         console.error('Unknown group: ' + group);
-         this.muse = 0;
-         this.aqours = 0;
-      }
-      this.updateSongUnit();
+      this.setSongDifficultyData(songSetting.combo, songSetting.star, songSetting.time);
+      this.setWeights(songSetting.positionweight || [0, 0, 0, 0, 0, 0, 0, 0, 0]);
    };
    proto.setWeights = function (weights) {
       var w = [];
@@ -2080,15 +2482,6 @@ var LLMap = (function () {
    proto.setMapBuff = function (tapup, skillup) {
       this.tapup = parseFloat(tapup || 0);
       this.skillup = parseFloat(skillup || 0);
-   };
-   proto.updateSongUnit = function () {
-      if (this.muse) {
-         this.songUnit = LLConst.GROUP_MUSE;
-      } else if (this.aqours) {
-         this.songUnit = LLConst.GROUP_AQOURS;
-      } else {
-         this.songUnit = LLConst.GROUP_UNKNOWN;
-      }
    };
    return cls;
 })();

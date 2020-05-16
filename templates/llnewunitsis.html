@@ -6,7 +6,6 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}?v=1.01"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <script type="text/javascript" src="/static/js/highcharts/highcharts.js"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
@@ -17,7 +16,6 @@
 
 {% block script %}
    <script>
-   var llsong = 0;
    var mezame = 0;
    var language = 0;
 
@@ -25,6 +23,7 @@
    var data_mapnote = 0;
    var comp_skill = 0;
    var comp_cardselector = 0;
+   var comp_songselector = 0;
    var comp_cardavatar = 0;
    var comp_gemstock = 0;
    var comp_resultmic = 0;
@@ -37,7 +36,9 @@
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, songData, metaData) {
       // init components
       LLConst.initMetadata(metaData);
-      llsong = new LLSong(songData);
+      comp_songselector = new LLSongSelector(songData);
+      comp_songselector.onSongSettingChange = applysongdata;
+      comp_songselector.onSongColorChange = changemapcolor;
       data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
@@ -84,8 +85,9 @@
 
       init();
 
-      // load cookie
-      comp_cardselector.loadCookie('llnewunitsis_cardselector');
+      // load
+      comp_cardselector.loadLocalStorage(LLHelperLocalStorage.localStorageCardSelectKey);
+      comp_songselector.loadLocalStorage(LLHelperLocalStorage.localStorageSongSelectKey);
 
       comp_gemstock = new LLGemStockComponent('sisreserves');
       comp_gemstock.loadJson(localStorage.getItem('llnewunitsis_gemstock'));
@@ -98,32 +100,23 @@
    }, defaultHandleFailedRequest);
 
    function changemapcolor(attr) {
-      if (attr === undefined) attr = document.getElementById('map').value;
-      document.getElementById('map').style.color = llsong.attcolor[attr];
-      if (attr == llsong.getSongAttr()) document.getElementById('songchoice').style.color = llsong.attcolor[attr];
       // do not update comp_cskill_team, because it is set by center
       comp_cskill_friend.setMapColor(attr);
    }
 
-   function applysongdata() {
-      var handleTime = function(t) { document.getElementById("time").value = (t ? t : 110); };
-      var handlePerfect = function(combo) { document.getElementById("perfect").value = parseInt(combo*19/20); };
-      var handleStar = function() { document.getElementById("starperfect").value = 0; };
-      var handleWeight = function(w) { comp_team.setWeights(w); };
-      var applyTarget = {
-         'attribute': ['map', changemapcolor],
-         'combo': ['combo', handlePerfect],
-         'time': [handleTime],
-         'star': [handleStar],
-         'positionweight': [handleWeight]
-      };
-      llsong.applyDataOfSongWithDiff(applyTarget);
+   function applysongdata(songSettingId) {
+      if (!songSettingId) return;
+      var songSetting = comp_songselector.songSettings[songSettingId];
+      document.getElementById('combo').value = songSetting.combo;
+      document.getElementById('perfect').value = parseInt(songSetting.combo * 19/20);
+      document.getElementById('time').value = (songSetting.time || 110);
+      document.getElementById('starperfect').value = 0;
+      comp_team.setWeights(songSetting.positionweight);
    }
 
    function changeLanguage(){
       language = 1-language
-      llsong.language = language;
-      llsong.onSongFilterChange();
+      comp_songselector.setLanguage(language);
       comp_cardselector.setLanguage(language);
    }
 
@@ -135,18 +128,14 @@
 
    function clearall(){
       var inputs = document.getElementsByTagName("input");
-      var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++){
          if (inputs[i].name)
             setCookie(inputs[i].name+"unit", inputs[i].value, -1);
       }
-      for (var i=0; i<selects.length; i++){
-         if (selects[i].name)
-            setCookie(selects[i].name+"unit", selects[i].value, -1);
-      }
       setCookie("mezame"+"unit", mezame, -1)
-      comp_cardselector.deleteCookie('llnewunitsis_cardselector');
       localStorage.removeItem('llnewunitsis_gemstock');
+      LLHelperLocalStorage.clearData(LLHelperLocalStorage.localStorageCardSelectKey);
+      LLHelperLocalStorage.clearData(LLHelperLocalStorage.localStorageSongSelectKey);
       LLHelperLocalStorage.clearData(LLHelperLocalStorage.localStorageLLNewUnitSisTeamKey);
       window.location.href="/llnewunitsis"
    }
@@ -184,7 +173,7 @@
    	document.getElementById("unitform").action = ''
    	document.getElementById("unitform").target = ''
    }
-   
+
    function init(){
       mezame = getCookie("mezameunit")
       language = getCookie("languageunit")
@@ -192,49 +181,27 @@
       if (language == "")
          language = 0
 
-      llsong.language = language;
-      llsong.onDiffSelectChange = applysongdata;
-      llsong.showAllSongs();
-      llsong.initListeners();
-      llsong.initAttrSelectColor('map');
-
    	var inputs = document.getElementsByTagName("input");
-   	var selects = document.getElementsByTagName("select");
    	for (var i=0; i<inputs.length; i++){
    		if (inputs[i].type == "text" && inputs[i].name)
    			if (getCookie(inputs[i].name+"unit") != "")
    				inputs[i].value = getCookie(inputs[i].name+"unit");
    	}
-   	for (var i=0; i<selects.length; i++){
-         if (comp_cardselector.getComponent(selects[i].id)) continue;
-         if (!selects[i].name) continue;
-   		if (getCookie(selects[i].name+"unit") != "")
-   			selects[i].value = getCookie(selects[i].name+"unit");
-   	}
       document.getElementById("mezame").checked = mezame
 
-         document.getElementById("songsearch").value = ""
-         // above codes may select songs/cards/filters according to cookies, so refresh it...
-         llsong.onSongFilterChange();
+      //document.getElementById("songsearch").value = ""
    }
-   
+
    function saveToCookie(){
       var inputs = document.getElementsByTagName("input");
-      var selects = document.getElementsByTagName("select");
       for (var i=0; i<inputs.length; i++){
          if (inputs[i].type == "text" && inputs[i].name)
             setCookie(inputs[i].name+"unit", inputs[i].value, 1);
       }
-      for (var i=0; i<selects.length; i++){
-         if (selects[i].name)
-            setCookie(selects[i].name+"unit", selects[i].value, 1);
-      }
       setCookie("mezame"+"unit", mezame, 1)
       setCookie("language"+"unit", language, 1)
-      comp_cardselector.saveCookie('llnewunitsis_cardselector');
-      localStorage.setItem('llnewunitsis_gemstock', comp_gemstock.saveJson());
    }
-   
+
    ///////////
    function autoarm(){
       if(document.getElementById('autoarm0').checked){
@@ -254,20 +221,22 @@
       document.getElementById('errorresult').style.display = 'none';
    }
 
-
-
    function check(){
-      if (!llsong.getSelectedSong()) {
-         showErrorResult("请选择歌曲");
+      if (!comp_songselector.getSelectedSongSetting()) {
+         showErrorResult('请选择谱面');
          return;
+      } else {
+         hideErrorResult();
       }
-      hideErrorResult();
-   	saveToCookie();
+      saveToCookie();
+      localStorage.setItem('llnewunitsis_gemstock', comp_gemstock.saveJson());
+      comp_cardselector.saveLocalStorage(LLHelperLocalStorage.localStorageCardSelectKey);
+      comp_songselector.saveLocalStorage(LLHelperLocalStorage.localStorageSongSelectKey);
       LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageDistParamKey, comp_distribution_param.saveJson());
       LLHelperLocalStorage.setData(LLHelperLocalStorage.localStorageLLNewUnitSisTeamKey, comp_team.saveJson());
       var distParam = comp_distribution_param.saveData();
       if (distParam.type == 'sim') {
-         LLUnit.calculate(docalculate, comp_team.getCardIds(), [data_mapnote.getMapNoteData(llsong.getSelectedSong(), document.getElementById('diffchoice').value)]);
+         LLUnit.calculate(docalculate, comp_team.getCardIds(), [data_mapnote.getMapNoteData(comp_songselector.getSelectedSong(), comp_songselector.getSelectedSongSetting())]);
       } else {
          LLUnit.calculate(docalculate, comp_team.getCardIds());
       }
@@ -295,8 +264,8 @@
 
       var distParam = comp_distribution_param.saveData();
       var llmap = new LLMap({
-         'song': llsong.getSelectedSong(),
-         'diff': document.getElementById('diffchoice').value,
+         'song': comp_songselector.getSelectedSong(),
+         'songSetting': comp_songselector.getSelectedSongSetting(),
          'friendCSkill': comp_cskill_friend.getCSkill()
       });
       llmap.attribute = mainatt;
@@ -426,36 +395,29 @@
 <input type="submit" name="clear" value="清空输入" onclick="clearall()"><br>
 <form action="" id="unitform" name="unitform" method="POST" enctype=multipart/form-data>
 <h3>歌曲信息</h3>
-搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
+搜索：<input type="text" id="songsearch" value=""></input><br>
 筛选：
-	<select id="songatt" name="songatt">
-		<option value="">属性</option>
-		<option value="smile">smile</option>
-		<option value="pure">pure</option>
-		<option value="cool">cool</option>
-	</select>
-	<select id="songunit" name="songunit">
-		<option value="">组合</option>
-		<option value="muse">μ's</option>
-		<option value="aqours">Aqours</option>
-	</select><br>
-歌曲：<select id="songchoice" name="songchoice">
-		<option value=""> </option>
-	</select>
-	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-	<br>
-   难度：<select id="diffchoice" name="diffchoice">
-      <option value="easy">easy</option>
-      <option value="normal">normal</option>
-      <option value="hard">hard</option>
-      <option value="expert" SELECTED>expert</option>
-      <option value="master">master</option>
-   </select><br>
-	图属性 :<select id="map" name="map" onchange="changemapcolor();">
-		<option value="smile">smile</option>
-		<option value="pure">pure</option>
-		<option value="cool">cool</option>
-	</select><br>
+<select id="songdiff"></select>
+<select id="songatt"></select>
+<select id="songunit"></select>
+<select id="songswing"></select>
+<select id="songac"></select>
+<select id="songstardiff"></select>
+<br>
+歌曲：
+<select id="songchoice">
+   <option value="">载入中...</option>
+</select>
+<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+<br>
+谱面：
+<select id="diffchoice">
+   <option value="">载入中...</option>
+</select>
+<br>
+图属性：
+<select id="map"></select>
+<br>
 	总combo数 :<input type="text" id="combo" name="combo" value="300" autocomplete="off" style="width:50px"><br>
 	perfect数:<input type="text" id="perfect" name="perfect" value="285" autocomplete="off" style="width:50px"><br>
 	时间:<input type="text" id="time" name="time" value="100" autocomplete="off" style="width:50px">秒（从人物出现到最后一个note被击打的时间，不是歌曲长度。部分谱面无长度数据，默认值为110秒）<br>

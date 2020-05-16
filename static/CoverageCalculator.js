@@ -1143,7 +1143,7 @@ function CoverageCalculatorWithData(song, member, member_C, _offset, s, data) {
     document.getElementById('running').style.display = "none";
 }
 
-function CoverageCalculator(song, difficulty, createdData)
+function CoverageCalculator(song, songSetting, createdData)
 {
     //读取卡组数据
     var member = new Array(9);
@@ -1176,7 +1176,7 @@ function CoverageCalculator(song, difficulty, createdData)
             alert("请输入整数");
             return;
         }
-        if ((member[i][0] == 1 || member[i][0] == 3) && song[difficulty].combo / member[i][1] > 80)
+        if ((member[i][0] == 1 || member[i][0] == 3) && songSetting.combo / member[i][1] > 80)
         {
             alert("结果超出设计容量");
             return;
@@ -1298,8 +1298,8 @@ function CoverageCalculator(song, difficulty, createdData)
     if (createdData) {
         CoverageCalculatorWithData(song, member, member_C, _offset, s, createdData);
     } else {
-        var maps = song[difficulty].liveid;
-        var jsonPath = song[difficulty].jsonpath;
+        var maps = songSetting.liveid;
+        var jsonPath = songSetting.jsonpath;
         var _liveid = Number(maps);
         //处理文件序号
         var j = maps.length;
