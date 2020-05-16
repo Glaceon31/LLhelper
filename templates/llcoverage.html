@@ -6,7 +6,6 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
    <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
@@ -23,17 +22,18 @@
    <script>
    LLSongData.briefKeys.push('bpm');
    LLSongData.briefKeys.push('jsonpath');
-   var llsong = 0;
    var mezame = 0;
    var language = 0;
 
    var defer_onload = $.Deferred();
    var comp_skill = 0;
    var comp_cardselector = 0;
+   var comp_songselector = 0;
    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, songData, metaData) {
       // init components
       LLConst.initMetadata(metaData);
-      llsong = new LLSong(songData);
+      comp_songselector = new LLSongSelector(songData);
+      comp_songselector.onSongSettingChange = applysongdata;
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData);
       comp_cardselector.getComponent('rarity').filterOptions(function (opt) {
@@ -51,20 +51,13 @@
       });
       init();
 
-      // load cookie
-      comp_cardselector.loadCookie('llcoverage_cardselector');
+      // load
+      comp_cardselector.loadLocalStorage('llcoverage_cardselector');
+      comp_songselector.loadLocalStorage('llcoverage_songselector');
 
       // done
       document.getElementById('loadingbox').style.display = 'none';
    }, defaultHandleFailedRequest);
-
-   var diffspeed = {
-      'easy': 2,
-      'normal': 4,
-      'hard': 6,
-      'expert': 8,
-      'master': 9
-   };
 
    function threetonumber(three){
       var result = three
@@ -123,8 +116,7 @@
     
    function changeLanguage(){
       language = 1-language
-      llsong.language = language;
-      llsong.onSongFilterChange();
+      comp_songselector.setLanguage(language);
       comp_cardselector.setLanguage(language);
    }
    
@@ -133,14 +125,12 @@
    	changecolor()
    }
 
-   function applysongdata() {
-      llsong.applyDataOfSongWithDiff({'attrcolor':['songchoice']});
-      var diff = document.getElementById("diffchoice").value;
-      if (diffspeed[diff]) {
-         document.getElementById("speeds").value = diffspeed[diff];
-      }
+   function applysongdata(songSettingId) {
+      if (!songSettingId) return;
+      var songSetting = comp_songselector.songSettings[songSettingId];
+      document.getElementById('speeds').value = LLConst.getDefaultSpeed(songSetting.difficulty);;
    }
-   
+
    function copyTo(n){
       document.getElementById('avatar'+String(n)).style.display = "";
       document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
@@ -191,10 +181,11 @@
    	var selects = document.getElementsByTagName("select");
 	var nospan = document.getElementsByTagName("nospan");
    	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
+   		if (inputs[i].type == "text" && inputs[i].name)
    			setCookie(inputs[i].name+"perfect", inputs[i].value, 1);
    	}
    	for (var i=0; i<selects.length; i++){
+         if (!selects[i].name) continue;
    		setCookie(selects[i].name+"perfect", selects[i].value, 1);
    	}
 	for (var i=1; i<nospan.length; i++){
@@ -202,7 +193,6 @@
    	}
    	setCookie("mezame"+"perfect", mezame, 1)
    	setCookie("language"+"perfect", language, 1)
-      comp_cardselector.saveCookie('llcoverage_cardselector');
    }
 
    function createMapData(combo, time) {
@@ -226,15 +216,10 @@
    }
 
    function check(){
-   	var inputs = document.getElementsByTagName("input");
-   	for (i in inputs){
-   		if ((inputs[i].type != "text") || (inputs[i].name == "songsearch"))
-   			continue
-   		if (!isNumber(inputs[i].value)){
-   			alert("请输入数字");
-   			return false;
-   		}
-   	}
+      if (!comp_songselector.getSelectedSongSetting()) {
+         alert('请选择谱面');
+         return false;
+      }
 	if (window.innerHeight - 20 < 977 && window.innerHeight - 20 > 700)
 	{
 	    document.getElementById('container').style.height = String(window.innerHeight - 20) + "px";
@@ -249,14 +234,16 @@
 	}
 	containerheight = parseInt(document.getElementById('container').style.height) - 165;
    	saveToCookie();
+      comp_cardselector.saveLocalStorage('llcoverage_cardselector');
+      comp_songselector.saveLocalStorage('llcoverage_songselector');
 	document.getElementById('container').style.display = "";
 	document.getElementById('separater').style.display = "";
-      var song = llsong.getSelectedSong();
-      var diff = document.getElementById('diffchoice').value;
-      if (parseInt(llsong.getSelectedSongIndex()) < 0) {
-         CoverageCalculator(song, diff, createMapData(song[diff].combo, song[diff].time));
+      var song = comp_songselector.getSelectedSong();
+      var songSetting = comp_songselector.getSelectedSongSetting();;
+      if (parseInt(comp_songselector.getSelectedSongId()) < 0) {
+         CoverageCalculator(song, songSetting, createMapData(songSetting.combo, songSetting.time));
       } else {
-         CoverageCalculator(song, diff);
+         CoverageCalculator(song, songSetting);
       }
       return true;
    }
@@ -267,26 +254,23 @@
       if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
    	if (language == "")
    		language = 0
-   	
-      llsong.language = language;
-      llsong.onDiffSelectChange = applysongdata;
-      llsong.showAllSongs();
-      llsong.initListeners();
 
    	var inputs = document.getElementsByTagName("input");
    	var selects = document.getElementsByTagName("select");
 	var nospan = document.getElementsByTagName("nospan");
    	for (var i=0; i<inputs.length; i++){
-   		if (inputs[i].type == "text")
+   		if (inputs[i].type == "text" && inputs[i].name)
    			if (getCookie(inputs[i].name+"perfect") != "")
    				inputs[i].value = getCookie(inputs[i].name+"perfect");
    	}
-   	for (var i=0; i<selects.length; i++){
+      for (var i=0; i<selects.length; i++){
+         if (!selects[i].name) continue;
          if (comp_cardselector.getComponent(selects[i].id)) continue;
    		if (getCookie(selects[i].name+"perfect") != "")
    			selects[i].value = getCookie(selects[i].name+"perfect");
    	}
    	for (var i=1; i<nospan.length; i++){
+         if (!selects[i].name) continue;
    		if (getCookie("nospan"+String(i)+"perfect") != "")
    			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
    	}
@@ -297,11 +281,9 @@
    		    LLUnit.changeavatarn(i)
 		}
    	}
-      document.getElementById("songsearch").value = ""
-      // above codes may select songs/cards/filters according to cookies, so refresh it...
-      llsong.onSongFilterChange();
+      //document.getElementById("songsearch").value = ""
    }
-   
+
    </script>
 {% endblock %}
 
@@ -327,41 +309,26 @@
 {% block main %}
 <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
 <h3>Live信息</h3>
-搜索：<input type="text" id="songsearch" name="songsearch" value=""></input><br>
-筛选：<select id="songdiff" name="songdiff">
-		<option value="">难度</option>
-		<option value="easy">包含easy难度</option>
-		<option value="normal">包含normal难度</option>
-		<option value="hard">包含hard难度</option>
-		<option value="expert">包含expert难度</option>
-		<option value="master">包含master难度</option>
-	</select>
-	<select id="songatt" name="songatt">
-		<option value="">属性</option>
-		<option value="smile">smile</option>
-		<option value="pure">pure</option>
-		<option value="cool">cool</option>
-	</select>
-	<select id="songunit" name="songunit">
-		<option value="">组合</option>
-		<option value="muse">μ's</option>
-		<option value="aqours">Aqours</option>
-	</select>
+搜索：<input type="text" id="songsearch" value=""></input><br>
+筛选：
+<select id="songdiff"></select>
+<select id="songatt"></select>
+<select id="songunit"></select>
+<select id="songswing"></select>
+<select id="songac"></select>
+<select id="songstardiff"></select>
 <br>
-歌曲：<select id="songchoice" name="songchoice">
-		<option value=""> </option>
-	</select>
-	<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-	<br>
-难度：<select id="diffchoice" name="diffchoice">
-      <option value="easy">easy</option>
-      <option value="normal">normal</option>
-      <option value="hard">hard</option>
-      <option value="expert" SELECTED>expert</option>
-      <option value="master">master</option>
-   </select>
+歌曲：
+<select id="songchoice">
+   <option value="">载入中...</option>
+</select>
+<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
 <br>
-
+谱面：
+<select id="diffchoice">
+   <option value="">载入中...</option>
+</select>
+<br>
 速度：<select name="speeds" id="speeds">
     <option value="1">1</option>
     <option value="2">2</option>

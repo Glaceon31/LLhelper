@@ -6,7 +6,6 @@
 
 {% block additional_header %}
    <script type="text/javascript" src="{{ url_for('static', filename='twintailosu.js') }}"></script>
-   <script type="text/javascript" src="{{ url_for('static', filename='llsong.js') }}"></script>
    <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
@@ -19,14 +18,12 @@
    LLSongData.briefKeys.push('bpm');
    LLSongData.briefKeys.push('totaltime');
    var defer_onload = $.Deferred();
-   var llsong = 0;
+   var comp_songselector = 0;
    var language = 0
 
    $.when(LLSongData.getAllBriefData(), defer_onload).then(function (songData) {
-      llsong = new LLSong(songData, false);
-      llsong.onDiffSelectChange = applysongdata;
-      llsong.initListeners();
-      llsong.onSongFilterChange();
+      comp_songselector = new LLSongSelector(songData, false);
+      comp_songselector.onSongSettingChange = applysongdata;
 
       // done
       document.getElementById('loadingbox').style.display = 'none';
@@ -64,24 +61,28 @@
       	return (1.35*(cb-800)+970)/cb
    }
 
-   function applysongdata() {
-      var index = llsong.getSelectedSongIndex();
-      if (index == "") return;
+   function applysongdata(songSettingId) {
+      if (songSettingId == '') return;
 
-      var applyTarget = {
-         'attrcolor': ['songchoice', 'attribute', 'name', 'jpname']
-      };
-      var infolist = ['attribute', 'totaltime', 'bpm', 'name', 'jpname',
-        'combo', 'time', 'stardifficulty', 'randomdifficulty', 'star', 'cscore', 'bscore', 'ascore', 'sscore', 'lp', 'exp',
-        'slider', 'swing', 'swingslider'];
-      for (var i in infolist) {
-         applyTarget[infolist[i]] = [[infolist[i], 'innerHTML']];
+      var curSongSetting = comp_songselector.songSettings[songSettingId];
+      var curSong = comp_songselector.songs[curSongSetting.song];
+
+      var songInfoList = ['attribute', 'totaltime', 'bpm', 'name', 'jpname'];
+      var songSettingInfoList = [
+        'combo', 'time', 'stardifficulty', 'star', 'cscore', 'bscore', 'ascore', 'sscore',
+        'slider', 'swing', 'swingslider'
+      ];
+      var coloredList = ['songchoice', 'attribute', 'name', 'jpname'];
+      for (var i in songInfoList) {
+         document.getElementById(songInfoList[i]).innerHTML = curSong[songInfoList[i]];
       }
-      llsong.applyDataOfSongWithDiff(applyTarget);
-
-      var diff = document.getElementById('diffchoice').value;
-      var curSong = llsong.songs[index];
-      var curSongWithDiff = curSong[diff];
+      for (var i in songSettingInfoList) {
+         var d = curSongSetting[songSettingInfoList[i]];
+         document.getElementById(songSettingInfoList[i]).innerHTML = (d === undefined ? '?' : d);
+      }
+      for (var i in coloredList) {
+         document.getElementById(coloredList[i]).style.color = LLConst.getAttributeColor(curSong.attribute);
+      }
 
       if (curSong['jpname'] == curSong['name']){
          document.getElementById("name").style.display = "none"
@@ -93,79 +94,59 @@
       }
 
       var totalweight = 0;
-      var weights = curSongWithDiff.positionweight;
-      var c = parseInt(curSongWithDiff.combo);
+      var weights = curSongSetting.positionweight;
+      var c = parseInt(curSongSetting.combo);
+      var hasNoteData = (weights !== undefined);
+      var isRandom = (curSongSetting.difficulty == LLConst.SONG_DIFFICULTY_RANDOM);
       for (var i = 0; i < 9; i++) {
-         document.getElementById('positionnote' + i).innerHTML = curSongWithDiff.positionnote[i];
-         document.getElementById('positionslider' + i).innerHTML = curSongWithDiff.positionslider[i];
-         document.getElementById('positionswing' + i).innerHTML = curSongWithDiff.positionswing[i];
-         document.getElementById('positionswingslider' + i).innerHTML = curSongWithDiff.positionswingslider[i];
-         document.getElementById('positionweight' + i).innerHTML = weights[i];
-         totalweight += parseFloat(weights[i]);
+         var showNoteInfo = (hasNoteData && !isRandom);
+         document.getElementById('positionnote' + i).innerHTML = (showNoteInfo ? curSongSetting.positionnote[i] : '?');
+         document.getElementById('positionslider' + i).innerHTML = (showNoteInfo ? curSongSetting.positionslider[i] : '?');
+         document.getElementById('positionswing' + i).innerHTML = (showNoteInfo ? curSongSetting.positionswing[i] : '?');
+         document.getElementById('positionswingslider' + i).innerHTML = (showNoteInfo ? curSongSetting.positionswingslider[i] : '?');
+         document.getElementById('positionweight' + i).innerHTML = (showNoteInfo ? weights[i] : '?');
+         document.getElementById("positionweight" + i).style.background = ""
+         document.getElementById("positionweight" + i).style.color = ""
+         if (hasNoteData) {
+            totalweight += parseFloat(weights[i]);
+         }
       }
       var sl = (totalweight-c)*100/0.25/c;
-      document.getElementById('noteweight').innerHTML = totalweight;
+      document.getElementById('noteweight').innerHTML = (hasNoteData ? totalweight : '?');
       for (var i = 0; i < 9; i++) {
-         var p = parseFloat(weights[i]);
-         var percentage = p/(c*(1+0.0025*sl));
-         document.getElementById("positionmulti"+i).innerHTML = String((10*percentage).toFixed(3))+"%";
-      }
-      //隐藏没有的信息
-      hidelist = ["randomdifficulty"]
-      for (var i in hidelist){
-         if (curSongWithDiff[hidelist[i]] == ""){
-            document.getElementById(hidelist[i]).style.display = "none"
-            document.getElementById(hidelist[i]+"tag").style.display = "none"
-         }
-         else{
-            document.getElementById(hidelist[i]).style.display = ""
-            document.getElementById(hidelist[i]+"tag").style.display = ""
+         if (hasNoteData && !isRandom) {
+            var p = parseFloat(weights[i]);
+            var percentage = p/(c*(1+0.0025*sl));
+            document.getElementById("positionmulti"+i).innerHTML = String((10*percentage).toFixed(3))+"%";
+         } else {
+            document.getElementById("positionmulti"+i).innerHTML = '?';
          }
       }
       //其他信息
       document.getElementById("kizunaget").innerHTML = kizuna(c);
       document.getElementById("combomulti").innerHTML = combomulti(c).toFixed(3);
-      document.getElementById("scoreperstrength").innerHTML = (1.1*1.1/80*combomulti(c)*totalweight).toFixed(3);
-
-      //属性需求信息
-      /*
-      cbmulti = combomulti(parseInt(curSongWithDiff.combo))
-      rankList = ['c', 'b', 'a', 's']
-      for (i in rankList){
-         if (curSongWithDiff[rankList+"score"] == "")
-            continue
-         //document.getElementById(rankList[i]+"lowatt").innerHTML = parseInt(parseInt(curSongWithDiff[rankList[i]+"score"])/cbmulti/c/(1+0.0025*sl)*80/1.1)
-         //document.getElementById(rankList[i]+"stableatt").innerHTML = parseInt(parseInt(curSongWithDiff[rankList[i]+"score"])/c/(1+0.0025*sl)/0.99*80/1.1)
-      }
-      */
+      document.getElementById("scoreperstrength").innerHTML = (hasNoteData ? (1.1*1.1/80*combomulti(c)*totalweight).toFixed(3) : '?');
 
       //高亮低权重位置
-      var we = [];
-      for (var i = 0; i < 9; i++) {
-         if (i != 4) we.push([i, weights[i]]);
-      }
-      we.sort(function (a, b) { return a[1] - b[1]; });
-      for (var i = 0; i < 9; i++) {
-         document.getElementById("positionweight"+i).style.background = ""
-         document.getElementById("positionweight"+i).style.color = ""
-      }
-      var highlights = [["#f2dede", "#a94442"], ["#fcf8e3", "#8a6d3b"], ["#ffffcc", "#a0a003"]];
-      for (var i = 0; i < highlights.length; i++) {
-         document.getElementById("positionweight"+we[i][0]).style.background = highlights[i][0];
-         document.getElementById("positionweight"+we[i][0]).style.color = highlights[i][1];
+      if (hasNoteData && !isRandom) {
+         var we = [];
+         for (var i = 0; i < 9; i++) {
+            if (i != 4) we.push([i, weights[i]]);
+         }
+         we.sort(function (a, b) { return a[1] - b[1]; });
+         var highlights = [["#f2dede", "#a94442"], ["#fcf8e3", "#8a6d3b"], ["#ffffcc", "#a0a003"]];
+         for (var i = 0; i < highlights.length; i++) {
+            document.getElementById("positionweight"+we[i][0]).style.background = highlights[i][0];
+            document.getElementById("positionweight"+we[i][0]).style.color = highlights[i][1];
+         }
       }
    }
-   
+
    function changeLanguage(){
    	  language = 1-language
-      llsong.language = language;
-      llsong.onSongFilterChange();
+      comp_songselector.setLanguage(language);
    }
-   
-   
-   document.addEventListener("change", function () {
-	   Han(document.body).render()
-   })
+
    </script>
 {% endblock %}
 
@@ -178,7 +159,7 @@
 <ul>
 <li>选择歌曲以浏览数据，可以使用搜索和筛选来查找想要看的歌曲</li>
 <li>注意：当不需要歌曲名搜索时，删除搜索框内所有字符（包括空格等）</li>
-<li>Normal、Easy 和新曲的数据仍不全</li>
+<li>新曲的数据仍不全</li>
 </ul>
 {% endblock %}
 
@@ -189,34 +170,31 @@
 <div class="form-group">
 <label class="control-label">筛选</label>
     <div class="row">
-        <div class="col-md-6">
-            <select class="form-control" id="songdiff" name="songdiff">
-        		<option value="">难度</option>
-        		<option value="easy">包含容易难度（Easy）</option>
-        		<option value="normal">包含普通难度（Normal）</option>
-        		<option value="hard">包含困难难度（Hard）</option>
-        		<option value="expert">包含专家难度（Expert）</option>
-        		<option value="master">包含大师难度（Master）</option>
-        		<option value="arcade">包含街机大师难度（Master Arcade）</option>
-        		<option value="expert_swing">包含滑键专家难度（Expert Swing）</option>
-        	</select>
-    	</div>
-        <div class="col-md-3">
-        	<select class="form-control" id="songatt" name="songatt">
-        		<option value="">属性</option>
-        		<option value="smile">Smile</option>
-        		<option value="pure">Pure</option>
-        		<option value="cool">Cool</option>
-        	</select>
-    	</div>
-    	<div class="col-md-3">
-        	<select class="form-control" id="songunit" name="songunit">
-        		<option value="">组合</option>
-        		<option value="muse">μ's</option>
-        		<option value="aqours">Aqours</option>
-        	</select>
-    	</div>
-	</div>
+        <div class="col-md-4">
+            <select class="form-control" id="songdiff">
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" id="songatt">
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" id="songunit">
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" id="songswing">
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" id="songac">
+            </select>
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" id="songstardiff">
+            </select>
+        </div>
+    </div>
 </div>
    <!--
 	<select id="songcnhave" name="songcnhave" onchange="changesongselect();changediffinfo()">
@@ -265,13 +243,14 @@
    </select>-->
 <div class="form-group">
 <label class="control-label">歌曲</label><select class="form-control" id="songchoice" name="songchoice">
-		<option value=""> </option>
+   <option value="">载入中...</option>
 </select>
 <input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言" class="form-control btn  btn-default" />
 </div>
 <div class="form-group">
-<label class="control-label">难度</label>
+<label class="control-label">谱面</label>
    <select class="form-control" id="diffchoice" name="diffchoice">
+      <option value="">载入中...</option>
    </select>
 </div>
 
@@ -287,12 +266,6 @@
 	<dd id='attribute'> </dd>
 	<dt>难度</dt>
 	<dd id='stardifficulty'> </dd>
-	<dt id="randomdifficultytag">Random谱难度</dt>
-	<dd id='randomdifficulty'> </dd>
-	<dt id="lptag" style="display:none">消耗LP</dt>
-	<dd id='lp' style="display:none"> </dd>
-	<dt style="display:none">经验</dt>
-	<dd id='exp' style="display:none"> </dd>
 	<dt>Combo数</dt>
 	<dd id='combo'> </dd>
 	<dt>按键权重</dt>
@@ -313,51 +286,6 @@
 	<dd id='swingslider'> </dd>
 </dl>
 
-
-
-<!--table class="table">
-<tr>
-	<th>歌曲名</th>
-	<th id='cnametag'>中文名</th>
-	<th>属性</th>
-	<th>难度</th>
-	<th id="randomdifficultytag">random谱难度</th>
-	<th id="lptag" style="display:none">消耗LP</th>
-	<th style="display:none">经验</th>
-	<th>combo数</th>
-	<th>按键权重</th>
-	<th>时间<sup><a href="#intro-1">(1)</a></sup></th>
-	<th>歌曲长度<sup><a href="#intro-2">(2)</a></sup></th>
-	<th>BPM</th>
-	<th>星星数</th>
-</tr>
-<tr>
-	<td id='jpname'></td>
-	<td id='name'></td>
-	<td id='attribute'> </td>
-	<td id='stardifficulty'> </td>
-	<td id='randomdifficulty'> </td>
-	<td id='lp' style="display:none"> </td>
-	<td id='exp' style="display:none"> </td>
-	<td id='combo'> </td>
-	<td id='noteweight'> </td>
-	<td id='time'> </td>
-	<td id='totaltime'> </td>
-	<td id='bpm'> </td>
-	<td id='star'> </td>
-</tr>
-</table-->
-<!--
-<table border='1'>
-   <tr>
-      <td>SM收录</td>
-      <td id='sm'></td>
-   </tr>
-   <tr>
-      <td>MF收录</td>
-      <td id='mf'></td>
-   </tr>
-</table>-->
 
 <h3>分数要求</h3>
 <dl class="dl-horizontal">

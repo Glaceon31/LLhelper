@@ -38,8 +38,6 @@ NUMBER_OF_THREAD = 20
 
 FILENAME_SONG_LIST_JSON = 'newsongsjson.txt'
 
-difficultyKeys = ['easy', 'normal', 'hard', 'expert', 'master', 'arcade', 'expert_swing']
-
 liveDataKeysForNumber = ['time', 'star', 'slider', 'swing', 'swingslider']
 liveDataKeysForPositiveNumber = ['time']
 liveDataKeysForPosition = ['positionweight', 'positionnote', 'positionslider', 'positionswing', 'positionswingslider']
@@ -250,9 +248,9 @@ def main(threadCount):
         os.makedirs(LIVE_MAP_LOCAL_CACHE_DIR)
 
     for song in songs.values():
-        for difficulty_name in [difficulty for difficulty in song.keys() if (difficulty in difficultyKeys)]:
+        for liveSettingId in song['settings'].keys():
             totalLiveCount += 1
-            live = song[difficulty_name]
+            live = song['settings'][liveSettingId]
             liveId = int(live['liveid'])
             if not isLiveDataComplete(live):
                 liveQueue.put(live)
