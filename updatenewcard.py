@@ -174,8 +174,7 @@ if __name__ == "__main__":
             cskill = Cskilldetail.fetchone()
             base =['','smile','pure','cool']
             card['Cskillpercentage'] = cskill[1]
-            #print cskill
-            if cskill[1] == 12:
+            if cskill[0] >= 100:
                 card['Cskillattribute'] = base[(cskill[0]/10)%10]
             else:
                 card['Cskillattribute'] = base[cskill[0]%10]

@@ -1730,10 +1730,14 @@ var LLUnit = {
       else if (majorPercentage == 4) nameSuffix = '能量';
       else if (majorPercentage == 6) nameSuffix = '之心';
       else if (majorPercentage == 7) nameSuffix = '之星';
-      else if (majorPercentage == 9 || majorPercentage == 12) {
+      else if (majorPercentage == 9 || (majorPercentage == 12 && card.Csecondskilllimit !== undefined)) {
          if (card.Cskillattribute == 'smile') nameSuffix = '公主';
          else if (card.Cskillattribute == 'pure') nameSuffix = '天使';
          else if (card.Cskillattribute == 'cool') nameSuffix = '皇后';
+      } else if (majorPercentage  == 12) {
+         if (card.Cskillattribute == 'smile') nameSuffix = '红宝石';
+         else if (card.Cskillattribute == 'pure') nameSuffix = '绿宝石';
+         else if (card.Cskillattribute == 'cool') nameSuffix = '蓝宝石';
       }
       if (card.Cskillattribute == card.attribute) {
          majorEffect = card.attribute + '属性提升' + majorPercentage + '%';
@@ -1755,7 +1759,13 @@ var LLUnit = {
       var ret = document.createElement(tag);
       if (options) {
          for (var k in options) {
-            ret[k] = options[k];
+            if (k == 'style') {
+               for (var s in options.style) {
+                  ret.style[s] = options.style[s];
+               }
+            } else {
+               ret[k] = options[k];
+            }
          }
       }
       if (subElements) {
