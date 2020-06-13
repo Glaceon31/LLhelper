@@ -1166,6 +1166,7 @@ var LLConst = (function () {
    ret.getMemberGrade = function (member) {
       var memberData = mGetMemberData(member);
       if (!memberData) return undefined;
+      if (!memberData.types) return undefined;
       var groups = memberData.types;
       for (var i = 0; i < groups.length; i++) {
          if (groups[i] >= 1 && groups[i] <= 3) return groups[i];
@@ -1184,6 +1185,7 @@ var LLConst = (function () {
       var ret = [];
       for (var mkey in MEMBER_DATA) {
          var types = MEMBER_DATA[mkey].types;
+         if (!types) continue;
          var matched = true;
          for (var i = 0; i < groups.length; i++) {
             var found = false;
