@@ -80,6 +80,8 @@ def handleUnitType(dbconn, cur_data, row, translate_cn_data):
     translateCn(cur_data, 'name', translate_cn_data)
     if row[2]:
         cur_data['color'] = row[2]
+    if row[3]:
+        cur_data['background_color'] = row[3]
 
 if __name__ == "__main__":
     if not os.path.exists(json_file):
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     commonHandleMetadataTable(jpdbconn, metadata, 'member_tag', 'SELECT member_tag_id, name FROM member_tag_m;', handleMemberTag, translate_cn_data)
 
     # unit type
-    commonHandleMetadataTable(jpdbconn, metadata, 'unit_type', 'SELECT unit_type_id, name, original_attribute_id FROM unit_type_m;', handleUnitType, translate_cn_data)
+    commonHandleMetadataTable(jpdbconn, metadata, 'unit_type', 'SELECT unit_type_id, name, original_attribute_id, background_color FROM unit_type_m;', handleUnitType, translate_cn_data)
 
     # cskill types
     commonHandleMetadataArray(jpdbconn, metadata, 'cskill_groups', 'SELECT member_tag_id FROM unit_leader_skill_extra_m GROUP BY member_tag_id;')

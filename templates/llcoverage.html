@@ -35,7 +35,7 @@
       comp_songselector = new LLSongSelector(songData);
       comp_songselector.onSongSettingChange = applysongdata;
       comp_skill = new LLSkillContainer();
-      comp_cardselector = new LLCardSelector(cardData);
+      comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
       comp_cardselector.getComponent('rarity').filterOptions(function (opt) {
          return !(opt.value == 'N' || opt.value == 'R');
       });
@@ -350,7 +350,7 @@
 
 <h3>判卡库</h3>
 <div id='card_data_version'></div>
-{% include 'components/card-filter.html' %}
+<div id='card_filter_container'></div>
 <br/>
 卡片：<select id="cardchoice" name="cardchoice">
 		<option value="">载入中...</option>

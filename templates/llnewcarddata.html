@@ -80,7 +80,7 @@
       comp_skill2.setSkillLevel = newSetSkillLevel;
 
       // init card selector, with lowbound filter
-      comp_cardselector = new LLCardSelector(cardData);
+      comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
       comp_cardselector.addComponentAsFilter('lowbound', new LLValuedComponent('lowbound'), function (card, v) {
          return (v == '' || isNaN(v) || getmaxstrength(card) >= parseInt(v));
       });
@@ -394,7 +394,7 @@
 
 <h3>卡片库</h3>
 <div id='card_data_version'></div>
-{% include 'components/card-filter.html' %}
+<div id='card_filter_container'></div>
 <br/>
 高级筛选：满槽强度下限 <input type="text" id="lowbound" name="lowbound" autocomplete="off" style="width:50px"><br>
 卡片：<select id="cardchoice" name="cardchoice" onchange="cslot=-1">
