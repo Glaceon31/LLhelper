@@ -50,7 +50,7 @@
       comp_songselector.onSongColorChange = changemapcolor;
       data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();
-      comp_cardselector = new LLCardSelector(cardData);
+      comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
       comp_cardselector.onCardChange = LLUnit.applycarddata;
       comp_cardavatar = new LLImageComponent('imageselect');
       comp_resultmic = new LLMicDisplayComponent('resultmic');

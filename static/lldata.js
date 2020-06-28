@@ -347,7 +347,7 @@ var LLSimpleKeyData = (function () {
 })();
 
 var LLCardData = new LLData('/lldata/cardbrief', '/lldata/card/',
-   ['id', 'support', 'rarity', 'jpname', 'name', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'eponym', 'jpeponym', 'hp', 'album']);
+   ['id', 'typeid', 'support', 'rarity', 'attribute', 'special', 'type', 'skilleffect', 'triggertype', 'triggerrequire', 'eponym', 'jpeponym', 'hp', 'album']);
 var LLSongData = new LLData('/lldata/songbrief', '/lldata/song/',
    ['id', 'attribute', 'name', 'jpname', 'settings', 'group']);
 var LLMetaData = new LLSimpleKeyData('/lldata/metadata', ['album', 'member_tag', 'unit_type', 'cskill_groups']);
@@ -641,6 +641,7 @@ var LLSelectComponent = (function() {
          if (filter && !filter(option)) continue;
          var newOption = new Option(option.text, option.value);
          newOption.style.color = option.color || '';
+         newOption.style['background-color'] = option.background || '';
          this.element.options.add(newOption);
          if (oldValue == option.value) foundOldValue = true;
       }
@@ -969,6 +970,8 @@ var LLConst = (function () {
 
       'SONG_DEFAULT_SET_1': 1,
       'SONG_DEFAULT_SET_2': 2,
+
+      'BACKGROUND_COLOR_DEFAULT': '#dcdbe3',
    };
    var COLOR_ID_TO_NAME = ['', 'smile', 'pure', 'cool'];
    var COLOR_NAME_TO_COLOR = {'smile': 'red', 'pure': 'green', 'cool': 'blue', '': 'purple'};
@@ -1095,6 +1098,9 @@ var LLConst = (function () {
          if (curMember.cnname !== undefined) {
             curMemberData.cnname = curMember.cnname;
          }
+         if (curMember.background_color !== undefined) {
+            curMemberData.background_color = '#' + curMember.background_color;
+         }
       }
    };
 
@@ -1178,6 +1184,17 @@ var LLConst = (function () {
       if (!memberData) return undefined;
       return memberData.color;
    };
+   ret.getMemberBackgroundColor = function (member) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return KEYS.BACKGROUND_COLOR_DEFAULT;
+      return memberData.background_color;
+   };
+   ret.getMemberName = function (member, iscn) {
+      var memberData = mGetMemberData(member);
+      if (!memberData) return '<未知成员(' + member + ')>';
+      if (iscn && memberData.cnname) return memberData.cnname;
+      return memberData.name;
+   };
    ret.getMemberNamesInGroups = function (groups) {
       mCheckInited('unit_type');
       if (groups === undefined) return [];
@@ -1260,13 +1277,13 @@ var LLConst = (function () {
    };
 
    var SKILL_TRIGGER_TEXT = {};
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_TIME] = '时间';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_NOTE] = '图标';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_COMBO] = '连击';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_SCORE] = '分数';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_PERFECT] = '完美';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_STAR_PERFECT] = '星星';
-   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_MEMBERS] = '连锁';
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_TIME] = {'name': '时间', 'unit': '秒'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_NOTE] = {'name': '图标', 'unit': '图标'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_COMBO] = {'name': '连击', 'unit': '连击'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_SCORE] = {'name': '分数', 'unit': '分'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_PERFECT] = {'name': '完美', 'unit': '完美判定'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_STAR_PERFECT] = {'name': '星星', 'unit': '星星'};
+   SKILL_TRIGGER_TEXT[KEYS.SKILL_TRIGGER_MEMBERS] = {'name': '连锁', 'unit': ''};
 
    var SKILL_EFFECT_TEXT = {};
    SKILL_EFFECT_TEXT[KEYS.SKILL_EFFECT_ACCURACY_SMALL] = '小判定';
@@ -1283,7 +1300,15 @@ var LLConst = (function () {
 
    ret.getSkillTriggerText = function(skill_trigger) {
       if (!skill_trigger) return '无';
-      return SKILL_TRIGGER_TEXT[skill_trigger] || '未知';
+      var t = SKILL_TRIGGER_TEXT[skill_trigger];
+      if (!t) return '未知';
+      return t.name;
+   };
+   ret.getSkillTriggerUnit = function(skill_trigger) {
+      if (!skill_trigger) return '';
+      var t = SKILL_TRIGGER_TEXT[skill_trigger];
+      if (!t) return '';
+      return t.unit;
    };
    ret.getSkillEffectText = function(skill_effect) {
       if (!skill_effect) return '无';
@@ -1757,6 +1782,23 @@ var LLUnit = {
       return true;
    },
 
+   updateSubElements: function (ele, subElements, isReplace) {
+     if (isReplace) {
+       ele.innerHTML = '';
+     }
+     if (subElements) {
+       for (var i = 0; i < subElements.length; i++) {
+         var curSubElement = subElements[i];
+         if (typeof (curSubElement) == 'string') {
+           ele.appendChild(document.createTextNode(curSubElement));
+         } else {
+           ele.appendChild(curSubElement);
+         }
+       }
+     }
+     return ele;
+   },
+
    createElement: function (tag, options, subElements, eventHandlers) {
       var ret = document.createElement(tag);
       if (options) {
@@ -1771,14 +1813,7 @@ var LLUnit = {
          }
       }
       if (subElements) {
-         for (var i = 0; i < subElements.length; i++) {
-            var curSubElement = subElements[i];
-            if (typeof(curSubElement) == 'string') {
-               ret.appendChild(document.createTextNode(curSubElement));
-            } else {
-               ret.appendChild(curSubElement);
-            }
-         }
+         LLUnit.updateSubElements(ret, subElements, false);
       }
       if (eventHandlers) {
          for (var e in eventHandlers) {
@@ -1913,15 +1948,31 @@ var LLSkillContainer = (function() {
 })();
 
 var LLCardSelector = (function() {
+   var createElement = LLUnit.createElement;
+   var SEL_ID_CARD_CHOICE = 'cardchoice';
+   var SEL_ID_RARITY = 'rarity';
+   var SEL_ID_CHARA = 'chr';
+   var SEL_ID_UNIT_GRADE = 'unitgrade';
+   var SEL_ID_ATTRIBUTE = 'att';
+   var SEL_ID_TRIGGER_TYPE = 'triggertype';
+   var SEL_ID_TRIGGER_REQUIRE = 'triggerrequire';
+   var SEL_ID_SKILL_TYPE = 'skilltype';
+   var SEL_ID_SPECIAL = 'special';
+   var SEL_ID_SET_NAME = 'setname';
+
+   var updateTriggerRequireOption = function (me, triggerType) {
+      me.getComponent(SEL_ID_TRIGGER_REQUIRE).setOptions(me.triggerRequireOptions[parseInt(triggerType)] || me.triggerRequireOptions['']);
+   };
    /* Properties:
     *    cards
     *    language (serialize)
     *    filters
     *    freezeCardFilter
+    *    dataForSelects
     *    cardOptions
     *    setNameOptions
     * Methods:
-    *    handleCardFilter()
+    *    handleCardFilters()
     *    setLanguage(language)
     *    getCardId()
     *    addComponentAsFilter(name, component, filterfunction)
@@ -1930,89 +1981,157 @@ var LLCardSelector = (function() {
     * Callbacks:
     *    onCardChange(cardid)
     */
-   function LLCardSelector_cls(cards, options) {
+   function LLCardSelector_cls(cards, container) {
       LLComponentCollection.call(this);
 
       // init variables
       this.language = 0;
       this.filters = {};
+      this.dataForSelects = {};
       this.freezeCardFilter = 1;
 
       // init components
-      options = options || {
-         cardchoice: 'cardchoice',
-         rarity: 'rarity',
-         chr: 'chr',
-         att: 'att',
-         special: 'special',
-         cardtype: 'cardtype',
-         skilltype: 'skilltype',
-         triggertype: 'triggertype',
-         setname: 'setname',
-         unitgrade: 'unitgrade',
-         showncard: 'showncard'
-      };
+      // 'cardchoice' and 'showncard' still based on element id
+      var eContainer = LLUnit.getElement(container);
+      var selRarity = createElement('select', {'className': 'form-control'});
+      var selChara = createElement('select', {'className': 'form-control'});
+      var selUnitGrade = createElement('select', {'className': 'form-control'});
+      var selAttribute = createElement('select', {'className': 'form-control'});
+      var selTriggerType = createElement('select', {'className': 'form-control'});
+      var selTriggerRequire = createElement('select', {'className': 'form-control'});
+      var selSkillType = createElement('select', {'className': 'form-control'});
+      var selSpecial = createElement('select', {'className': 'form-control'});
+      var selSetName = createElement('select', {'className': 'form-control'});
+      LLUnit.updateSubElements(eContainer, [
+         '筛选：',
+         selRarity,
+         selChara,
+         selUnitGrade,
+         selAttribute,
+         selTriggerType,
+         selTriggerRequire,
+         selSkillType,
+         selSpecial,
+         selSetName
+      ]);
+      eContainer.className = "form-inline";
+
       var me = this;
-      var addSelect = function (name, f) {
-         var comp = new LLSelectComponent(options[name]);
-         me.addComponentAsFilter(name, comp, f);
+      var addSelect = function (name, element, cardFilter, extraCallback) {
+         var comp = new LLSelectComponent(element);
+         var filters = {};
+         filters[SEL_ID_CARD_CHOICE] = cardFilter;
+         me.addComponentAsFilter(name, comp, filters, extraCallback);
       };
-      this.add('cardchoice', new LLSelectComponent(options.cardchoice));
-      this.getComponent('cardchoice').onValueChange = function (v) {
+      me.add(SEL_ID_CARD_CHOICE, new LLSelectComponent(SEL_ID_CARD_CHOICE));
+      me.getComponent(SEL_ID_CARD_CHOICE).onValueChange = function (v) {
          if (me.onCardChange) me.onCardChange(v);
       };
-      addSelect('rarity', function (card, v) { return (v == '' || card.rarity == v); });
-      addSelect('chr', function (card, v) { return (v == '' || card.jpname == v); });
-      addSelect('att', function (card, v) { return (v == '' || card.attribute == v); });
-      addSelect('special', function (card, v) { return (v == '' || parseInt(card.special) == parseInt(v)); });
-      addSelect('cardtype', function (card, v) { return (v == '' || card.type.indexOf(v) >= 0); });
-      addSelect('skilltype', function (card, v) { return (v == '' || card.skilleffect == v); });
-      addSelect('triggertype', function (card, v) { return (v == '' || card.triggertype == v); });
-      addSelect('setname', function (card, v) { return (v == '' || LLConst.isAlbumInAlbumGroup(card.album, v)); });
-      addSelect('unitgrade', function (card, v) { return (v == '' || LLConst.isMemberInGroup(card.jpname, v)); });
-      me.addComponentAsFilter('showncard', new LLValuedComponent(options.showncard), function (card, v) { return (v == true || card.rarity != 'N'); });
+      me.dataForSelects[SEL_ID_CARD_CHOICE] = function (option) {
+         var index = option.value;
+         if (!index) return undefined;
+         return cards[index];
+      };
 
-      this.setCardData(cards);
+      addSelect(SEL_ID_RARITY, selRarity, function (card, v) { return (v == '' || card.rarity == v); });
+      addSelect(SEL_ID_CHARA, selChara, function (card, v) { return (v == '' || LLConst.getMemberName(card.typeid) == v); });
+      addSelect(SEL_ID_UNIT_GRADE, selUnitGrade, function (card, v) { return (v == '' || LLConst.isMemberInGroup(parseInt(card.typeid), v)); });
+      addSelect(SEL_ID_ATTRIBUTE, selAttribute, function (card, v) { return (v == '' || card.attribute == v); });
+      addSelect(SEL_ID_TRIGGER_TYPE, selTriggerType,
+         function (card, v) { return (v == '' || card.triggertype == v); },
+         function (v) { updateTriggerRequireOption(me, v); }
+      );
+      addSelect(SEL_ID_TRIGGER_REQUIRE, selTriggerRequire, function (card, v) { return (v == '' || card.triggerrequire == v); });
+      addSelect(SEL_ID_SKILL_TYPE, selSkillType, function (card, v) { return (v == '' || card.skilleffect == v); });
+      addSelect(SEL_ID_SPECIAL, selSpecial, function (card, v) { return (v == '' || parseInt(card.special) == parseInt(v)); });
+      addSelect(SEL_ID_SET_NAME, selSetName, function (card, v) { return (v == '' || LLConst.isAlbumInAlbumGroup(card.album, v)); });
+
+      // showncard
+      var showncardFilters = {};
+      showncardFilters[SEL_ID_CARD_CHOICE] = function (card, v) { return (v == true || card.rarity != 'N'); };
+      showncardFilters[SEL_ID_CHARA] = function (opt, v) {
+         return (v == true) || (opt.value == '') || (LLConst[opt.value] !== undefined);
+      };
+      me.addComponentAsFilter('showncard', new LLValuedComponent('showncard'), showncardFilters);
+
+      me.setCardData(cards);
    };
    var cls = LLCardSelector_cls;
    cls.prototype = new LLComponentCollection();
    cls.prototype.constructor = cls;
-   var doFilter = function (me, option) {
-      var index = option.value;
-      if (!index) return true;
-      var card = me.cards[index];
-      if (!card) return true;
-      var filters = me.filters;
-      if (!filters) return true;
-      for (var i in filters) {
-         if (!filters[i](card)) return false;
+
+   var makeTriggerTypeOption = function (triggerId) {
+      return {'value': triggerId, 'text': LLConst.getSkillTriggerText(parseInt(triggerId))};
+   };
+   var makeEffectTypeOption = function (effectId) {
+      return {'value': effectId, 'text': LLConst.getSkillEffectText(parseInt(effectId))};
+   };
+
+   var handleCardFilter = function (me, compId) {
+      var comp = me.getComponent(compId);
+      if (!comp) {
+         console.error('not found filter target ' + compId);
+         return;
       }
-      return true;
+      var dataGetter = me.dataForSelects[compId];
+      var filterMap = me.filters[compId];
+      var filters = [];
+      var values = [];
+      if (filterMap) {
+         for (var i in filterMap) {
+            filters.push(filterMap[i]);
+            values.push(me.getComponent(i).get());
+         }
+      }
+      comp.filterOptions(function (option) {
+         if (!filterMap) return true;
+         var data = option;
+         if (dataGetter) data = dataGetter(option);
+         if (data === undefined) return true;
+         for (var j = 0; j < filters.length; j++) {
+            if (!filters[j](data, values[j])) return false;
+         }
+         return true;
+      });
    };
    var proto = cls.prototype;
-   proto.handleCardFilter = function () {
+   proto.handleCardFilters = function (affectedComps) {
       var me = this;
-      this.getComponent('cardchoice').filterOptions(function (option) {
-         return doFilter(me, option);
-      });
+      if (!affectedComps) {
+         for (var i in me.filters) {
+            handleCardFilter(me, i);
+         }
+      } else {
+         for (var i = 0; i < affectedComps.length; i++) {
+            handleCardFilter(me, affectedComps[i]);
+         }
+      }
    };
    proto.setLanguage = function (language) {
       if (this.language == language) return;
       this.language = language;
-      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
-      this.getComponent('setname').setOptions(this.setNameOptions[this.language]);
+      this.getComponent(SEL_ID_CARD_CHOICE).setOptions(this.cardOptions[this.language]);
+      this.getComponent(SEL_ID_SET_NAME).setOptions(this.setNameOptions[this.language]);
+      this.getComponent(SEL_ID_CHARA).setOptions(this.charaNameOptions[this.language]);
    };
    proto.getCardId = function () {
-      return this.getComponent('cardchoice').get() || '';
+      return this.getComponent(SEL_ID_CARD_CHOICE).get() || '';
    };
-   proto.addComponentAsFilter = function (name, comp, f) {
+   proto.addComponentAsFilter = function (name, comp, filters, extraCallback) {
       var me = this;
       me.add(name, comp);
+      var affectedComps = [];
+      for (var i in filters) {
+         if (me.filters[i] === undefined) {
+            me.filters[i] = {};
+         }
+         me.filters[i][name] = filters[i];
+         affectedComps.push(i);
+      }
       comp.onValueChange = function (v) {
-         me.filters[name] = function (card) { return f(card, v); };
-         if (!me.freezeCardFilter) me.handleCardFilter();
+         if (!me.freezeCardFilter) me.handleCardFilters(affectedComps);
+         if (extraCallback) extraCallback(v);
       };
-      comp.onValueChange(comp.get());
    };
    proto.setCardData = function (cards, resetSelection) {
       if (typeof(cards) == "string") {
@@ -2020,6 +2139,10 @@ var LLCardSelector = (function() {
       }
       this.cards = cards;
       this.freezeCardFilter = 1;
+
+      var foundTypeIds = {};
+      var foundTriggerRequires = {};
+
       // build card options for both language
       var cardOptionsCN = [{'value': '', 'text': ''}];
       var cardOptionsJP = [{'value': '', 'text': ''}];
@@ -2033,17 +2156,26 @@ var LLCardSelector = (function() {
 
          var fullname = String(curCard.id);
          var albumGroup = LLConst.getAlbumGroupByAlbumId(curCard.album) || {};
+         var curTypeId = (curCard.typeid ? parseInt(curCard.typeid) : -1);
          while (fullname.length < 3) fullname = '0' + fullname;
          fullname += ' ' + curCard.rarity + ' ';
-         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + curCard.name + ' ' + (albumGroup.cnname ? "("+albumGroup.cnname+")" : '');
-         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + curCard.jpname + ' ' + (albumGroup.name ? "("+albumGroup.name+")" : '');
+         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + LLConst.getMemberName(curTypeId, true) + ' ' + (albumGroup.cnname ? "("+albumGroup.cnname+")" : '');
+         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + LLConst.getMemberName(curTypeId) + ' ' + (albumGroup.name ? "("+albumGroup.name+")" : '');
          var color = LLConst.getAttributeColor(curCard.attribute);
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
+
+         foundTypeIds[curTypeId] = 1;
+         if (curCard.triggerrequire) {
+            if (!foundTriggerRequires[curCard.triggertype]) {
+               foundTriggerRequires[curCard.triggertype] = {};
+            }
+            foundTriggerRequires[curCard.triggertype][curCard.triggerrequire] = 1;
+         }
       }
       this.cardOptions = [cardOptionsCN, cardOptionsJP];
-      this.getComponent('cardchoice').setOptions(this.cardOptions[this.language]);
-      if (resetSelection) this.getComponent('cardchoice').set('');
+      this.getComponent(SEL_ID_CARD_CHOICE).setOptions(this.cardOptions[this.language]);
+      if (resetSelection) this.getComponent(SEL_ID_CARD_CHOICE).set('');
 
       // build set name options from album groups
       var setNameOptionsCN = [{'value': '', 'text': '相册名'}];
@@ -2055,11 +2187,118 @@ var LLCardSelector = (function() {
          setNameOptionsJP.push({'value': i, 'text': curGroup.name});
       }
       this.setNameOptions = [setNameOptionsCN, setNameOptionsJP];
-      this.getComponent('setname').setOptions(this.setNameOptions[this.language]);
+      this.getComponent(SEL_ID_SET_NAME).setOptions(this.setNameOptions[this.language]);
+
+      // build character name options
+      var charaNameOptionsCN = [{'value': '', 'text': '角色'}];
+      var charaNameOptionsJP = [{'value': '', 'text': '角色'}];
+      var typeIds = Object.keys(foundTypeIds).sort(function (a, b){return parseInt(a)-parseInt(b);});
+      var normalizedTypeIds = [];
+      var typeNameId = {};
+      for (i = 0; i < typeIds.length; i++) {
+         var curTypeId = parseInt(typeIds[i]);
+         if (curTypeId < 0) continue;
+         // some member has more than 1 id, we need normalize the ids using LLConst
+         var jpName = LLConst.getMemberName(curTypeId);
+         if (typeNameId[jpName] === undefined) {
+            if (LLConst[jpName] !== undefined) {
+               curTypeId = LLConst[jpName];
+            } 
+            typeNameId[jpName] = curTypeId;
+            normalizedTypeIds.push(curTypeId);
+         }
+      }
+      normalizedTypeIds = normalizedTypeIds.sort(function (a, b) {return a - b});
+      for (i = 0; i < normalizedTypeIds.length; i++) {
+         var curTypeId = normalizedTypeIds[i];
+         var jpName = LLConst.getMemberName(curTypeId);
+         var cnName = LLConst.getMemberName(curTypeId, true);
+         var bkColor = LLConst.getMemberBackgroundColor(curTypeId);
+         charaNameOptionsCN.push({'value': jpName, 'text': cnName, 'background': bkColor});
+         charaNameOptionsJP.push({'value': jpName, 'text': jpName, 'background': bkColor});
+      }
+      this.charaNameOptions = [charaNameOptionsCN, charaNameOptionsJP];
+      this.getComponent(SEL_ID_CHARA).setOptions(this.charaNameOptions[this.language]);
+
+      // build trigger require options
+      var triggerRequireOptions = {
+         '': [{'value': '', 'text': '触发条件'}]
+      };
+      for (i in foundTriggerRequires) {
+         var triggerRequires = Object.keys(foundTriggerRequires[i]).sort(function (a, b){return parseInt(a) - parseInt(b)});
+         var options = [{'value': '', 'text': '触发条件'}];
+         var unitText = LLConst.getSkillTriggerUnit(parseInt(i));
+         for (var j = 0; j < triggerRequires.length; j++) {
+            options.push({'value': triggerRequires[j], 'text': triggerRequires[j] + unitText});
+         }
+         triggerRequireOptions[parseInt(i)] = options;
+      }
+      this.triggerRequireOptions = triggerRequireOptions;
+      updateTriggerRequireOption(this, this.getComponent(SEL_ID_TRIGGER_TYPE).get());
+
+      // set other options
+      this.getComponent(SEL_ID_RARITY).setOptions([
+         {'value': '',    'text': '稀有度'},
+         {'value': 'N',   'text': 'N'},
+         {'value': 'R',   'text': 'R'},
+         {'value': 'SR',  'text': 'SR'},
+         {'value': 'SSR', 'text': 'SSR'},
+         {'value': 'UR',  'text': 'UR'}
+      ]);
+      this.getComponent(SEL_ID_UNIT_GRADE).setOptions([
+         {'value': '', 'text': '年级小队'},
+         {'value': LLConst.GROUP_MUSE,   'text': "μ's"},
+         {'value': LLConst.GROUP_AQOURS, 'text': 'Aqours'},
+         {'value': LLConst.GROUP_GRADE1, 'text': '一年级'},
+         {'value': LLConst.GROUP_GRADE2, 'text': '二年级'},
+         {'value': LLConst.GROUP_GRADE3, 'text': '三年级'},
+         {'value': LLConst.GROUP_PRINTEMPS, 'text': 'Printemps'},
+         {'value': LLConst.GROUP_LILYWHITE, 'text': 'lilywhite'},
+         {'value': LLConst.GROUP_BIBI,   'text': 'BiBi'},
+         {'value': LLConst.GROUP_CYARON, 'text': 'CYaRon!'},
+         {'value': LLConst.GROUP_AZALEA, 'text': 'AZALEA'},
+         {'value': LLConst.GROUP_GUILTYKISS, 'text': 'Guilty Kiss'},
+         {'value': LLConst.GROUP_NIJIGASAKI, 'text': '虹咲'}
+      ]);
+      this.getComponent(SEL_ID_ATTRIBUTE).setOptions([
+         {'value': '',      'text': '属性',  'color': 'black'},
+         {'value': 'smile', 'text': 'smile', 'color': 'red'},
+         {'value': 'pure',  'text': 'pure',  'color': 'green'},
+         {'value': 'cool',  'text': 'cool',  'color': 'blue'}
+      ]);
+      this.getComponent(SEL_ID_TRIGGER_TYPE).setOptions([
+         {'value': '', 'text': '触发类型'},
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_TIME),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_NOTE),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_COMBO),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_SCORE),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_PERFECT),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_STAR_PERFECT),
+         makeTriggerTypeOption(LLConst.SKILL_TRIGGER_MEMBERS)
+      ]);
+      this.getComponent(SEL_ID_SKILL_TYPE).setOptions([
+         {'value': '', 'text': '技能类型'},
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_ACCURACY_SMALL),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_ACCURACY_NORMAL),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_HEAL),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_SCORE),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_POSSIBILITY_UP),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_REPEAT),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_PERFECT_SCORE_UP),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_COMBO_FEVER),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_SYNC),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_LEVEL_UP),
+         makeEffectTypeOption(LLConst.SKILL_EFFECT_ATTRIBUTE_UP)
+      ]);
+      this.getComponent(SEL_ID_SPECIAL).setOptions([
+         {'value': '', 'text': '是否特典卡'},
+         {'value': '0', 'text': '不是特典'},
+         {'value': '1', 'text': '是特典'}
+      ]);
 
       // at last, unfreeze the card filter and refresh filter
       this.freezeCardFilter = 0;
-      this.handleCardFilter();
+      this.handleCardFilters();
    };
    var super_serialize = proto.serialize;
    var super_deserialize = proto.deserialize;
@@ -2077,7 +2316,7 @@ var LLCardSelector = (function() {
       }
       super_deserialize.call(this, v.components);
       this.freezeCardFilter = 0;
-      this.handleCardFilter();
+      this.handleCardFilters();
       if (this.onCardChange) this.onCardChange(this.getCardId());
    };
    return cls;
@@ -6250,7 +6489,7 @@ var LLTeamComponent = (function () {
          cardsBrief[i] = cardbrief;
          if (cardbrief) {
             controllers.info.cells[i].set(cardbrief.attribute);
-            controllers.info_name.cells[i].set(cardbrief.name);
+            controllers.info_name.cells[i].set(LLConst.getMemberName(cardbrief.typeid, true));
             controllers.skill_trigger.cells[i].set(LLConst.getSkillTriggerText(cardbrief.triggertype));
             controllers.skill_effect.cells[i].set(LLConst.getSkillEffectText(cardbrief.skilleffect));
             if (member.hp === undefined) {

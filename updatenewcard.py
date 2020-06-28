@@ -86,6 +86,7 @@ if __name__ == "__main__":
             cntmp = 0
         card['rarity'] = rarity[jptmp[6]]
         card['attribute'] = attribute[jptmp[7]]
+        card['typeid'] = jptmp[1]
         card['jpeponym'] = jptmp[2]
         card['jpname'] = jptmp[3]
         # do not overwrite old data
@@ -146,14 +147,29 @@ if __name__ == "__main__":
             card['skilldetail'] = []
             tmp = skilldetail.fetchone()
             i = 0
+            trigger_require_min = None
+            trigger_require_max = None
             while tmp:
                 card['skilldetail'].append({})
                 card['skilldetail'][i]['score'] = tmp[0]
                 card['skilldetail'][i]['time'] = tmp[1]
                 card['skilldetail'][i]['require'] = tmp[2]
                 card['skilldetail'][i]['possibility'] = tmp[3]
+                if 0 == i:
+                    trigger_require_min = tmp[2]
+                    trigger_require_max = tmp[2]
+                else:
+                    if tmp[2] < trigger_require_min:
+                        trigger_require_min = tmp[2]
+                    if tmp[2] > trigger_require_max:
+                        trigger_require_max = tmp[2]
                 i = i + 1
                 tmp = skilldetail.fetchone()
+            if trigger_require_min:
+                if trigger_require_min == trigger_require_max:
+                    card['triggerrequire'] = trigger_require_min;
+                else:
+                    card['triggerrequire'] = str(trigger_require_min) + '~' + str(trigger_require_max);
             triggertarget = jpdbconn.execute('SELECT trigger_target FROM unit_skill_trigger_target_m WHERE unit_skill_id = '+str(skillid)+' ORDER BY trigger_target DESC;')
             tmp = triggertarget.fetchone()
             if tmp:
