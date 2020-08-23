@@ -90,6 +90,14 @@
       .tool-index-row-4 > div > .row > a:focus {
         color: #2ec4b6;
       }
+      .tool-index-5 {
+        background-color: #494;
+      }
+      .tool-index-row-5 > div > .row > a:active,
+      .tool-index-row-5 > div > .row > a:hover,
+      .tool-index-row-5 > div > .row > a:focus {
+        color: #494;
+      }
       #tips {
         font-weight: 300;
         font-size: 24px;
@@ -316,7 +324,7 @@
       </div>
       </div>
       {% endraw %}
-      <div class="tool-index-5">
+      <div class="tool-index-6">
         <div class="container">
           <div class="row tool-index-row">
             <div class="col-xs-12 col-sm-4">
@@ -524,6 +532,15 @@
             { name: '人种鉴定', href: '/llurrank' },
          ]
         },
+        {
+          id: 5,
+          name: '文档攻略',
+          description: '',
+          key: 'docs',
+          links: [
+            { name: '得分计算概述', href: '/document/score_calculation.md' }
+         ]
+        },
       ]
     },
     computed: {
@@ -541,6 +558,7 @@
           case '#game-data': this.activeSectionId = 2; break
           case '#unit-formation': this.activeSectionId = 3; break
           case '#other-tools': this.activeSectionId = 4; break
+          case '#docs': this.activeSectionId = 5; break
         }
       }
     },

@@ -127,9 +127,15 @@ def llcardapi():
 def llmapapi():
        return open("songsjson.txt").read()
 
-@app.route("/document")
-def document():
-    return send_file("document.txt")
+### documents ###
+
+def render_document(md_file, doc_title):
+    md_content = open(md_file, 'rb').read()
+    return render_template('docs.html', md_content = md_content, doc_title = doc_title)
+
+@app.route("/document/score_calculation.md", methods=['GET'])
+def document_score_calculation():
+    return render_document('docs/score_calculation.md', '得分计算概述')
 
 ### species ###
 @app.route("/llspecies", methods=['GET', 'POST'])

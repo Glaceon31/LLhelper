@@ -1270,8 +1270,8 @@ var LLConst = (function () {
          console.error('max HP out of range: ' + maxHp);
          return 1;
       }
-      if (curHp <= maxHp*2) return 1;
-      var bonus = (Math.floor(curHp/maxHp + 1e-8)-1) * HEAL_BONUS[maxHp];
+      if (curHp < maxHp*2) return 1;
+      var bonus = (Math.floor(curHp/maxHp + 1e-8)-1) * HEAL_BONUS[maxHp-9];
       if (bonus > KEYS.SKILL_LIMIT_HEAL_BONUS) bonus = KEYS.SKILL_LIMIT_HEAL_BONUS;
       return 1 + bonus/100;
    };
