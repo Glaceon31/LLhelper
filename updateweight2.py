@@ -209,7 +209,7 @@ class positionWeightUpdateThread (threading.Thread):
             self.printer.myPrint('* User trying to exit program')
             return (liveId, STATUS_KEYBOARD_INTERRUPT, None)
         except Exception as e:
-            self.printer.myPrint('* Failed to process %d' % (liveId))
+            self.printer.myPrint('* Failed to process %d, json=%s' % (liveId, live['jsonpath']))
             self.printer.myPrint(e)
             return (liveId, STATUS_ERROR, None)
     def interrupt(self, e):
@@ -273,7 +273,7 @@ def main(threadCount):
             except KeyboardInterrupt:
                 printer.myPrint('* User trying to exit program')
             except Exception as e:
-                printer.myPrint('* Failed to process %d' % (liveId))
+                printer.myPrint('* Failed to process %d, json=%s' % (liveId, live['jsonpath']))
                 printer.myPrint(e)
     else:
         printer.myPrint('* Multi-thread mode, %d threads processing %d lives' % (threadCount, liveQueueCount))
