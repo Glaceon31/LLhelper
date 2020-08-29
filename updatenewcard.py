@@ -37,7 +37,7 @@ unit_column_str = (
 ' unit_m.attribute_id,'
 ' unit_m.default_unit_skill_id,'
 ' unit_m.default_leader_skill_id,'
-' unit_m.before_level_max,'   # 10
+' unit_rarity_m.before_level_max,'   # 10
 ' unit_m.default_removable_skill_capacity,'
 ' unit_m.max_removable_skill_capacity,'
 ' unit_m.disable_rank_up,'
@@ -47,6 +47,7 @@ unit_column_str = (
 ' unit_m.pure_max,'
 ' unit_m.cool_max,'
 ' unit_m.album_series_id '
+'FROM unit_m LEFT JOIN unit_rarity_m ON unit_m.rarity = unit_rarity_m.rarity '
 )
 
 def namechange(name):
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     has_cndb = os.path.exists(cndbpath)
     if has_cndb:
         cndbconn = sqlite3.connect(cndbpath)
-    jptc = jpdbconn.execute('SELECT %s FROM unit_m;' % unit_column_str)
+    jptc = jpdbconn.execute('SELECT %s;' % unit_column_str)
     jptmp = jptc.fetchone()
     while jptmp:
         card_count_in_db += 1
@@ -80,7 +81,7 @@ if __name__ == "__main__":
         card = cards[card_key]
         card['id'] = card_id
         if has_cndb:
-            cncard = cndbconn.execute('SELECT %s FROM unit_m WHERE unit_number = %s;' % (unit_column_str, card_key))
+            cncard = cndbconn.execute('SELECT %s WHERE unit_m.unit_number = %s;' % (unit_column_str, card_key))
             cntmp = cncard.fetchone()
         else:
             cntmp = 0
