@@ -4,6 +4,10 @@ import os
 import hashlib
 import sqlite3
 import re
+import sys
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 json_file = 'metadata.txt'
 translate_cn_file = 'translate-cn.txt'

@@ -12,8 +12,40 @@
 
 {% block script %}
    <script>
+   "use strict";
    var testSet = [];
-   var currentTestId = -1;
+   var defer_onload = $.Deferred();
+   var defer_test_load = $.Deferred();
+   var cardDetails = 0;
+   var data_mapnote = 0;
+   var song_settings = 0;
+
+   function loadCardsById(cardIds, version) {
+      var uniqueCardids = {};
+      var requests = [];
+      for (var i = 0; i < cardIds.length; i++) {
+         var curCardId = cardIds[i];
+         if (curCardId && uniqueCardids[curCardId] === undefined) {
+            requests.push(LLCardData.getDetailedDataWithVersion(version || 'cn', curCardId));
+            uniqueCardids[curCardId] = 1;
+         }
+      }
+      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
+   }
+   function getSongById(songId) {
+      return LLSongData.getCachedBriefData()[songId];
+   }
+   function getSongSettingById(songSettingId) {
+      return song_settings[songSettingId];
+   }
+   function buildMapOptionById(songId, songSettingId, friendCSkill) {
+      return {
+         'song': getSongById(songId),
+         'songSetting': getSongSettingById(songSettingId),
+         'friendCSkill': friendCSkill
+      };
+   }
+
    function addTestItem(item) {
       testSet.push(item);
 
@@ -33,7 +65,12 @@
             resultElement.className = 'danger';
             item.fail = 1;
          } else {
-            resultElement.innerHTML = 'Success';
+            var maxDiff = item.maxDiff;
+            if (maxDiff !== undefined) {
+               resultElement.innerHTML = 'Success, max diff = ' + maxDiff.toFixed(6);
+            } else {
+               resultElement.innerHTML = 'Success';
+            }
             resultElement.className = 'success';
             item.success = 1;
          }
@@ -60,11 +97,26 @@
             }
          }
          $.when.apply($, afters).then(function () {
+            var cardDefer, songDefer;
+            if (item.cardConfigs) {
+               var cardIds = item.cardConfigs.map(function (c) { return c[0]; });
+               cardDefer = loadCardsById(cardIds, item.version);
+            }
+            if (item.songId && item.songSettingId) {
+               var song = getSongById(item.songId);
+               var songSetting = getSongSettingById(item.songSettingId);
+               songDefer = data_mapnote.getLocalMapNoteData(song, songSetting);
+            }
+            return $.when(cardDefer, songDefer);
+         }, function () {
+            setResult('Skipped');
+            defer.reject('Skipped');
+         }).then(function (cards, noteData) {
             try {
                resultElement.innerHTML = 'Running';
                item.startTime = window.performance.now();
-               var ret = item.run();
-               if (ret.then) {
+               var ret = item.run(cards, noteData);
+               if (ret && ret.then) {
                   ret.then(function (r) {
                      setResult(r);
                      defer.resolve(r);
@@ -82,8 +134,8 @@
                defer.resolve(e);
             }
          }, function () {
-            setResult('Skipped');
-            defer.reject('Skipped');
+            setResult('Load cards and notes failed');
+            defer.reject();
          });
          return defer;
       };
@@ -98,20 +150,8 @@
       return item;
    }
 
-   function loadCardsById(cardIds) {
-      var requests = [];
-      for (var i = 0; i < cardIds.length; i++) {
-         requests.push(LLCardData.getDetailedData(cardIds[i]));
-      }
-      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
-   }
-
-   function loadCardsByConfig(cardConfigs) {
-      var requests = [];
-      for (var i = 0; i < cardConfigs.length; i++) {
-         requests.push(LLCardData.getDetailedData(cardConfigs[i][0]));
-      }
-      return LoadingUtil.start(requests, LoadingUtil.cardDetailMerger);
+   function loadCardsByConfig(cardConfigs, version) {
+      return loadCardsById(cardConfigs.map(function (c){return c[0];}), version);
    }
 
    function buildTeam(cards, cardConfigs, mapdata) {
@@ -295,41 +335,116 @@
       throw 'assertEqual fail: ' + a + ' == ' + b;
    }
 
+   function assertFloatEqual(a, b, eps, lastDiff) {
+      var diff = a-b;
+      if (diff < 0) diff = -diff;
+      if (diff <= eps) return (lastDiff && diff < lastDiff ? lastDiff : diff);
+      throw 'assertFloatEqual fail: abs(' + a + ' - ' + b + ') = ' + diff + ' > ' + eps;
+   }
+
    function assertAttributeP(a, smilep, purep, coolp) {
       if (a.smile == smilep && a.pure == purep && a.cool == coolp) return;
       throw 'assertAttributeP fail: {' + a.smile + ', ' + a.pure + ', ' + a.cool + '} == {' + smilep + ', ' + purep + ', ' + coolp + '}';
    }
 
-   var defer_onload = $.Deferred();
-   var defer_test_load = $.Deferred();
-   var defer_test_load_card_detail = $.Deferred();
-   var cardDetails = 0;
+   function assertFloatArrayEqual(arr1, arr2, eps, lastDiff) {
+      var maxDiff = lastDiff || 0;
+      for (var i = 0; i < arr1.length; i++) {
+         maxDiff = assertFloatEqual(arr1[i], arr2[i], eps, maxDiff);
+      }
+      return maxDiff;
+   }
+
+   function initSongSettings() {
+      var songs = LLSongData.getCachedBriefData();
+      song_settings = {};
+      for (var i in songs) {
+         if (!songs[i].settings) continue;
+         for (var j in songs[i].settings) {
+            song_settings[j] = songs[i].settings[j];
+            songs[i].settings[j].song = i;
+         }
+      }
+   }
+
+   function calcSim(item, cards, noteData, verifyCallback) {
+      var cardConfigs = item.cardConfigs;
+      var songId = item.songId;
+      var songSettingId = item.songSettingId;
+      var simCount = item.simCount || 1000;
+      var friendCSkill = item.friendCSkill || {
+         'attribute': 'smile',
+         'Cskillattribute': 'smile',
+         'Cskillpercentage': 0,
+         'Csecondskilllimit': LLConst.GROUP_UNKNOWN,
+         'Csecondskillattribute': 0
+      };
+      var buffTapUp = item.buffTapUp || 0;
+      var buffSkillUp = item.buffSkillUp || 0;
+      var perfectPercent = (item.perfectPercent === undefined ? 95 : item.perfectPercent);
+      var speed = (item.speed === undefined ? 8 : item.speed);
+      var cfPattern = (item.cfPattern === undefined ? 2 : item.cfPattern);
+      var overHealPattern = (item.overHealPattern === undefined ? 1 : item.overHealPattern);
+      var perfectAccuracyPattern = (item.perfectAccuracyPattern === undefined ? 1 : item.perfectAccuracyPattern);
+      // do simulate
+      var llmap = new LLMap(buildMapOptionById(songId, songSettingId, friendCSkill));
+      llmap.setMapBuff(buffTapUp, buffSkillUp);
+      llmap.perfect = Math.floor(parseFloat(perfectPercent)/100 * llmap.combo);
+      llmap.speed = speed;
+      llmap.combo_fever_pattern = cfPattern;
+      llmap.over_heal_pattern = overHealPattern;
+      llmap.perfect_accuracy_pattern = perfectAccuracyPattern;
+      var llteam = buildTeam(cards, cardConfigs, llmap);
+      llteam.calculateAttributeStrength(llmap);
+      llteam.calculateSkillStrength(llmap);
+      var err = llteam.simulateScoreDistribution(llmap, noteData, simCount);
+      if (err) throw err;
+      var diffs = verifyCallback(llteam);
+      if (diffs && diffs.length) {
+         var maxDiff = 0;
+         for (var i = 0; i < diffs.length; i++) {
+            if (diffs[i] > maxDiff) maxDiff = diffs[i];
+         }
+         item.maxDiff = maxDiff;
+      }
+   }
 
    function handleFailedLoading(e) {
       defer_test_load.reject(e);
       document.getElementById('loadingbox').style.display = 'none';
    }
 
-   LLCardData.setVersion('cn');
-   $.when(LLCardData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, metaData) {
+   $.when(
+      LLMetaData.get(),
+      LLCardData.getAllBriefDataWithVersion('cn'),
+      LLCardData.getAllBriefDataWithVersion('latest'),
+      LLSongData.getAllBriefData(),
+      defer_onload
+   ).then(function (metaData) {
       LLConst.initMetadata(metaData);
+      data_mapnote = new LLMapNoteData('/static/live/json/');
+      initSongSettings();
       defer_test_load.resolve();
       // done
       document.getElementById('loadingbox').style.display = 'none';
 
       // init tests
       var test1 = addTestItem({'name': 'Load card detail', 'run': function () {
-         var ids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726,
-            1115, 782, 937, 843, 980, 107, 955, 459, 127, 1002, 648, 317, 957
+         var cnids = [378, 346, 330, 296, 408, 358, 367, 1172, 397, 1165, 1373, 1417, 68, 88, 155, 315, 476, 565, 634, 726,
+            1115, 782, 937, 843, 980, 107, 955, 459, 127, 1002, 648, 317, 957, 636, 1065, 939, 369, 1720, 1721, 1651, 1640
          ];
-         return loadCardsById(ids).then(function (cards) {
-            cardDetails = cards;
-            defer_test_load_card_detail.resolve();
+         var jpids = [2357, 346, 476, 315];
+         return $.when(
+            loadCardsById(cnids, 'cn'),
+            loadCardsById(jpids, 'latest')
+         ).then(function () {
             return 0;
          });
       }});
-      addTestItem({'name': 'Basic calculate', 'after': test1, 'run': function () {
-         var cardConfigs = [
+      addTestItem({
+         'name': 'Basic calculate',
+         'after': test1,
+         'cardConfigs': [
             [955, 1, 4, 4, [LLSisGem.SCORE_250]],
             [980, 1, 4, 4, [LLSisGem.SCORE_250]],
             [459, 1, 1, 1, [LLSisGem.SADD_200]],
@@ -339,14 +454,14 @@
             [317, 1, 2, 3, [LLSisGem.AMUL_18]],
             [378, 0, 1, 4, [LLSisGem.AMUL_24]],
             [957, 1, 1, 5, [LLSisGem.SMUL_10, LLSisGem.SMUL_16]]
-         ];
-         var songSetting = {"combo": 359, "positionweight": ["15.5", "26.0", "51.5", "55.0", "52.25", "58.25", "58.5", "26.75", "21.5"], "star": "62", "time": "117", 'difficulty': LLConst.SONG_DIFFICULTY_EXPERT};
-         var mapdata = new LLMap({
-            'song': {'group': LLConst.SONG_GROUP_MUSE, "attribute": "pure", "settings": {'1': songSetting}},
-            'songSetting': songSetting
-         });
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
+         ],
+         'run': function (cards) {
+            var songSetting = {"combo": 359, "positionweight": ["15.5", "26.0", "51.5", "55.0", "52.25", "58.25", "58.5", "26.75", "21.5"], "star": "62", "time": "117", 'difficulty': LLConst.SONG_DIFFICULTY_EXPERT};
+            var mapdata = new LLMap({
+               'song': {'group': LLConst.SONG_GROUP_MUSE, "attribute": "pure", "settings": {'1': songSetting}},
+               'songSetting': songSetting
+            });
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
@@ -356,16 +471,16 @@
             assertEqual(llteam.totalAttrStrength, 57788);
             assertEqual(llteam.totalSkillStrength, 9946);
             return 0;
-         });
-      }});
+         }
+      });
 
-      addTestItem({'name': 'Smile team with smile song with friend', 'after': test1, 'run': function () {
-         var cardConfigs = getSmileTeam();
-         var song = getSmileSong('oyasuminasann');
-         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
+      addTestItem({
+         'name': 'Smile team with smile song with friend',
+         'after': test1,
+         'cardConfigs': getSmileTeam(),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('529', '887', getFriendCSkill_muse_9_3('smile')));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
             console.log(llteam);
@@ -375,15 +490,15 @@
             assertEqual(llteam.totalAttrStrength, 72088);
             assertEqual(llteam.totalSkillStrength, 17650);
             return 0;
-         });
-      }});
-      addTestItem({'name': 'Smile team with smile song with friend - autoarm 6.0 gem', 'after': test1, 'run': function () {
-         var cardConfigs = getSmileTeam();
-         var song = getSmileSong('oyasuminasann');
-         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
+         }
+      });
+      addTestItem({
+         'name': 'Smile team with smile song with friend - autoarm 6.0 gem',
+         'after': test1,
+         'cardConfigs': getSmileTeam(),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('529', '887', getFriendCSkill_muse_9_3('smile')));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
             llteam.autoArmGem(mapdata, getGemStock_60AllGem());
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -394,15 +509,15 @@
             assertEqual(llteam.totalAttrStrength, 74798);
             assertEqual(llteam.totalSkillStrength, 16138);
             return 0;
-         });
-      }});
-      addTestItem({'name': 'Smile team with smile song with friend - autoarm 6.5 gem', 'after': test1, 'run': function () {
-         var cardConfigs = getSmileTeam();
-         var song = getSmileSong('oyasuminasann');
-         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
+         }
+      });
+      addTestItem({
+         'name': 'Smile team with smile song with friend - autoarm 6.5 gem',
+         'after': test1,
+         'cardConfigs': getSmileTeam(),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('529', '887', getFriendCSkill_muse_9_3('smile')));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
             llteam.autoArmGem(mapdata, getGemStock_65AllGem());
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -413,15 +528,15 @@
             assertEqual(llteam.totalAttrStrength, 78025);
             assertEqual(llteam.totalSkillStrength, 14280);
             return 0;
-         });
-      }});
-      addTestItem({'name': 'Smile team with smile song with friend - autoarm no gem', 'after': test1, 'run': function () {
-         var cardConfigs = getSmileTeam();
-         var song = getSmileSong('oyasuminasann');
-         song['friendCSkill'] = getFriendCSkill_muse_9_3('smile');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
+         }
+      });
+      addTestItem({
+         'name': 'Smile team with smile song with friend - autoarm no gem',
+         'after': test1,
+         'cardConfigs': getSmileTeam(),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('529', '887', getFriendCSkill_muse_9_3('smile')));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
             llteam.autoArmGem(mapdata, {'ALL': 0});
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -432,18 +547,19 @@
             assertEqual(llteam.totalAttrStrength, 62172);
             assertEqual(llteam.totalSkillStrength, 7742);
             return 0;
-         });
-      }});
-      addTestItem({'name': 'Smile team with smile song with friend - autounit 4.0 gem', 'after': test1, 'run': function () {
-         var cardConfigs = getSmileTeam();
-         cardConfigs.push([1065, 1, 1, 3, []]);
-         cardConfigs.push([378, 1, 4, 4, []]);
-         var song = getSmileSong('oyasuminasann');
-         song['friendCSkill'] = getFriendCSkill_grade2_9_6('smile');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
-            var submembers = buildSubMembers(cards, cardConfigs);
+         }
+      });
+      addTestItem({
+         'name': 'Smile team with smile song with friend - autounit 4.0 gem',
+         'after': test1,
+         'cardConfigs': getSmileTeam().concat([
+            [1065, 1, 1, 3, []],
+            [378, 1, 4, 4, []]
+         ]),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('529', '887', getFriendCSkill_grade2_9_6('smile')));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, this.cardConfigs);
             llteam.autoUnit(mapdata, getGemStock_40AllGem(), submembers);
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -454,19 +570,21 @@
             assertEqual(llteam.totalAttrStrength, 70182);
             assertEqual(llteam.totalSkillStrength, 21748);
             return 0;
-         });
-      }});
-      var test8 = addTestItem({'name': 'Pure muse team with pure aqours song - autounit N-SSR 4.0 gem', 'after': test1, 'run': function () {
-         var cardConfigs = getPureTeam();
-         cardConfigs.push([1720, 0, 1, 3, []]);
-         cardConfigs.push([1721, 1, 1, 3, []]);
-         cardConfigs.push([1651, 1, 1, 6, []]);
-         cardConfigs.push([1640, 1, 8, 6, []]);
-         var song = getPureSong('kiminokokorohakagayaiterukai');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
-            var submembers = buildSubMembers(cards, cardConfigs);
+         }
+      });
+      var test8 = addTestItem({
+         'name': 'Pure muse team with pure aqours song - autounit N-SSR 4.0 gem',
+         'after': test1,
+         'cardConfigs': getPureTeam().concat([
+            [1720, 0, 1, 3, []],
+            [1721, 1, 1, 3, []],
+            [1651, 1, 1, 6, []],
+            [1640, 1, 8, 6, []]
+         ]),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('446', '520'));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, this.cardConfigs);
             llteam.autoUnit(mapdata, getGemStock_40AllGem(), submembers);
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -477,19 +595,21 @@
             assertEqual(llteam.totalAttrStrength, 64823);
             assertEqual(llteam.totalSkillStrength, 1332);
             return 0;
-         });
-      }});
-      addTestItem({'name': 'Pure muse team with pure aqours song - autounit N-SSR 6.0 gem', 'after': test8, 'run': function () {
-         var cardConfigs = getPureTeam();
-         cardConfigs.push([1720, 0, 1, 3, []]);
-         cardConfigs.push([1721, 1, 1, 3, []]);
-         cardConfigs.push([1651, 1, 1, 6, []]);
-         cardConfigs.push([1640, 1, 8, 6, []]);
-         var song = getPureSong('kiminokokorohakagayaiterukai');
-         var mapdata = new LLMap(song);
-         return loadCardsByConfig(cardConfigs).then(function (cards) {
-            var llteam = buildTeam(cards, cardConfigs, mapdata);
-            var submembers = buildSubMembers(cards, cardConfigs);
+         }
+      });
+      addTestItem({
+         'name': 'Pure muse team with pure aqours song - autounit N-SSR 6.0 gem',
+         'after': test8,
+         'cardConfigs': getPureTeam().concat([
+            [1720, 0, 1, 3, []],
+            [1721, 1, 1, 3, []],
+            [1651, 1, 1, 6, []],
+            [1640, 1, 8, 6, []]
+         ]),
+         'run': function (cards) {
+            var mapdata = new LLMap(buildMapOptionById('446', '520'));
+            var llteam = buildTeam(cards, this.cardConfigs, mapdata);
+            var submembers = buildSubMembers(cards, this.cardConfigs);
             llteam.autoUnit(mapdata, getGemStock_60AllGem(), submembers);
             llteam.calculateAttributeStrength(mapdata);
             llteam.calculateSkillStrength(mapdata);
@@ -500,8 +620,39 @@
             assertEqual(llteam.totalAttrStrength, 67273);
             assertEqual(llteam.totalSkillStrength, 1332);
             return 0;
-         });
-      }});
+         }
+      });
+      addTestItem({
+         'name': 'Attribute up sim',
+         'after': test1,
+         'cardConfigs': [
+            [2357, 1, 8, 4, []],
+            [346, 1, 1, 4, []],
+            [476, 1, 1, 4, []],
+            [315, 1, 1, 4, []],
+            [315, 1, 1, 4, []],
+            [315, 1, 1, 4, []],
+            [315, 1, 1, 4, []],
+            [315, 1, 1, 4, []],
+            [2357, 1, 8, 4, []]
+         ],
+         'songId': '577',
+         'songSettingId': '1171',
+         'version': 'latest',
+         'run': function (cards, noteData) {
+            return calcSim(this, cards, noteData, function (team) {
+               var diffs = [];
+               diffs.push(assertFloatArrayEqual(team.averageSkillsActiveChanceCount,
+                  [13, 8, 5, 17, 17, 17, 17, 17, 13], 0.01));
+               diffs.push(assertFloatArrayEqual(team.averageSkillsActiveCount,
+                  [3.1235, 3.063, 2.562, 5.914, 5.8885, 5.9145, 5.9905, 5.9475, 7.6535], 0.4));
+               diffs.push(assertFloatEqual(team.averageSkillsActiveCount[8], team.averageSkillsActiveNoEffectCount[0], 0.001));
+               diffs.push(assertFloatArrayEqual(team.averageSkillsActiveNoEffectCount.slice(1),
+                  [0, 0, 0, 0, 0, 0, 0, 0], 0));
+               return diffs;
+            });
+         }
+      });
       // run tests
       var defers = [];
       for (var i = 1; i < testSet.length; i++) {
