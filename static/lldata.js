@@ -42,7 +42,7 @@
  * v1.6.0
  * By ben1222
  */
-
+"use strict";
 /*
  * LoadingUtil: utility to show loading box when defers are not resolved
  * and hide the loading box when defers are resolved or rejected
@@ -194,6 +194,9 @@ var LLData = (function () {
          version = LLHelperLocalStorage.getDataVersion();
       }
       this.version = version;
+      this.initVersion(version);
+   };
+   proto.initVersion = function (version) {
       if (!this.briefCache[version]) {
          this.briefCache[version] = {};
          this.briefCachedKeys[version] = {};
@@ -207,20 +210,21 @@ var LLData = (function () {
       return this.briefCache[this.version];
    };
 
-   proto.getAllBriefData = function(keys, url) {
+   proto.getAllBriefDataWithVersion = function(version, keys, url) {
       if (keys === undefined) keys = this.briefKeys;
       if (url === undefined) url = this.briefUrl;
       var me = this;
       var missingKeys = [];
       var defer = $.Deferred();
+      me.initVersion(version);
       for (var i = 0; i < keys.length; i++) {
          var key = keys[i];
-         if (!me.briefCachedKeys[me.version][key]) {
+         if (!me.briefCachedKeys[version][key]) {
             missingKeys.push(key);
          }
       }
       if (missingKeys.length == 0) {
-         defer.resolve(me.briefCache[me.version]);
+         defer.resolve(me.briefCache[version]);
          return defer;
       }
       var requestKeys = missingKeys.sort().join(',');
@@ -230,10 +234,10 @@ var LLData = (function () {
          'type': 'GET',
          'data': {
             'keys': requestKeys,
-            'version': this.version
+            'version': version
          },
          'success': function (data) {
-            var curCache = me.briefCache[me.version];
+            var curCache = me.briefCache[version];
             for (var index in data) {
                if (!curCache[index]) {
                   curCache[index] = data[index];
@@ -246,7 +250,7 @@ var LLData = (function () {
                }
             }
             for (var i = 0; i < missingKeys.length; i++) {
-               me.briefCachedKeys[me.version][missingKeys[i]] = 1;
+               me.briefCachedKeys[version][missingKeys[i]] = 1;
             }
             defer.resolve(curCache);
          },
@@ -259,8 +263,11 @@ var LLData = (function () {
       });
       return defer;
    };
+   proto.getAllBriefData = function(keys, url) {
+      return this.getAllBriefDataWithVersion(this.version, keys, url);
+   };
 
-   proto.getDetailedData = function(index, url) {
+   proto.getDetailedDataWithVersion = function(version, index, url) {
       if (url === undefined) url = this.detailUrl;
       var defer = $.Deferred();
       if (index === undefined) {
@@ -269,19 +276,20 @@ var LLData = (function () {
          return defer;
       }
       var me = this;
-      if (me.detailCache[me.version][index]) {
-         defer.resolve(me.detailCache[me.version][index]);
+      me.initVersion();
+      if (me.detailCache[version][index]) {
+         defer.resolve(me.detailCache[version][index]);
          return defer;
       }
       url = url + index;
       $.ajax({
          'url': url ,
          'data': {
-            'version': this.version
+            'version': version
          },
          'type': 'GET',
          'success': function (data) {
-            me.detailCache[me.version][index] = data;
+            me.detailCache[version][index] = data;
             defer.resolve(data);
          },
          'error': function (xhr, textStatus, errorThrown) {
@@ -292,6 +300,9 @@ var LLData = (function () {
          'dataType': 'json'
       });
       return defer;
+   };
+   proto.getDetailedData = function(index, url) {
+      return this.getDetailedDataWithVersion(this.version, index, url);
    };
    return cls;
 })();
@@ -378,6 +389,35 @@ var LLMapNoteData = (function () {
       }
       return data;
    }
+   function handleLocalServerCache(me, jsonPath, liveId, defer) {
+      $.ajax({
+         'url': '/static/live/json/' + liveId + '.json',
+         'type': 'GET',
+         'success': function (data) {
+            me.cache[jsonPath] = data;
+            defer.resolve(data);
+         },
+         'error': function (xhr, textStatus, errorThrown) {
+            console.error("Failed on request to local cache for live id " + liveId + ": " + textStatus);
+            console.error(errorThrown);
+            defer.reject();
+         },
+         'dataType': 'json'
+      });
+   }
+   function handleLocalCache(me, jsonPath, liveId, defer) {
+      if (!jsonPath) {
+         console.error('No json path found for liveSetting id : ' + liveId);
+         console.error(song);
+         defer.reject();
+         return true;
+      }
+      if (me.cache[jsonPath]) {
+         defer.resolve(me.cache[jsonPath]);
+         return true;
+      }
+      return false;
+   }
    proto.getMapNoteData = function (song, songSetting) {
       var defer = $.Deferred();
       if (song.attribute == '') {
@@ -387,17 +427,8 @@ var LLMapNoteData = (function () {
       }
       var jsonPath = songSetting.jsonpath;
       var liveId = songSetting.liveid;
-      if (!jsonPath) {
-         console.error('No json path found for liveSetting id : ' + liveId);
-         console.error(song);
-         defer.reject();
-         return defer;
-      }
       var me = this;
-      if (me.cache[jsonPath]) {
-         defer.resolve(me.cache[jsonPath]);
-         return defer;
-      }
+      if (handleLocalCache(me, jsonPath, liveId, defer)) return defer;
       var url = me.baseUrl + jsonPath;
       $.ajax({
          'url': url ,
@@ -414,26 +445,27 @@ var LLMapNoteData = (function () {
                console.error(song);
                defer.reject();
             } else {
-               $.ajax({
-                  'url': '/static/live/json/' + liveId + '.json',
-                  'type': 'GET',
-                  'success': function (data) {
-                     me.cache[jsonPath] = data;
-                     defer.resolve(data);
-                  },
-                  'error': function (xhr, textStatus, errorThrown) {
-                     console.error("Failed on request to local cache for live id " + liveId + ": " + textStatus);
-                     console.error(errorThrown);
-                     defer.reject();
-                  },
-                  'dataType': 'json'
-               });
+               handleLocalServerCache(me, jsonPath, liveId, defer);
             }
          },
          'dataType': 'json'
       });
       return defer;
-   }
+   };
+   proto.getLocalMapNoteData = function (song, songSetting) {
+      var me = this;
+      var defer = $.Deferred();
+      if (song.attribute == '') {
+         // 默认曲目
+         defer.resolve(createMapData(songSetting.combo, songSetting.time));
+         return defer;
+      }
+      var jsonPath = songSetting.jsonpath;
+      var liveId = songSetting.liveid;
+      if (handleLocalCache(me, jsonPath, liveId, defer)) return defer;
+      handleLocalServerCache(me, jsonPath, liveId, defer);
+      return defer;
+   };
    return cls;
 })();
 
@@ -3525,6 +3557,7 @@ var LLSimulateContext = (function() {
             this.markTriggerActive(deactivedMemberId, 0);
             this.activeSkills.splice(activeIndex, 1);
             if (deactivedSkillEffect == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
+               var realMemberId = curActiveSkill[IDX_ACTIVE_REAL_MEMMBER_ID];
                for (var i = 0; i < this.attributeUpTargetMembers[realMemberId].length; i++) {
                   var targetMemberId = this.attributeUpTargetMembers[realMemberId][i];
                   this.attributeUpForMember[targetMemberId] = undefined;
@@ -3583,9 +3616,9 @@ var LLSimulateContext = (function() {
          }
       } else if (skillEffect == LLConst.SKILL_EFFECT_ATTRIBUTE_UP) {
          // 若队伍中所有满足条件的卡都已经在属性提升状态, 则无法发动
-         for (var i = 0; i < this.attributeUpTargetMembers[realMemberId].length; i++) {
-            var targetMemberId = this.attributeUpTargetMembers[realMemberId][i];
-            if (this.attributeUpForMember[targetMemberId] === undefined) {
+         for (var i = 0; i < this.attributeUpTargetMembers[memberId].length; i++) {
+            var targetMemberId = this.attributeUpTargetMembers[memberId][i];
+            if (this.attributeUpForMember[targetMemberId] !== undefined) {
                return true;
             }
          }
@@ -4827,7 +4860,7 @@ var LLSaveData = (function () {
          for (var i = 0; i < teamMember.length; i++) {
             var curMember = teamMember[i];
             if (curMember.gemmember && parseInt(curMember.gemmember) == 1) {
-               var memberColor = LLConst.getMemberColor(LLCardData.getCachedBriefData()[curMember.cardid].jpname);
+               var memberColor = LLConst.getMemberColor(parseInt(LLCardData.getCachedBriefData()[curMember.cardid].typeid));
                curMember.gemmember = GEM_MEMBER_COLOR_102_TO_103[memberColor];
             } else if (!curMember.gemmember) {
                curMember.gemmember = 0;
