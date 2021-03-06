@@ -172,7 +172,7 @@
 
    function update_avatar(comp, cardid, mezame, show) {
       update_visible(comp, show, function() {
-         comp.setSrcList(LLUnit.getImagePathList(cardid, 'avatar', mezame));
+         LLUnit.setAvatarSrcList(comp, cardid, mezame);
       });
    }
 
@@ -435,7 +435,7 @@
 	
 </tr>
 <tr id="notmezame">
-	<td><img id="avatar1" height="75px" width="75px"></img></td>
+	<td><img id="avatar1" class="avatar"></img></td>
 	<td id="hp1"></td>
 	<td id="smile1" style="color:red"></td>
 	<td id="pure1" style="color:green"></td>
@@ -459,7 +459,7 @@
 	<td id="strengthlevel1" style="display:none"></td>
 </tr>
 <tr>
-	<td><img id="avatar2" height="75px" width="75px"></img></td>
+	<td><img id="avatar2" class="avatar"></img></td>
 	<td id="hp2"></td>
 	<td id="smile2" style="color:red"></td>
 	<td id="pure2" style="color:green"></td>

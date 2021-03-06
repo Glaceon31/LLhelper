@@ -137,6 +137,10 @@ def render_document(md_file, doc_title):
 def document_score_calculation():
     return render_document('docs/score_calculation.md', '得分计算概述')
 
+@app.route("/document/repeat_team.md", methods=['GET'])
+def document_repeat_team():
+    return render_document('docs/repeat_team.md', '复读机队伍选择')
+
 ### species ###
 @app.route("/llspecies", methods=['GET', 'POST'])
 @app.route("/llurrank", methods=['GET', 'POST'])

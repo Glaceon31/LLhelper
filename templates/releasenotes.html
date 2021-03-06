@@ -20,6 +20,16 @@
          var update_history = [
             {
                'version': LLSiteVersion.current_version,
+               'features': [
+                  '添加了#doc-repeat_team#页面，供大家方便查阅复读机组件'
+               ],
+               'enhancements': [
+                  '卡片图标加载失败时增加显示卡的信息，以便在加载失败的情况下能知道是什么卡',
+                  '鼠标悬停在卡片图标上可以显示卡的信息，以便在加载慢的情况下能知道是什么卡'
+               ]
+            },
+            {
+               'version': 20200919,
                'fixes': [
                   '修复了属性提升技能在模拟计算中报错的问题'
                ]
@@ -509,7 +519,8 @@
                .replace('#llnewcarddata#', '<a href="/llnewcarddata">卡片、立绘</a>')
                .replace('#llunitimport#', '<a href="/llunitimport">截图导入队伍</a>')
                .replace('#llactivity#', '<a href="/llactivity">传统活动</a>')
-               .replace('#doc-score_calculation#', '<a href="/document/score_calculation.md">得分计算概述</a>');
+               .replace('#doc-score_calculation#', '<a href="/document/score_calculation.md">得分计算概述</a>')
+               .replace('#doc-repeat_team#', '<a href="/document/repeat_team.md">复读机队伍选择</a>');
          }
          function createList(data) {
             var list_items = [];
