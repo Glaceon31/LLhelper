@@ -158,4 +158,10 @@ input.num-size-2 {
 input.num-size-1 {
    width: 40px;
 }
+img.avatar {
+   width: 65px;
+   height: 65px;
+   display: inline-block;
+   overflow: hidden;
+}
 

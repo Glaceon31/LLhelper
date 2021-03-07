@@ -694,7 +694,7 @@ var LLImageComponent = (function() {
     * Methods:
     *    setSrcList(list)
     */
-   function LLValuedComponent_cls(id, options) {
+   function LLImageComponent_cls(id, options) {
       LLComponentBase.call(this, id, options);
       if (!this.exist) {
          this.srcList = undefined;
@@ -719,7 +719,7 @@ var LLImageComponent = (function() {
       });
       this.setSrcList(srcList);
    };
-   var cls = LLValuedComponent_cls;
+   var cls = LLImageComponent_cls;
    cls.prototype = new LLComponentBase();
    cls.prototype.constructor = cls;
    var proto = cls.prototype;
@@ -1484,6 +1484,24 @@ var LLConst = (function () {
       default_song.settings[master_default.liveid] = master_default;
       return default_song;
    };
+
+   ret.getCardDescription = function (card, isJp, mezame) {
+      var desc = String(card.id);
+      var albumGroup = ret.getAlbumGroupByAlbumId(card.album) || {};
+      var curTypeId = (card.typeid ? parseInt(card.typeid) : -1);
+      while (desc.length < 3) desc = '0' + desc;
+      desc += ' ' + (card.rarity || '?') + ' ';
+      if (mezame !== undefined) {
+         desc += (mezame ? '觉醒' : '未觉') + ' ';
+      }
+      if (isJp) {
+         desc += (card.jpeponym ? "【"+card.jpeponym+"】" : '') + ' ' + ret.getMemberName(curTypeId) + ' ' + (albumGroup.name ? "("+albumGroup.name+")" : '');
+      } else {
+        desc += (card.eponym ? "【"+card.eponym+"】" : '') + ' ' + ret.getMemberName(curTypeId, true) + ' ' + (albumGroup.cnname ? "("+albumGroup.cnname+")" : '');
+      }
+      return desc;
+   };
+
    return ret;
 })();
 
@@ -1586,6 +1604,7 @@ var LLUnit = {
       var index = document.getElementById('cardchoice').value;
       var mezame = (document.getElementById("mezame").checked ? 1 : 0);
       if (index != "") {
+         LLUnit.setAvatarSrcList(comp_cardavatar, parseInt(index), mezame);
          LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(card) {
             document.getElementById("main").value = card.attribute
             comp_skill.setCardData(card);
@@ -1609,9 +1628,9 @@ var LLUnit = {
             document.getElementById("kizuna").value = kizuna[card.rarity][mezame]
          }, defaultHandleFailedRequest);
       } else {
+         LLUnit.setAvatarSrcList(comp_cardavatar, 0, mezame);
          comp_skill.setCardData();
       }
-      comp_cardavatar.setSrcList(LLUnit.getImagePathList(index, 'avatar', mezame));
    },
 
    getImagePathList: function (cardid, type, mezame) {
@@ -1624,8 +1643,17 @@ var LLUnit = {
       if (type == 'avatar' || type == 'card') {
          var f = (type == 'avatar' ? 'icon' : 'unit');
          var m = (mezame ? 'rankup' : 'normal');
-         for (var i = 0; i < 4; i++) {
-            ret.push((isHttp ^ (i>=2) ? 'http' : 'https') + '://gitcdn.' + (i%2==0 ? 'xyz' : 'link') + '/repo/iebb/SIFStatic/master/' + f + '/' + m + '/' + cardid + '.png');
+         if (isHttp) {
+            for (var i = 0; i < 4; i++) {
+               ret.push(((i>=2) ? 'https' : 'http') + '://gitcdn.' + (i%2==0 ? 'xyz' : 'link') + '/repo/iebb/SIFStatic/master/' + f + '/' + m + '/' + cardid + '.png');
+            }
+         } else {
+            for (var i = 0; i < 2; i++) {
+               ret.push('https://gitcdn.' + (i%2==0 ? 'xyz' : 'link') + '/repo/iebb/SIFStatic/master/' + f + '/' + m + '/' + cardid + '.png');
+            }
+         }
+         if (type == 'avatar') {
+            ret.push('/static/avatar/' + m + '/' + cardid + '.png');
          }
       } else if (type == 'navi') {
          var m = (mezame ? '1' : '0');
@@ -1872,12 +1900,18 @@ var LLUnit = {
          for (var j = 0; j < row.length; j++) {
             var cell = row[j];
             var tag = 'td';
-            var text = cell;
-            if (cell[0] == '#') {
-               tag = 'th';
-               text = cell.substr(1);
+            if (typeof(cell) == 'string') {
+               var text = cell;
+               if (cell[0] == '#') {
+                  tag = 'th';
+                  text = cell.substr(1);
+               }
+               cellElements.push(createElement(tag, {'innerHTML': text}));
+            } else if (typeof(cell) == 'number') {
+               cellElements.push(createElement(tag, {'innerHTML': '' + cell}));
+            } else {
+               cellElements.push(createElement(tag, undefined, cell));
             }
-            cellElements.push(createElement(tag, {'innerHTML': text}));
          }
          rowElements.push(createElement('tr', undefined, cellElements));
       }
@@ -1897,6 +1931,15 @@ var LLUnit = {
       options.push({'value': 'cool',  'text': 'Cool',  'color': 'blue'});
       selectComponent.setOptions(options);
       return selectComponent;
+   },
+
+   setAvatarSrcList: function (imgComp, cardid, mezame) {
+      imgComp.setSrcList(LLUnit.getImagePathList(cardid, 'avatar', mezame));
+      if (cardid) {
+         imgComp.element.title = LLConst.getCardDescription((LLCardData.getCachedBriefData() || {'id': cardid})[cardid], false, mezame);
+      } else {
+         imgComp.element.title = '';
+      }
    }
 };
 
@@ -2186,13 +2229,9 @@ var LLCardSelector = (function() {
          var curCard = this.cards[index];
          if (curCard.support == 1) continue;
 
-         var fullname = String(curCard.id);
-         var albumGroup = LLConst.getAlbumGroupByAlbumId(curCard.album) || {};
          var curTypeId = (curCard.typeid ? parseInt(curCard.typeid) : -1);
-         while (fullname.length < 3) fullname = '0' + fullname;
-         fullname += ' ' + curCard.rarity + ' ';
-         var cnName = fullname + (curCard.eponym ? "【"+curCard.eponym+"】" : '') + ' ' + LLConst.getMemberName(curTypeId, true) + ' ' + (albumGroup.cnname ? "("+albumGroup.cnname+")" : '');
-         var jpName = fullname + (curCard.jpeponym ? "【"+curCard.jpeponym+"】" : '') + ' ' + LLConst.getMemberName(curTypeId) + ' ' + (albumGroup.name ? "("+albumGroup.name+")" : '');
+         var cnName = LLConst.getCardDescription(curCard, false);
+         var jpName = LLConst.getCardDescription(curCard, true);
          var color = LLConst.getAttributeColor(curCard.attribute);
          cardOptionsCN.push({'value': index, 'text': cnName, 'color': color});
          cardOptionsJP.push({'value': index, 'text': jpName, 'color': color});
@@ -2991,19 +3030,6 @@ var LLSkill = (function () {
       'STAR_PERFECT': LLConst.SKILL_TRIGGER_STAR_PERFECT,
       'MEMBERS': LLConst.SKILL_TRIGGER_MEMBERS
    };
-   var eEffectType = {
-      'ACCURACY_SMALL': LLConst.SKILL_EFFECT_ACCURACY_SMALL,
-      'ACCURACY_NORMAL': LLConst.SKILL_EFFECT_ACCURACY_NORMAL,
-      'HEAL': LLConst.SKILL_EFFECT_HEAL,
-      'SCORE': LLConst.SKILL_EFFECT_SCORE,
-      'SKILL_POSSIBILITY_UP': LLConst.SKILL_EFFECT_POSSIBILITY_UP,
-      'REPEAT': LLConst.SKILL_EFFECT_REPEAT,
-      'PERFECT_SCORE_UP': LLConst.SKILL_EFFECT_PERFECT_SCORE_UP,
-      'COMBO_FEVER': LLConst.SKILL_EFFECT_COMBO_FEVER,
-      'SYNC': LLConst.SKILL_EFFECT_SYNC,
-      'SKILL_LEVEL_UP': LLConst.SKILL_EFFECT_LEVEL_UP,
-      'ATTRIBUTE_UP': LLConst.SKILL_EFFECT_ATTRIBUTE_UP
-   };
    var calcBiDist = function (n, p) {
       // time: O(n^2), space: O(n)
       if (n < 0) throw 'LLSkill::calcBiDist: n cannot be negitive, n=' + n + ', p=' + p;
@@ -3026,14 +3052,14 @@ var LLSkill = (function () {
    proto.setScoreGem = function (has) {
       this.actualScore = 0;
       if (parseInt(has || 0)) {
-         if (this.effectType == eEffectType.HEAL) {
+         if (this.effectType == LLConst.SKILL_EFFECT_HEAL) {
             // 日服4.1版本前是270, 4.1版本后是480; 国服没有270
             this.actualScore = this.score * 480;
-         } else if (this.effectType == eEffectType.SCORE) {
+         } else if (this.effectType == LLConst.SKILL_EFFECT_SCORE) {
             this.actualScore = Math.ceil(this.score * 2.5);
          }
       } else {
-         if (this.effectType == eEffectType.SCORE) {
+         if (this.effectType == LLConst.SKILL_EFFECT_SCORE) {
             this.actualScore = this.score;
          }
       }
@@ -3086,7 +3112,7 @@ var LLSkill = (function () {
    proto.calcSkillEffect = function (env) {
       if (!this.hasSkill) return false;
       this.maxScore = this.skillChance * this.actualScore;
-      if (this.effectType == eEffectType.HEAL) {
+      if (this.effectType == LLConst.SKILL_EFFECT_HEAL) {
          this.maxHeal = this.skillChance * this.score;
       } else {
          this.maxHeal = 0;
@@ -3124,8 +3150,8 @@ var LLSkill = (function () {
       this.skillDist = calcBiDist(this.skillChance, this.actualPossibility/100);
       return this.skillDist;
    };
-   proto.isEffectHeal = function () { return this.effectType == eEffectType.HEAL; }
-   proto.isEffectScore = function () { return this.effectType == eEffectType.SCORE; }
+   proto.isEffectHeal = function () { return this.effectType == LLConst.SKILL_EFFECT_HEAL; }
+   proto.isEffectScore = function () { return this.effectType == LLConst.SKILL_EFFECT_SCORE; }
    return cls;
 })();
 
@@ -3508,7 +3534,6 @@ var LLSimulateContext = (function() {
       var effPossibilityUp = 1.0; // possibility *x, no stack
       var effPerfectScoreUp = 0; // total bonus
       var effComboFever = 0; // score +(x*combo_factor), need cap at SKILL_LIMIT_COMBO_FEVER
-      var effLevelUp = 0; // next skill level +x
       var effAttributeUp = 0; // total attribute +x, including sync and attribute up and accuracy gem
       var needCheckAttribute = false;
       for (var i = 0; i < this.activeSkills.length; i++) {
@@ -3542,7 +3567,6 @@ var LLSimulateContext = (function() {
       eff[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = effPossibilityUp;
       eff[LLConst.SKILL_EFFECT_PERFECT_SCORE_UP] = effPerfectScoreUp;
       eff[LLConst.SKILL_EFFECT_COMBO_FEVER] = effComboFever;
-      eff[LLConst.SKILL_EFFECT_LEVEL_UP] = effLevelUp;
       eff[LLConst.SKILL_EFFECT_ATTRIBUTE_UP] = effAttributeUp;
    };
    proto.processDeactiveSkills = function() {
@@ -5032,6 +5056,7 @@ var LLSaveLoadJsonMixin = (function () {
          this.loadData(json);
       } catch (e) {
          console.error('Failed to load json:');
+         console.error(e);
          console.error(data);
       }
    };
@@ -5348,7 +5373,7 @@ var LLSubMemberComponent = (function () {
       var localMember;
       var bSwapping = false;
       var bDeleting = false;
-      var image = createElement('img');
+      var image = createElement('img', {'className': 'avatar'});
       var imageComp = new LLImageComponent(image);
       var levelInput = createElement('input', {'className': 'form-control', 'type': 'number', 'min': 1, 'max': 8, 'value': 1});
       levelInput.addEventListener('change', function() {
@@ -5396,7 +5421,7 @@ var LLSubMemberComponent = (function () {
          }
          levelInput.value = m.skilllevel;
          slotInput.value = m.maxcost;
-         imageComp.setSrcList(LLUnit.getImagePathList(m.cardid, 'avatar', parseInt(m.mezame)));
+         LLUnit.setAvatarSrcList(imageComp, m.cardid, parseInt(m.mezame));
       };
       controller.startSwapping = function() {
          swapButton.innerHTML = '选择';
@@ -6298,7 +6323,7 @@ var LLTeamComponent = (function () {
    //    getMezame: function()
    // }
    function avatarCreator(controller) {
-      var imgElement = createElement('img');
+      var imgElement = createElement('img', {'className': 'avatar'});
       var imgComp = new LLImageComponent(imgElement, {'srcList': ['/static/null.png']});
       var curCardid = undefined;
       var curMezame = undefined;
@@ -6308,7 +6333,7 @@ var LLTeamComponent = (function () {
          if (cardid != curCardid || mezame != curMezame) {
             curCardid = cardid;
             curMezame = mezame;
-            imgComp.setSrcList(LLUnit.getImagePathList(cardid, 'avatar', mezame));
+            LLUnit.setAvatarSrcList(imgComp, cardid, mezame);
          }
       };
       controller.getCardId = function() { return curCardid; };
@@ -6779,7 +6804,8 @@ var LLCSkillComponent = (function () {
       {'value': '2', 'text': '2'},
       {'value': '3', 'text': '3'},
       {'value': '6', 'text': '6'},
-      {'value': '7', 'text': '7'}
+      {'value': '7', 'text': '7'},
+      {'value': '9', 'text': '9'}
    ];
    function getSecondLimitSelectOptions() {
       var ret = [];

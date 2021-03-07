@@ -10,7 +10,6 @@
    <script type="text/javascript" src="/static/js/highcharts/highcharts.js"></script>
    <link rel="shortcut icon" href="/static/shortcuticon.png" />
    <style type="text/css">
-      img {height:65px;width:65px}
       input[type="number"][size="3"] {
          width: 60px;
       }
@@ -148,8 +147,7 @@
    }
 
    function makeSaveData() {
-      var member = comp_team.getMembers();
-      return new LLSaveData(member);
+      return new LLSaveData({'version': 103, 'team': comp_team.getMembers(), 'gemstock': {}, 'submember': []});
    }
 
    function saveunit(){

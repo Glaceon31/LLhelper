@@ -56,10 +56,11 @@
               cnVersionTo:
            }
            content: {
-              type: <'text'|'func'|'bold'|'code'>
-              text: <plain-text> (for text, bold, code type)
+              type: <'text'|'func'|'bold'|'code'|'url'>
+              text: <plain-text> (for text, bold, code, url type)
               funcName: <function name> (only for func type)
               params: [<parameter>, ...] (only for func type)
+              url: <url> (for url type)
            }
          */
          var md_parser = {
@@ -118,11 +119,36 @@
                }
                if (i >= str.length) return i;
                if (str[i] == '[') {
-                  return md_parser.parseFunc(str, i+1, out);
+                  return md_parser.parseUrlOrFunc(str, i+1, out);
                } else if (str[i] == '`') {
                   return md_parser.parseCode(str, i+1, out);
                } else {
                   return md_parser.parseBold(str, i+2, out);
+               }
+            },
+            'parseUrlOrFunc': function (str, pos, out) {
+               var isUrl = false;
+               var i;
+               for (i = pos; i < str.length-1; i++) {
+                  if (str[i] == ']' && str[i+1] == '(') {
+                     isUrl = true;
+                     break;
+                  }
+               }
+               if (isUrl) {
+                  var displayText = str.substr(pos, i-pos);
+                  var u = '';
+                  pos = i+2;
+                  for (i = pos; i < str.length; i++) {
+                     if (str[i] == ')') {
+                        u = str.substr(pos, i-pos);
+                        break;
+                     }
+                  }
+                  out.contents.push({'type': 'url', 'text': displayText, 'url': u})
+                  return i+1;
+               } else {
+                  return md_parser.parseFunc(str, pos, out);
                }
             },
             'parseFunc': function (str, pos, out) {
@@ -351,6 +377,70 @@
                }
                return LLUnit.createSimpleTable(table_data);
             },
+            'repeat_select': function (context, params) {
+               var container = createElement('div', undefined, ['载入中...']);
+               $.when(LLCardData.getAllBriefData(), LLMetaData.get()).then(function (data, metaData) {
+                  LLConst.initMetadata(metaData);
+                  var needCards = {};
+                  var notes = {};
+                  var effects = [
+                     LLConst.SKILL_EFFECT_LEVEL_UP,
+                     LLConst.SKILL_EFFECT_POSSIBILITY_UP,
+                     LLConst.SKILL_EFFECT_REPEAT,
+                     LLConst.SKILL_EFFECT_SCORE,
+                     LLConst.SKILL_EFFECT_ATTRIBUTE_UP,
+                     LLConst.SKILL_EFFECT_HEAL,
+                     LLConst.SKILL_EFFECT_ACCURACY_NORMAL
+                  ];
+                  for (var i in data) {
+                     var curCard = data[i];
+                     if (curCard.triggertype != LLConst.SKILL_TRIGGER_NOTE) continue;
+                     if (curCard.rarity != 'UR') continue;
+                     var effect = parseInt(curCard.skilleffect);
+                     var note = parseInt(curCard.triggerrequire);
+                     notes[note] = 1;
+                     if (!needCards[effect]) {
+                        needCards[effect] = {};
+                     }
+                     if (!needCards[effect][note]) {
+                        needCards[effect][note] = [];
+                     }
+                     needCards[effect][note].push(curCard);
+                  }
+                  var headerRow = ['#图标'];
+                  for (var i = 0; i < effects.length; i++) {
+                     headerRow.push('#' + LLConst.getSkillEffectText(effects[i]));
+                  }
+                  var tableData = [headerRow];
+                  for (var i in notes) {
+                     var curRow = [i + 'N'];
+                     for (var j = 0; j < effects.length; j++) {
+                        var curEffect = effects[j];
+                        if (needCards[curEffect] && needCards[curEffect][i]) {
+                           var cardImages = [];
+                           var matchedCards = needCards[curEffect][i];
+                           for (var k = 0; k < matchedCards.length; k++) {
+                              var curCard = matchedCards[k];
+                              var image = createElement('img', {'className': 'avatar'});
+                              var imageComp = new LLImageComponent(image);
+                              LLUnit.setAvatarSrcList(imageComp, parseInt(curCard.id), 1);
+                              cardImages.push(image);
+                           }
+                           curRow.push(cardImages);
+                        } else {
+                           curRow.push('');
+                        }
+                     }
+                     tableData.push(curRow);
+                  }
+                  console.log(tableData);
+                  updateSubElements(container, [LLUnit.createSimpleTable(tableData)], true);
+               }).fail(function (e) {
+                  container.innerHTML = '加载失败';
+                  console.error(e);
+               });
+               return container;
+            },
             '_element': function (context, params) {
                return params[0];
             }
@@ -403,6 +493,8 @@
                      } else {
                         ret.push(createElement('span', {'style': {'color': 'red'}}, ['unknown func: ' + curContent.funcName]));
                      }
+                  } else if (curContent.type == 'url') {
+                     ret.push(createElement('a', {'href': curContent.url}, [curContent.text]));
                   } else {
                      ret.push(createElement('span', {'style': {'color': 'red'}}, ['unknown type: ' + curContent.type]));
                   }
