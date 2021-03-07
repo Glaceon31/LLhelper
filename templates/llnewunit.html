@@ -147,8 +147,7 @@
    }
 
    function makeSaveData() {
-      var member = comp_team.getMembers();
-      return new LLSaveData(member);
+      return new LLSaveData({'version': 103, 'team': comp_team.getMembers(), 'gemstock': {}, 'submember': []});
    }
 
    function saveunit(){

@@ -3030,19 +3030,6 @@ var LLSkill = (function () {
       'STAR_PERFECT': LLConst.SKILL_TRIGGER_STAR_PERFECT,
       'MEMBERS': LLConst.SKILL_TRIGGER_MEMBERS
    };
-   var eEffectType = {
-      'ACCURACY_SMALL': LLConst.SKILL_EFFECT_ACCURACY_SMALL,
-      'ACCURACY_NORMAL': LLConst.SKILL_EFFECT_ACCURACY_NORMAL,
-      'HEAL': LLConst.SKILL_EFFECT_HEAL,
-      'SCORE': LLConst.SKILL_EFFECT_SCORE,
-      'SKILL_POSSIBILITY_UP': LLConst.SKILL_EFFECT_POSSIBILITY_UP,
-      'REPEAT': LLConst.SKILL_EFFECT_REPEAT,
-      'PERFECT_SCORE_UP': LLConst.SKILL_EFFECT_PERFECT_SCORE_UP,
-      'COMBO_FEVER': LLConst.SKILL_EFFECT_COMBO_FEVER,
-      'SYNC': LLConst.SKILL_EFFECT_SYNC,
-      'SKILL_LEVEL_UP': LLConst.SKILL_EFFECT_LEVEL_UP,
-      'ATTRIBUTE_UP': LLConst.SKILL_EFFECT_ATTRIBUTE_UP
-   };
    var calcBiDist = function (n, p) {
       // time: O(n^2), space: O(n)
       if (n < 0) throw 'LLSkill::calcBiDist: n cannot be negitive, n=' + n + ', p=' + p;
@@ -3065,14 +3052,14 @@ var LLSkill = (function () {
    proto.setScoreGem = function (has) {
       this.actualScore = 0;
       if (parseInt(has || 0)) {
-         if (this.effectType == eEffectType.HEAL) {
+         if (this.effectType == LLConst.SKILL_EFFECT_HEAL) {
             // 日服4.1版本前是270, 4.1版本后是480; 国服没有270
             this.actualScore = this.score * 480;
-         } else if (this.effectType == eEffectType.SCORE) {
+         } else if (this.effectType == LLConst.SKILL_EFFECT_SCORE) {
             this.actualScore = Math.ceil(this.score * 2.5);
          }
       } else {
-         if (this.effectType == eEffectType.SCORE) {
+         if (this.effectType == LLConst.SKILL_EFFECT_SCORE) {
             this.actualScore = this.score;
          }
       }
@@ -3125,7 +3112,7 @@ var LLSkill = (function () {
    proto.calcSkillEffect = function (env) {
       if (!this.hasSkill) return false;
       this.maxScore = this.skillChance * this.actualScore;
-      if (this.effectType == eEffectType.HEAL) {
+      if (this.effectType == LLConst.SKILL_EFFECT_HEAL) {
          this.maxHeal = this.skillChance * this.score;
       } else {
          this.maxHeal = 0;
@@ -3163,8 +3150,8 @@ var LLSkill = (function () {
       this.skillDist = calcBiDist(this.skillChance, this.actualPossibility/100);
       return this.skillDist;
    };
-   proto.isEffectHeal = function () { return this.effectType == eEffectType.HEAL; }
-   proto.isEffectScore = function () { return this.effectType == eEffectType.SCORE; }
+   proto.isEffectHeal = function () { return this.effectType == LLConst.SKILL_EFFECT_HEAL; }
+   proto.isEffectScore = function () { return this.effectType == LLConst.SKILL_EFFECT_SCORE; }
    return cls;
 })();
 
@@ -3547,7 +3534,6 @@ var LLSimulateContext = (function() {
       var effPossibilityUp = 1.0; // possibility *x, no stack
       var effPerfectScoreUp = 0; // total bonus
       var effComboFever = 0; // score +(x*combo_factor), need cap at SKILL_LIMIT_COMBO_FEVER
-      var effLevelUp = 0; // next skill level +x
       var effAttributeUp = 0; // total attribute +x, including sync and attribute up and accuracy gem
       var needCheckAttribute = false;
       for (var i = 0; i < this.activeSkills.length; i++) {
@@ -3581,7 +3567,6 @@ var LLSimulateContext = (function() {
       eff[LLConst.SKILL_EFFECT_POSSIBILITY_UP] = effPossibilityUp;
       eff[LLConst.SKILL_EFFECT_PERFECT_SCORE_UP] = effPerfectScoreUp;
       eff[LLConst.SKILL_EFFECT_COMBO_FEVER] = effComboFever;
-      eff[LLConst.SKILL_EFFECT_LEVEL_UP] = effLevelUp;
       eff[LLConst.SKILL_EFFECT_ATTRIBUTE_UP] = effAttributeUp;
    };
    proto.processDeactiveSkills = function() {
