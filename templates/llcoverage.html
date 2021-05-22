@@ -1,320 +1,335 @@
-﻿{% extends "layout.html" %} {% set category="数据查询" %} {% set category_link="/#game-data" %} {% set title="判定覆盖率分布计算" %} {% block additional_header %}
-<script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
-<script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
-<script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
-<script type="text/javascript" src="{{ url_for('static', filename='CoverageCalculator.js') }}"></script>
-<link rel="shortcut icon" href="/static/shortcuticon.png" />
-<style type="text/css">
-    table {
-        position: relative;
-    }
+﻿{% extends "layout.html" %}
+
+{% set category="数据查询" %}
+{% set category_link="/#game-data" %}
+{% set title="判定覆盖率分布计算" %}
+
+{% block additional_header %}
+   <script type="text/javascript" src="/static/twintailosu.js?v=1.01"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='lldata.js') }}"></script>
+   <script type="text/javascript" src="/static/js/highcharts/highstock.js"></script>
+   <script type="text/javascript" src="/static/js/highcharts/exporting.js"></script>
+   <script type="text/javascript" src="{{ url_for('static', filename='CoverageCalculator.js') }}"></script>
+   <link rel="shortcut icon" href="/static/shortcuticon.png" />
+   <style type="text/css">
+   	table {position:relative;}
+	img {height:65px;width:65px}
+   	td {size:2}
+   </style>
+{% endblock %}
+
+{% block script %}
+   <script>
+   LLSongData.briefKeys.push('bpm');
+   LLSongData.briefKeys.push('jsonpath');
+   var mezame = 0;
+   var language = 0;
+
+   var defer_onload = $.Deferred();
+   var comp_skill = 0;
+   var comp_cardselector = 0;
+   var comp_songselector = 0;
+   $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function (cardData, songData, metaData) {
+      // init components
+      LLConst.initMetadata(metaData);
+      comp_songselector = new LLSongSelector(songData);
+      comp_songselector.onSongSettingChange = applysongdata;
+      comp_skill = new LLSkillContainer();
+      comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
+      comp_cardselector.getComponent('rarity').filterOptions(function (opt) {
+         return !(opt.value == 'N' || opt.value == 'R');
+      });
+      comp_cardselector.getComponent('skilltype').filterOptions(function (opt) {
+         return opt.value == '5';
+      });
+      comp_cardselector.onCardChange = changecolor;
+
+      var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function (v) {
+         LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function (cards) {
+            comp_cardselector.setCardData(cards, true);
+         }));
+      });
+      init();
+
+      // load
+      comp_cardselector.loadLocalStorage('llcoverage_cardselector');
+      comp_songselector.loadLocalStorage('llcoverage_songselector');
+
+      // done
+      document.getElementById('loadingbox').style.display = 'none';
+   }, defaultHandleFailedRequest);
+
+   function threetonumber(three){
+      var result = three
+      if (result == '0') {
+         return 0;
+      }
+      if (result[0] == '0') {
+         result = result[1]+result[2]
+      }
+      if (result[0] == '0') {
+         result = result[1]
+      }
+      return result
+   }
+   
+   function offsetup(){
+    if (document.getElementById('offset').value < 50)
+	{
+	    document.getElementById('offset').value = Number(document.getElementById('offset').value) + 1;
+	}
+	else
+	    return;
+   }
+   
+   function offsetdown(){
+    if (document.getElementById('offset').value > -50)
+	{
+	    document.getElementById('offset').value = Number(document.getElementById('offset').value) - 1;
+	}
+	else
+	    return;
+   }
+   
+   function offsetzero(){
+	    document.getElementById('offset').value = 0;
+   }
+   
+   function changecolor(){
+      var index = document.getElementById('cardchoice').value
+      var mezame = (document.getElementById("mezame").checked ? 1 : 0);
+      if (index != "") {
+         LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+            comp_skill.setCardData(curCard);
+         }, defaultHandleFailedRequest);
+   		if (mezame == 0){
+   				document.getElementById("mezame").value = "未觉醒"
+   		}
+   		else{
+   				document.getElementById("mezame").value = "已觉醒"
+   		}
+      } else {
+         comp_skill.setCardData();
+      }
+      LLUnit.changeavatar('imageselect', index, mezame);
+   }
     
-    img {
-        height: 65px;
-        width: 65px
-    }
-    
-    td {
-        size: 2
-    }
-</style>
-{% endblock %} {% block script %}
-<script>
-    LLSongData.briefKeys.push('bpm');
-    LLSongData.briefKeys.push('jsonpath');
-    var mezame = 0;
-    var language = 0;
+   function changeLanguage(){
+      language = 1-language
+      comp_songselector.setLanguage(language);
+      comp_cardselector.setLanguage(language);
+   }
+   
+   function toMezame(){
+   	mezame = 1-mezame
+   	changecolor()
+   }
 
-    var defer_onload = $.Deferred();
-    var comp_skill = 0;
-    var comp_cardselector = 0;
-    var comp_songselector = 0;
-    $.when(LLCardData.getAllBriefData(), LLSongData.getAllBriefData(), LLMetaData.get(), defer_onload).then(function(cardData, songData, metaData) {
-        // init components
-        LLConst.initMetadata(metaData);
-        comp_songselector = new LLSongSelector(songData);
-        comp_songselector.onSongSettingChange = applysongdata;
-        comp_skill = new LLSkillContainer();
-        comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
-        comp_cardselector.getComponent('rarity').filterOptions(function(opt) {
-            return !(opt.value == 'N' || opt.value == 'R');
-        });
-        comp_cardselector.getComponent('skilltype').filterOptions(function(opt) {
-            return opt.value == '5';
-        });
-        comp_cardselector.onCardChange = changecolor;
+   function applysongdata(songSettingId) {
+      if (!songSettingId) return;
+      var songSetting = comp_songselector.songSettings[songSettingId];
+      document.getElementById('speeds').value = LLConst.getDefaultSpeed(songSetting.difficulty);;
+   }
 
-        var comp_dataversion = new LLDataVersionSelectorComponent('card_data_version', LLCardData, function(v) {
-            LoadingUtil.startSingle(LLCardData.getAllBriefData().then(function(cards) {
-                comp_cardselector.setCardData(cards, true);
-            }));
-        });
-        init();
+   function copyTo(n){
+      document.getElementById('avatar'+String(n)).style.display = "";
+      document.getElementById('avatar'+String(n)).src = document.getElementById('imageselect').src;
+      var index = document.getElementById('cardchoice').value
+      if (index == "") return;
+      LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
+         if (!curCard.skill) return;
+         if (curCard.triggertype == 3) {
+            document.getElementById("member"+String(n))[1].selected = true;
+         } else if (curCard.triggertype == 1) {
+            document.getElementById("member"+String(n))[2].selected = true;
+         } else if (curCard.triggertype == 4) {
+            document.getElementById("member"+String(n))[3].selected = true;
+         } else {
+            document.getElementById("member"+String(n))[0].selected = true;
+         }
+         var skilllevel = comp_skill.skillLevel;
+         document.getElementById("skilllevel"+String(n)).innerHTML = String(skilllevel+1);
+         document.getElementById('require'+String(n)).value = curCard['skilldetail'][skilllevel].require
+         document.getElementById('probability'+String(n)).value = curCard['skilldetail'][skilllevel].possibility
+         document.getElementById('time'+String(n)).value = curCard['skilldetail'][skilllevel].time
+         document.getElementById("mezame"+String(n)).value = mezame;
+         document.getElementById("cardid"+String(n)).value = index;
+      }, defaultHandleFailedRequest);
+   }
+   
+   function decopyTo(n){
+    if (n == 0)
+	{
+	    document.getElementById('avatar'+String(n)).src = '/static/null.png';
+	}
+	else
+	{
+	    document.getElementById('avatar'+String(n)).style.display = "none";
+		document.getElementById('avatar'+String(n)).src = "";
+	}
+    document.getElementById("member"+String(n))[0].selected = true;
+	document.getElementById("skilllevel"+String(n)).innerHTML = 1;
+	document.getElementById("require"+String(n)).value = 0;
+	document.getElementById("probability"+String(n)).value = 0;
+	document.getElementById("time"+String(n)).value = 0;
+	document.getElementById("mezame"+String(n)).value = 0;
+   	document.getElementById("cardid"+String(n)).value = 0;
+   }
 
-        // load
-        comp_cardselector.loadLocalStorage('llcoverage_cardselector');
-        comp_songselector.loadLocalStorage('llcoverage_songselector');
+   function saveToCookie(){
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+	var nospan = document.getElementsByTagName("nospan");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text" && inputs[i].name)
+   			setCookie(inputs[i].name+"perfect", inputs[i].value, 1);
+   	}
+   	for (var i=0; i<selects.length; i++){
+         if (!selects[i].name) continue;
+   		setCookie(selects[i].name+"perfect", selects[i].value, 1);
+   	}
+	for (var i=1; i<nospan.length; i++){
+   		setCookie("nospan"+String(i)+"perfect", nospan[i].innerHTML, 1);
+   	}
+   	setCookie("mezame"+"perfect", mezame, 1)
+   	setCookie("language"+"perfect", language, 1)
+   }
 
-        // done
-        document.getElementById('loadingbox').style.display = 'none';
-    }, defaultHandleFailedRequest);
+   function createMapData(combo, time) {
+      if (combo <= 0 || time <= 3) return undefined;
+      var data = [];
+      // 第一秒和最后一秒不填note, 其它时间把note平均分布在除5号位外的8个位置上
+      var interval = (time - 2)/combo;
+      for (var i = 0; i < combo; i++) {
+         var pos = (i%8)+1;
+         if (pos >= 5) pos = pos+1;
+         data.push({
+            "timing_sec": i*interval+1,
+            // notes_attribute
+            "notes_level": 1,
+            "effect": 1,
+            "effect_value": 2,
+            "position": pos
+         });
+      }
+      return data;
+   }
 
-    function threetonumber(three) {
-        var result = three
-        if (result == '0') {
-            return 0;
-        }
-        if (result[0] == '0') {
-            result = result[1] + result[2]
-        }
-        if (result[0] == '0') {
-            result = result[1]
-        }
-        return result
-    }
+   function check(){
+      if (!comp_songselector.getSelectedSongSetting()) {
+         alert('请选择谱面');
+         return false;
+      }
+	if (window.innerHeight - 20 < 977 && window.innerHeight - 20 > 700)
+	{
+	    document.getElementById('container').style.height = String(window.innerHeight - 20) + "px";
+	}
+	else if (window.innerHeight - 20 >= 977)
+	{
+	    document.getElementById('container').style.height = "977px";
+	}
+	else
+	{
+	    document.getElementById('container').style.height = "700px";
+	}
+	containerheight = parseInt(document.getElementById('container').style.height) - 165;
+   	saveToCookie();
+      comp_cardselector.saveLocalStorage('llcoverage_cardselector');
+      comp_songselector.saveLocalStorage('llcoverage_songselector');
+	document.getElementById('container').style.display = "";
+	document.getElementById('separater').style.display = "";
+      var song = comp_songselector.getSelectedSong();
+      var songSetting = comp_songselector.getSelectedSongSetting();;
+      if (parseInt(comp_songselector.getSelectedSongId()) < 0) {
+         CoverageCalculator(song, songSetting, createMapData(songSetting.combo, songSetting.time));
+      } else {
+         CoverageCalculator(song, songSetting);
+      }
+      return true;
+   }
+   
+   function init(){
+   	mezame = getCookie("mezameperfect")
+   	language = getCookie("languageperfect")
+      if (mezame == "") mezame = 0; else mezame = parseInt(mezame);
+   	if (language == "")
+   		language = 0
 
-    function offsetup() {
-        if (document.getElementById('offset').value < 50) {
-            document.getElementById('offset').value = Number(document.getElementById('offset').value) + 1;
-        } else
-            return;
-    }
+   	var inputs = document.getElementsByTagName("input");
+   	var selects = document.getElementsByTagName("select");
+	var nospan = document.getElementsByTagName("nospan");
+   	for (var i=0; i<inputs.length; i++){
+   		if (inputs[i].type == "text" && inputs[i].name)
+   			if (getCookie(inputs[i].name+"perfect") != "")
+   				inputs[i].value = getCookie(inputs[i].name+"perfect");
+   	}
+      for (var i=0; i<selects.length; i++){
+         if (!selects[i].name) continue;
+         if (comp_cardselector.getComponent(selects[i].id)) continue;
+   		if (getCookie(selects[i].name+"perfect") != "")
+   			selects[i].value = getCookie(selects[i].name+"perfect");
+   	}
+   	for (var i=1; i<nospan.length; i++){
+         if (!selects[i].name) continue;
+   		if (getCookie("nospan"+String(i)+"perfect") != "")
+   			nospan[i].innerHTML = getCookie("nospan"+String(i)+"perfect");
+   	}
+      document.getElementById("mezame").checked = mezame
+   	for (i = 0; i < 9; i++){
+	    if (document.getElementById("member"+String(i)).value != 0){
+   		    //changeskilltext(i)
+   		    LLUnit.changeavatarn(i)
+		}
+   	}
+      //document.getElementById("songsearch").value = ""
+   }
 
-    function offsetdown() {
-        if (document.getElementById('offset').value > -50) {
-            document.getElementById('offset').value = Number(document.getElementById('offset').value) - 1;
-        } else
-            return;
-    }
+   </script>
+{% endblock %}
 
-    function offsetzero() {
-        document.getElementById('offset').value = 0;
-    }
+{% block body_onload %}
+   <body onload="defer_onload.resolve()" lang="zh-Hans">
+{% endblock %}
 
-    function changecolor() {
-        var index = document.getElementById('cardchoice').value
-        var mezame = (document.getElementById("mezame").checked ? 1 : 0);
-        if (index != "") {
-            LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
-                comp_skill.setCardData(curCard);
-            }, defaultHandleFailedRequest);
-            if (mezame == 0) {
-                document.getElementById("mezame").value = "未觉醒"
-            } else {
-                document.getElementById("mezame").value = "已觉醒"
-            }
-        } else {
-            comp_skill.setCardData();
-        }
-        LLUnit.changeavatar('imageselect', index, mezame);
-    }
+{% block front_notice %}
+<h4 class="alert-heading">使用方法</h4>
+<ol>
+	<li>选择歌曲以及<b>难度</b>；</li>
+	<li>设置速度；</li>
+	<li>设置击打节奏；</li>
+	<li>配置判定队伍，可以从卡片库中选择卡片，也可以直接填写数据；</li>
+	<li>计算；</li>
+	<li>鼠标在图纸区域<b>上下框选可以进行放大</b>，移动端可<b>手势缩放</b>，或者<b>两指拖动平移</b>；</li>
+	<li>当选择了多张判卡时，可以点击右侧的按钮<b>单独显示</b>某一判卡的“<b>边际覆盖率</b>”分布，即撤掉这张卡片后，卡组的覆盖率损失；</li>
+	<li>详细使用<a href="http://tieba.baidu.com/p/4774274250" target="_blank">说明&反馈</a>点击此处；</li>
+</ol>
+<p>该功能由 <b>各种化肥</b> 提供</p>
+{% endblock %}
 
-    function changeLanguage() {
-        language = 1 - language
-        comp_songselector.setLanguage(language);
-        comp_cardselector.setLanguage(language);
-    }
-
-    function toMezame() {
-        mezame = 1 - mezame
-        changecolor()
-    }
-
-    function applysongdata(songSettingId) {
-        if (!songSettingId) return;
-        var songSetting = comp_songselector.songSettings[songSettingId];
-        document.getElementById('speeds').value = LLConst.getDefaultSpeed(songSetting.difficulty);;
-    }
-
-    function copyTo(n) {
-        document.getElementById('avatar' + String(n)).style.display = "";
-        document.getElementById('avatar' + String(n)).src = document.getElementById('imageselect').src;
-        var index = document.getElementById('cardchoice').value
-        if (index == "") return;
-        LoadingUtil.startSingle(LLCardData.getDetailedData(index)).then(function(curCard) {
-            if (!curCard.skill) return;
-            if (curCard.triggertype == 3) {
-                document.getElementById("member" + String(n))[1].selected = true;
-            } else if (curCard.triggertype == 1) {
-                document.getElementById("member" + String(n))[2].selected = true;
-            } else if (curCard.triggertype == 4) {
-                document.getElementById("member" + String(n))[3].selected = true;
-            } else {
-                document.getElementById("member" + String(n))[0].selected = true;
-            }
-            var skilllevel = comp_skill.skillLevel;
-            document.getElementById("skilllevel" + String(n)).innerHTML = String(skilllevel + 1);
-            document.getElementById('require' + String(n)).value = curCard['skilldetail'][skilllevel].require
-            document.getElementById('probability' + String(n)).value = curCard['skilldetail'][skilllevel].possibility
-            document.getElementById('time' + String(n)).value = curCard['skilldetail'][skilllevel].time
-            document.getElementById("mezame" + String(n)).value = mezame;
-            document.getElementById("cardid" + String(n)).value = index;
-        }, defaultHandleFailedRequest);
-    }
-
-    function decopyTo(n) {
-        if (n == 0) {
-            document.getElementById('avatar' + String(n)).src = '/static/null.png';
-        } else {
-            document.getElementById('avatar' + String(n)).style.display = "none";
-            document.getElementById('avatar' + String(n)).src = "";
-        }
-        document.getElementById("member" + String(n))[0].selected = true;
-        document.getElementById("skilllevel" + String(n)).innerHTML = 1;
-        document.getElementById("require" + String(n)).value = 0;
-        document.getElementById("probability" + String(n)).value = 0;
-        document.getElementById("time" + String(n)).value = 0;
-        document.getElementById("mezame" + String(n)).value = 0;
-        document.getElementById("cardid" + String(n)).value = 0;
-    }
-
-    function saveToCookie() {
-        var inputs = document.getElementsByTagName("input");
-        var selects = document.getElementsByTagName("select");
-        var nospan = document.getElementsByTagName("nospan");
-        for (var i = 0; i < inputs.length; i++) {
-            if (inputs[i].type == "text" && inputs[i].name)
-                setCookie(inputs[i].name + "perfect", inputs[i].value, 1);
-        }
-        for (var i = 0; i < selects.length; i++) {
-            if (!selects[i].name) continue;
-            setCookie(selects[i].name + "perfect", selects[i].value, 1);
-        }
-        for (var i = 1; i < nospan.length; i++) {
-            setCookie("nospan" + String(i) + "perfect", nospan[i].innerHTML, 1);
-        }
-        setCookie("mezame" + "perfect", mezame, 1)
-        setCookie("language" + "perfect", language, 1)
-    }
-
-    function createMapData(combo, time) {
-        if (combo <= 0 || time <= 3) return undefined;
-        var data = [];
-        // 第一秒和最后一秒不填note, 其它时间把note平均分布在除5号位外的8个位置上
-        var interval = (time - 2) / combo;
-        for (var i = 0; i < combo; i++) {
-            var pos = (i % 8) + 1;
-            if (pos >= 5) pos = pos + 1;
-            data.push({
-                "timing_sec": i * interval + 1,
-                // notes_attribute
-                "notes_level": 1,
-                "effect": 1,
-                "effect_value": 2,
-                "position": pos
-            });
-        }
-        return data;
-    }
-
-    function check() {
-        if (!comp_songselector.getSelectedSongSetting()) {
-            alert('请选择谱面');
-            return false;
-        }
-        if (window.innerHeight - 20 < 977 && window.innerHeight - 20 > 700) {
-            document.getElementById('container').style.height = String(window.innerHeight - 20) + "px";
-        } else if (window.innerHeight - 20 >= 977) {
-            document.getElementById('container').style.height = "977px";
-        } else {
-            document.getElementById('container').style.height = "700px";
-        }
-        containerheight = parseInt(document.getElementById('container').style.height) - 165;
-        saveToCookie();
-        comp_cardselector.saveLocalStorage('llcoverage_cardselector');
-        comp_songselector.saveLocalStorage('llcoverage_songselector');
-        document.getElementById('container').style.display = "";
-        document.getElementById('separater').style.display = "";
-        var song = comp_songselector.getSelectedSong();
-        var songSetting = comp_songselector.getSelectedSongSetting();;
-        //   if (parseInt(comp_songselector.getSelectedSongId()) < 0) {
-        //      CoverageCalculator(song, songSetting, createMapData(songSetting.combo, songSetting.time));
-        //   } else {
-        //      CoverageCalculator(song, songSetting);
-        //   }
-        data_mapnote.getMapNoteData(song, songSetting).done(
-            function(data) {
-                CoverageCalculator(song, songSetting, data);
-            }
-        )
-        return true;
-    }
-
-    function init() {
-        mezame = getCookie("mezameperfect")
-        language = getCookie("languageperfect")
-        if (mezame == "") mezame = 0;
-        else mezame = parseInt(mezame);
-        if (language == "")
-            language = 0
-
-        var inputs = document.getElementsByTagName("input");
-        var selects = document.getElementsByTagName("select");
-        var nospan = document.getElementsByTagName("nospan");
-        for (var i = 0; i < inputs.length; i++) {
-            if (inputs[i].type == "text" && inputs[i].name)
-                if (getCookie(inputs[i].name + "perfect") != "")
-                    inputs[i].value = getCookie(inputs[i].name + "perfect");
-        }
-        for (var i = 0; i < selects.length; i++) {
-            if (!selects[i].name) continue;
-            if (comp_cardselector.getComponent(selects[i].id)) continue;
-            if (getCookie(selects[i].name + "perfect") != "")
-                selects[i].value = getCookie(selects[i].name + "perfect");
-        }
-        for (var i = 1; i < nospan.length; i++) {
-            if (!selects[i].name) continue;
-            if (getCookie("nospan" + String(i) + "perfect") != "")
-                nospan[i].innerHTML = getCookie("nospan" + String(i) + "perfect");
-        }
-        document.getElementById("mezame").checked = mezame
-        for (i = 0; i < 9; i++) {
-            if (document.getElementById("member" + String(i)).value != 0) {
-                //changeskilltext(i)
-                LLUnit.changeavatarn(i)
-            }
-        }
-        //document.getElementById("songsearch").value = ""
-    }
-</script>
-{% endblock %} {% block body_onload %}
-
-<body onload="defer_onload.resolve()" lang="zh-Hans">
-    {% endblock %} {% block front_notice %}
-    <h4 class="alert-heading">使用方法</h4>
-    <ol>
-        <li>选择歌曲以及<b>难度</b>；</li>
-        <li>设置速度；</li>
-        <li>设置击打节奏；</li>
-        <li>配置判定队伍，可以从卡片库中选择卡片，也可以直接填写数据；</li>
-        <li>计算；</li>
-        <li>鼠标在图纸区域<b>上下框选可以进行放大</b>，移动端可<b>手势缩放</b>，或者<b>两指拖动平移</b>；</li>
-        <li>当选择了多张判卡时，可以点击右侧的按钮<b>单独显示</b>某一判卡的“<b>边际覆盖率</b>”分布，即撤掉这张卡片后，卡组的覆盖率损失；</li>
-        <li>详细使用<a href="http://tieba.baidu.com/p/4774274250" target="_blank">说明&反馈</a>点击此处；</li>
-    </ol>
-    <p>该功能由 <b>各种化肥</b> 提供</p>
-    {% endblock %} {% block main %}
-    <form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
-        <h3>Live信息</h3>
-        搜索：<input type="text" id="songsearch" value=""></input><br> 筛选：
-        <select id="songdiff"></select>
-        <select id="songatt"></select>
-        <select id="songunit"></select>
-        <select id="songswing"></select>
-        <select id="songac"></select>
-        <select id="songstardiff"></select>
-        <br> 歌曲：
-        <select id="songchoice">
+{% block main %}
+<form action="" id="unitform" name="unitform" method="POST" onsubmit="return check()" enctype=multipart/form-data>
+<h3>Live信息</h3>
+搜索：<input type="text" id="songsearch" value=""></input><br>
+筛选：
+<select id="songdiff"></select>
+<select id="songatt"></select>
+<select id="songunit"></select>
+<select id="songswing"></select>
+<select id="songac"></select>
+<select id="songstardiff"></select>
+<br>
+歌曲：
+<select id="songchoice">
    <option value="">载入中...</option>
 </select>
-        <input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-        <br> 谱面：
-        <select id="diffchoice">
+<input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+<br>
+谱面：
+<select id="diffchoice">
    <option value="">载入中...</option>
 </select>
-        <br> 速度：
-        <select name="speeds" id="speeds">
+<br>
+速度：<select name="speeds" id="speeds">
     <option value="1">1</option>
     <option value="2">2</option>
     <option value="3">3</option>
@@ -326,286 +341,268 @@
     <option value="9">9</option>
     <option value="10">10</option>
   </select>
-        <br> 击打节奏：
-        <input type="button" style="height:24px;width:24px;padding:0" value="-" onclick="offsetdown()"></input>
-        <input name="offset" type="text" id="offset" value="0" size="3" />
-        <input type="button" style="height:24px;width:24px;padding:0" value="+" onclick="offsetup()"></input>
-        <input type="button" style="height:24px;width:24px;padding:0" value="0" onclick="offsetzero()"></input>
-        <br>
+<br>
+击打节奏：<input type="button" style="height:24px;width:24px;padding:0" value="-" onclick="offsetdown()"></input>
+<input name="offset" type="text" id="offset" value="0" size="3" />
+<input type="button" style="height:24px;width:24px;padding:0" value="+" onclick="offsetup()"></input>
+<input type="button" style="height:24px;width:24px;padding:0" value="0" onclick="offsetzero()"></input>
+<br>
 
-        <h3>判卡库</h3>
-        <div id='card_data_version'></div>
-        <div id='card_filter_container'></div>
-        <br/> 卡片：
-        <select id="cardchoice" name="cardchoice">
+<h3>判卡库</h3>
+<div id='card_data_version'></div>
+<div id='card_filter_container'></div>
+<br/>
+卡片：<select id="cardchoice" name="cardchoice">
 		<option value="">载入中...</option>
 	</select>
-        <input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
-        <br>
-        <div style="float:left">
-            <img id="imageselect" src="/static/null.png" />
-        </div>
-        <div style="clear:both">
-            <p id="skillcontainer" style="display:none">
-                技能等级 : <input type="button" id="skilllvup" style="height:20px;width:20px;padding:0" value="▲" /> Lv
-                <nospan id="skilllevel">1</nospan> <input type="button" id="skilllvdown" style="height:20px;width:20px;padding:0" value="▼" />
-                </input>
-                </nobr><br> 技能效果 : <span id="skilltext"></span><br/>
-            </p>
+	<input type="checkbox" id="mezame" name="mezame" onclick="toMezame()">觉醒</input><input type="button" id="language" name="language" onclick="changeLanguage()" value="切换语言"></input>
+<br>
+   <div style="float:left">
+<img id="imageselect" src="/static/null.png" />
+</div>
+<div style="clear:both">
+<p id="skillcontainer" style="display:none">
+   技能等级 : <input type="button" id="skilllvup" style="height:20px;width:20px;padding:0" value="▲" /> Lv<nospan id="skilllevel">1</nospan> <input type="button" id="skilllvdown" style="height:20px;width:20px;padding:0" value="▼" />
+   </input></nobr><br>
+   技能效果 : <span id="skilltext"></span><br/>
+</p>
 
-            <h3>队伍配置</h3>
-            <div style="float:left">
-                <table border='1'>
-                    <tr>
-                        <td>判卡1：</td>
-                        <td><img id='avatar0' src='/static/null.png' /></td>
-                        <td><select name="member0" id="member0">
+<h3>队伍配置</h3>
+<div style="float:left">
+<table border='1'>
+    <tr>
+        <td>判卡1：</td>
+		<td><img  id='avatar0' src='/static/null.png'/></td>
+        <td><select name="member0" id="member0">
             <option value="0">无</option>
             <option value="1" SELECTED>N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel0">1</nospan>　</td>
-                        <td>条件：<input name="require0" type="text" id="require0" value="25" size="2" />　</td>
-                        <td>概率：<input name="probability0" type="text" id="probability0" value="36" size="2" />%　</td>
-                        <td>时间：<input name="time0" type="text" id="time0" value="4.5" size="3" />秒</td>
-                        <td><input type="button" value="放卡1" onclick="copyTo(0)"></td>
-                        <td><input type="button" value="清空1" onclick="decopyTo(0)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡2：</td>
-                        <td><img style="display:none" id='avatar1' /></td>
-                        <td><select name="member1" id="member1">
+		<td>Lv<nospan id="skilllevel0">1</nospan>　</td>
+        <td>条件：<input name="require0" type="text" id="require0" value="25" size="2" />　</td>
+        <td>概率：<input name="probability0" type="text" id="probability0" value="36" size="2" />%　</td>
+        <td>时间：<input name="time0" type="text" id="time0" value="4.5" size="3" />秒</td>
+		<td><input type="button" value="放卡1" onclick="copyTo(0)"></td>
+		<td><input type="button" value="清空1" onclick="decopyTo(0)"></td>
+    </tr>
+    <tr>
+        <td>判卡2：</td>
+		<td><img style="display:none" id='avatar1'/></td>
+        <td><select name="member1" id="member1">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel1">1</nospan>　</td>
-                        <td>条件：<input name="require1" type="text" id="require1" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability1" type="text" id="probability1" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time1" type="text" id="time1" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡2" onclick="copyTo(1)"></td>
-                        <td><input type="button" value="清空2" onclick="decopyTo(1)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡3：</td>
-                        <td><img style="display:none" id='avatar2' /></td>
-                        <td><select name="member2" id="member2">
+		<td>Lv<nospan id="skilllevel1">1</nospan>　</td>
+        <td>条件：<input name="require1" type="text" id="require1" value="0" size="2" />　</td>
+        <td>概率：<input name="probability1" type="text" id="probability1" value="0" size="2" />%　</td>
+        <td>时间：<input name="time1" type="text" id="time1" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡2" onclick="copyTo(1)"></td>
+		<td><input type="button" value="清空2" onclick="decopyTo(1)"></td>
+	</tr>
+    <tr>
+        <td>判卡3：</td>
+		<td><img style="display:none" id='avatar2'/></td>
+        <td><select name="member2" id="member2">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel2">1</nospan>　</td>
-                        <td>条件：<input name="require2" type="text" id="require2" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability2" type="text" id="probability2" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time2" type="text" id="time2" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡3" onclick="copyTo(2)"></td>
-                        <td><input type="button" value="清空3" onclick="decopyTo(2)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡4：</td>
-                        <td><img style="display:none" id='avatar3' /></td>
-                        <td><select name="member3" id="member3">
+		<td>Lv<nospan id="skilllevel2">1</nospan>　</td>
+        <td>条件：<input name="require2" type="text" id="require2" value="0" size="2" />　</td>
+        <td>概率：<input name="probability2" type="text" id="probability2" value="0" size="2" />%　</td>
+        <td>时间：<input name="time2" type="text" id="time2" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡3" onclick="copyTo(2)"></td>
+		<td><input type="button" value="清空3" onclick="decopyTo(2)"></td>
+	</tr>
+    <tr>
+        <td>判卡4：</td>
+		<td><img style="display:none" id='avatar3'/></td>
+        <td><select name="member3" id="member3">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel3">1</nospan>　</td>
-                        <td>条件：<input name="require3" type="text" id="require3" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability3" type="text" id="probability3" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time3" type="text" id="time3" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡4" onclick="copyTo(3)"></td>
-                        <td><input type="button" value="清空4" onclick="decopyTo(3)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡5：</td>
-                        <td><img style="display:none" id='avatar4' /></td>
-                        <td><select name="member4" id="member4">
+		<td>Lv<nospan id="skilllevel3">1</nospan>　</td>
+        <td>条件：<input name="require3" type="text" id="require3" value="0" size="2" />　</td>
+        <td>概率：<input name="probability3" type="text" id="probability3" value="0" size="2" />%　</td>
+        <td>时间：<input name="time3" type="text" id="time3" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡4" onclick="copyTo(3)"></td>
+		<td><input type="button" value="清空4" onclick="decopyTo(3)"></td>
+	</tr>
+    <tr>
+        <td>判卡5：</td>
+		<td><img style="display:none" id='avatar4'/></td>
+        <td><select name="member4" id="member4">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel4">1</nospan>　</td>
-                        <td>条件：<input name="require4" type="text" id="require4" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability4" type="text" id="probability4" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time4" type="text" id="time4" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡5" onclick="copyTo(4)"></td>
-                        <td><input type="button" value="清空5" onclick="decopyTo(4)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡6：</td>
-                        <td><img style="display:none" id='avatar5' /></td>
-                        <td><select name="member5" id="member5">
+		<td>Lv<nospan id="skilllevel4">1</nospan>　</td>
+        <td>条件：<input name="require4" type="text" id="require4" value="0" size="2" />　</td>
+        <td>概率：<input name="probability4" type="text" id="probability4" value="0" size="2" />%　</td>
+        <td>时间：<input name="time4" type="text" id="time4" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡5" onclick="copyTo(4)"></td>
+		<td><input type="button" value="清空5" onclick="decopyTo(4)"></td>
+	</tr>
+    <tr>
+        <td>判卡6：</td>
+		<td><img style="display:none" id='avatar5'/></td>
+        <td><select name="member5" id="member5">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel5">1</nospan>　</td>
-                        <td>条件：<input name="require5" type="text" id="require5" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability5" type="text" id="probability5" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time5" type="text" id="time5" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡6" onclick="copyTo(5)"></td>
-                        <td><input type="button" value="清空6" onclick="decopyTo(5)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡7：</td>
-                        <td><img style="display:none" id='avatar6' /></td>
-                        <td><select name="member6" id="member6">
+		<td>Lv<nospan id="skilllevel5">1</nospan>　</td>
+        <td>条件：<input name="require5" type="text" id="require5" value="0" size="2" />　</td>
+        <td>概率：<input name="probability5" type="text" id="probability5" value="0" size="2" />%　</td>
+        <td>时间：<input name="time5" type="text" id="time5" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡6" onclick="copyTo(5)"></td>
+		<td><input type="button" value="清空6" onclick="decopyTo(5)"></td>
+	</tr>
+    <tr>
+        <td>判卡7：</td>
+		<td><img style="display:none" id='avatar6'/></td>
+        <td><select name="member6" id="member6">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel6">1</nospan>　</td>
-                        <td>条件：<input name="require6" type="text" id="require6" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability6" type="text" id="probability6" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time6" type="text" id="time6" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡7" onclick="copyTo(6)"></td>
-                        <td><input type="button" value="清空7" onclick="decopyTo(6)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡8：</td>
-                        <td><img style="display:none" id='avatar7' /></td>
-                        <td><select name="member7" id="member7">
+		<td>Lv<nospan id="skilllevel6">1</nospan>　</td>
+        <td>条件：<input name="require6" type="text" id="require6" value="0" size="2" />　</td>
+        <td>概率：<input name="probability6" type="text" id="probability6" value="0" size="2" />%　</td>
+        <td>时间：<input name="time6" type="text" id="time6" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡7" onclick="copyTo(6)"></td>
+		<td><input type="button" value="清空7" onclick="decopyTo(6)"></td>
+	</tr>
+    <tr>
+        <td>判卡8：</td>
+		<td><img style="display:none" id='avatar7'/></td>
+        <td><select name="member7" id="member7">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel7">1</nospan>　</td>
-                        <td>条件：<input name="require7" type="text" id="require7" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability7" type="text" id="probability7" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time7" type="text" id="time7" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡8" onclick="copyTo(7)"></td>
-                        <td><input type="button" value="清空8" onclick="decopyTo(7)"></td>
-                    </tr>
-                    <tr>
-                        <td>判卡9：</td>
-                        <td><img style="display:none" id='avatar8' /></td>
-                        <td><select name="member8" id="member8">
+		<td>Lv<nospan id="skilllevel7">1</nospan>　</td>
+        <td>条件：<input name="require7" type="text" id="require7" value="0" size="2" />　</td>
+        <td>概率：<input name="probability7" type="text" id="probability7" value="0" size="2" />%　</td>
+        <td>时间：<input name="time7" type="text" id="time7" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡8" onclick="copyTo(7)"></td>
+		<td><input type="button" value="清空8" onclick="decopyTo(7)"></td>
+	</tr>
+    <tr>
+        <td>判卡9：</td>
+		<td><img style="display:none" id='avatar8'/></td>
+        <td><select name="member8" id="member8">
             <option value="0">无</option>
             <option value="1">N判</option>
             <option value="2">T判</option>
             <option value="3">C判</option>
         </select></td>
-                        <td>Lv
-                            <nospan id="skilllevel8">1</nospan>　</td>
-                        <td>条件：<input name="require8" type="text" id="require8" value="0" size="2" />　</td>
-                        <td>概率：<input name="probability8" type="text" id="probability8" value="0" size="2" />%　</td>
-                        <td>时间：<input name="time8" type="text" id="time8" value="0" size="3" />秒</td>
-                        <td><input type="button" value="放卡9" onclick="copyTo(8)"></td>
-                        <td><input type="button" value="清空9" onclick="decopyTo(8)"></td>
-                    </tr>
-                    <tr style="display:none">
-                        <td>id</td>
+		<td>Lv<nospan id="skilllevel8">1</nospan>　</td>
+        <td>条件：<input name="require8" type="text" id="require8" value="0" size="2" />　</td>
+        <td>概率：<input name="probability8" type="text" id="probability8" value="0" size="2" />%　</td>
+        <td>时间：<input name="time8" type="text" id="time8" value="0" size="3" />秒</td>
+		<td><input type="button" value="放卡9" onclick="copyTo(8)"></td>
+		<td><input type="button" value="清空9" onclick="decopyTo(8)"></td>
+	</tr>
+	<tr style="display:none">
+      <td>id</td>
+      
+      <td><input type="text" id="cardid0" name="cardid0" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid1" name="cardid1" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid2" name="cardid2" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid3" name="cardid3" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid4" name="cardid4" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid5" name="cardid5" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid6" name="cardid6" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid7" name="cardid7" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="cardid8" name="cardid8" size=1 value=0 autocomplete="off"></td>
+      
+    </tr>
+    <tr style="display:none">
+      <td>mezame</td>
+      
+      <td><input type="text" id="mezame0" name="mezame0" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame1" name="mezame1" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame2" name="mezame2" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame3" name="mezame3" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame4" name="mezame4" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame5" name="mezame5" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame6" name="mezame6" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame7" name="mezame7" size=1 value=0 autocomplete="off"></td>
+      
+      <td><input type="text" id="mezame8" name="mezame8" size=1 value=0 autocomplete="off"></td>
+      
+    </tr>
+</table>
 
-                        <td><input type="text" id="cardid0" name="cardid0" size=1 value=0 autocomplete="off"></td>
+<div id="calculate">
+<input type="button" value="calculate" onclick="check()">
+<b>注意：4.1版本与之前的版本判定覆盖结果有所不同（当前计算版本：4.1）</b><a href="llcoverage40">to 4.0</a>
+</div>
 
-                        <td><input type="text" id="cardid1" name="cardid1" size=1 value=0 autocomplete="off"></td>
+{% include 'components/loadingbox.html' %}
 
-                        <td><input type="text" id="cardid2" name="cardid2" size=1 value=0 autocomplete="off"></td>
+</div>
+<div style="clear:both">
+</div>
+<br>
+</form>
 
-                        <td><input type="text" id="cardid3" name="cardid3" size=1 value=0 autocomplete="off"></td>
+<iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
 
-                        <td><input type="text" id="cardid4" name="cardid4" size=1 value=0 autocomplete="off"></td>
+<br>
+<div id="container" style="display:none;width:550px;height:700px;float:left"></div>
+<div id="separater" style="display:none;width:50px;height:700px;float:left">
+    <div style="height:50px"></div>
+	<input type="button" id="separater0" value="1" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(0)"><p></p>
+    <input type="button" id="separater1" value="2" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(1)"><p></p>
+    <input type="button" id="separater2" value="3" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(2)"><p></p>
+    <input type="button" id="separater3" value="4" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(3)"><p></p>
+    <input type="button" id="separater4" value="5" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(4)"><p></p>
+    <input type="button" id="separater5" value="6" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(5)"><p></p>
+    <input type="button" id="separater6" value="7" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(6)"><p></p>
+    <input type="button" id="separater7" value="8" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(7)"><p></p>
+    <input type="button" id="separater8" value="9" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(8)"><p></p>
+</div>
+<div style="clear:both">
+</div>
+<div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center;font-weight:bold">运行中…</div>
+{% endblock %}
 
-                        <td><input type="text" id="cardid5" name="cardid5" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="cardid6" name="cardid6" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="cardid7" name="cardid7" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="cardid8" name="cardid8" size=1 value=0 autocomplete="off"></td>
-
-                    </tr>
-                    <tr style="display:none">
-                        <td>mezame</td>
-
-                        <td><input type="text" id="mezame0" name="mezame0" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame1" name="mezame1" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame2" name="mezame2" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame3" name="mezame3" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame4" name="mezame4" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame5" name="mezame5" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame6" name="mezame6" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame7" name="mezame7" size=1 value=0 autocomplete="off"></td>
-
-                        <td><input type="text" id="mezame8" name="mezame8" size=1 value=0 autocomplete="off"></td>
-
-                    </tr>
-                </table>
-
-                <div id="calculate">
-                    <input type="button" value="calculate" onclick="check()">
-                    <b>注意：4.1版本与之前的版本判定覆盖结果有所不同（当前计算版本：4.1）</b><a href="llcoverage40">to 4.0</a>
-                </div>
-
-                {% include 'components/loadingbox.html' %}
-
-            </div>
-            <div style="clear:both">
-            </div>
-            <br>
-    </form>
-
-    <iframe style="display:none" id='if' name='if' src='about:blank' frameborder='0' allowtransparency="yes"></iframe>
-
-    <br>
-    <div id="container" style="display:none;width:550px;height:700px;float:left"></div>
-    <div id="separater" style="display:none;width:50px;height:700px;float:left">
-        <div style="height:50px"></div>
-        <input type="button" id="separater0" value="1" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(0)">
-        <p></p>
-        <input type="button" id="separater1" value="2" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(1)">
-        <p></p>
-        <input type="button" id="separater2" value="3" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(2)">
-        <p></p>
-        <input type="button" id="separater3" value="4" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(3)">
-        <p></p>
-        <input type="button" id="separater4" value="5" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(4)">
-        <p></p>
-        <input type="button" id="separater5" value="6" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(5)">
-        <p></p>
-        <input type="button" id="separater6" value="7" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(6)">
-        <p></p>
-        <input type="button" id="separater7" value="8" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(7)">
-        <p></p>
-        <input type="button" id="separater8" value="9" style="display:none;height:24px;width:24px;border:2px #b0b0b0 solid;border-radius:12px" onclick="redraw(8)">
-        <p></p>
-    </div>
-    <div style="clear:both">
-    </div>
-    <div id="running" style="display:none;background:#ffffb0;width:550px;text-align:center;font-weight:bold">运行中…</div>
-    {% endblock %} {% block back_notice %}
-    <h4 class="alert-heading">说明</h4>
-    <ol>
-        <li>该计算器
-            <font style='color:red'><b>不适用于</b></font>MF活动的第二第三首歌；</li>
-        <li>计算结果图纸右侧为卡组综合覆盖率随时间的分布，纵轴为时间轴，横轴为覆盖概率。计算结果图纸左侧为对应歌曲的谱面参考；</li>
-        <li>由于“击打点≠判定点”，靠近覆盖区间边缘的note可能存在“半覆盖”现象，此时将鼠标移动至对应的note上将显示出“判定对该note的<b>Good区间</b>覆盖率”；</li>
-        <li>图纸下方显示总覆盖率（P+G+G区间），括号内包含Combo和长条的权重，意义为“FC前提当前覆盖状态下判定宝石的加成效果相对于100%覆盖下加成效果的比例”；</li>
-        <li>SIF 4.1版本修复了技能时间bug，因此现在计算对于N判（时间轴）误差小于1帧（16ms），对于T判误差小于7帧；</li>
-        <li>由于C判的触发条件与玩家的操作有关，因此C判的覆盖理论分布计算过于复杂，此处对于C判只给出“FC前提下的覆盖分布数学期望”；</li>
-        <li>若想了解具体<a href="https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB" target="_blank">计算原理</a>请看文档第四章。</li>
-    </ol>
-    {% endblock %}
+{% block back_notice %}
+<h4 class="alert-heading">说明</h4>
+<ol>
+    <li>该计算器<font style='color:red'><b>不适用于</b></font>MF活动的第二第三首歌；</li>
+    <li>计算结果图纸右侧为卡组综合覆盖率随时间的分布，纵轴为时间轴，横轴为覆盖概率。计算结果图纸左侧为对应歌曲的谱面参考；</li>
+    <li>由于“击打点≠判定点”，靠近覆盖区间边缘的note可能存在“半覆盖”现象，此时将鼠标移动至对应的note上将显示出“判定对该note的<b>Good区间</b>覆盖率”；</li>
+    <li>图纸下方显示总覆盖率（P+G+G区间），括号内包含Combo和长条的权重，意义为“FC前提当前覆盖状态下判定宝石的加成效果相对于100%覆盖下加成效果的比例”；</li>
+    <li>SIF 4.1版本修复了技能时间bug，因此现在计算对于N判（时间轴）误差小于1帧（16ms），对于T判误差小于7帧；</li>
+    <li>由于C判的触发条件与玩家的操作有关，因此C判的覆盖理论分布计算过于复杂，此处对于C判只给出“FC前提下的覆盖分布数学期望”；</li>
+    <li>若想了解具体<a href="https://www.lovelivewiki.com/w/%E5%88%A4%E5%AE%9A%E8%A6%86%E7%9B%96%E7%8E%87%E5%92%8C%E5%88%A4%E5%8D%A1%E5%9F%B9%E5%85%BB" target="_blank">计算原理</a>请看文档第四章。</li>
+</ol>
+{% endblock %}
