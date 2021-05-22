@@ -34,6 +34,7 @@
       LLConst.initMetadata(metaData);
       comp_songselector = new LLSongSelector(songData);
       comp_songselector.onSongSettingChange = applysongdata;
+      data_mapnote = new LLMapNoteData();
       comp_skill = new LLSkillContainer();
       comp_cardselector = new LLCardSelector(cardData, 'card_filter_container');
       comp_cardselector.getComponent('rarity').filterOptions(function (opt) {
