@@ -240,11 +240,13 @@
 	document.getElementById('separater').style.display = "";
       var song = comp_songselector.getSelectedSong();
       var songSetting = comp_songselector.getSelectedSongSetting();;
-      if (parseInt(comp_songselector.getSelectedSongId()) < 0) {
-         CoverageCalculator(song, songSetting, createMapData(songSetting.combo, songSetting.time));
-      } else {
-         CoverageCalculator(song, songSetting);
-      }
+      data_mapnote.getMapNoteData(song, songSetting).done(
+            function(data) {
+                CoverageCalculator(song, songSetting, data);
+            }
+        ).fail(function (){
+                document.getElementById('running').innerHTML = "谱面下载失败";
+            })
       return true;
    }
    
